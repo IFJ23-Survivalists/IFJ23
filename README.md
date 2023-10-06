@@ -1,0 +1,2 @@
+# IFJ23
+VUT FIT IFJ 2023 project 
