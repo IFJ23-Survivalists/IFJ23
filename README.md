@@ -15,12 +15,12 @@ of Technology](https://www.vut.cz/en/) in [IFJ](https://www.fit.vut.cz/study/cou
 
 The IFJ23 project is designed to implement a Swift interpreter that can handle a simplified version of the Swift programming language. The project is divided into several key components:
 
-1. Lexical Analysis: Responsible for tokenizing the input source code.
-2. Syntax Analysis: Parses the tokenized code into a syntax tree.
-3. Semantic Analysis: Performs semantic checks and builds symbol tables.
-4. Internal Code Generation: Generates intermediate code from the syntax tree.
-5. Optimization: Optimizes the intermediate code for better performance.
-6. Code Generation: Produces executable code from the optimized intermediate code.
+1. **Lexical Analysis**: Responsible for tokenizing the input source code.
+2. **Syntax Analysis**: Parses the tokenized code into a syntax tree.
+3. **Semantic Analysis**: Performs semantic checks and builds symbol tables.
+4. **Internal Code Generation**: Generates intermediate code from the syntax tree.
+5. **Optimization**: Optimizes the intermediate code for better performance.
+6. **Code Generation**: Produces executable code from the optimized intermediate code.
 
 ## Getting Started
 
@@ -48,7 +48,8 @@ Given the follow `factorial.swift` that calculates factorial.
 write("Zadejte cislo pro vypocet faktorialu\n")
 let a : Int? = readInt()
 if let a {
-  if (a < 0) {write("Faktorial nelze spocitat\n")
+  if (a < 0) {
+    write("Faktorial nelze spocitat\n")
   } else {
     var a = Int2Double(a)
     var vysl : Double = 1
@@ -65,7 +66,7 @@ if let a {
 
 Execute it simply by
 ```bash
-./ifj factorial.swift
+./ifj23 factorial.swift
 ```
 
 ## Code Guidelines
@@ -84,7 +85,7 @@ Please IFJ23 project, please follow these code guidelines:
      */
     ```
 
-- **Header Declarations**: Document every declaration in the header file (enum, union, struct, function, constants) using Doxygen style. Include `@brief` and descriptions for each declaration. For example:
+- **Header Declarations**: Document every declaration in the header file (enum, union, struct, function, constants) using Doxygen style. Include `@brief` for each declaration at minimum. For example:
 
     ```c
     #ifndef EXAMPLE_H
@@ -103,7 +104,7 @@ Please IFJ23 project, please follow these code guidelines:
     #endif
     ```
 
-- **Function Naming**: Functions that are methods over a data structure must start with the data structure name and have a pointer to that data structure as the first parameter if needed. Use `snake_case` for function names. For example:
+- **Function Naming**: Functions that are methods over a data structure must start with the data structure name and have a pointer to that data structure as the first parameter if needed. For example:
 
     ```c
     typedef struct { ... } String;
@@ -118,7 +119,7 @@ Please IFJ23 project, please follow these code guidelines:
     - Variables: Use `snake_case` for variable names. For example:
 
         ```c
-        void main() {
+        int main() {
             int just_for_demonstration = 0;
             return just_for_demonstration;
         }
@@ -146,7 +147,8 @@ Please IFJ23 project, please follow these code guidelines:
 
         ```c
         typedef enum {
-            DataType_Int,
+            DataType_Number,
+            DataType_FloatingPointNumber,
             DataType_String,
         } DataType;
         ```
