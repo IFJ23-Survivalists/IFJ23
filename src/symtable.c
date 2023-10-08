@@ -36,7 +36,7 @@ void function_parameter_push(FunctionParameter *par, DataType type) {
         return;
     }
 
-    reallocated[par->argc] = type;
+    reallocated[par->argc++] = type;
     par->argv = reallocated;
 }
 
@@ -98,7 +98,7 @@ static bool item_bvs_insert(Item *item, const char *key, ItemType type, ItemValu
 
     if (*next) {
         return item_bvs_insert(*next, key, type, value);
-    } 
+    }
 
     Item *new_item = create_item(key, type, value);
 
