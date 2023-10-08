@@ -153,7 +153,7 @@ Please IFJ23 project, please follow these code guidelines:
         } DataType;
         ```
 
-- **Error Handling**: Use the provided `set_error` and `get_error` functions declared in the `error.h` file for error handling. If you are unsure which function is failable, perform error handling after calling any function. For example:
+- **Error Handling**: Use the provided `set_error` and `got_error` functions declared in the `error.h` file for error handling. If you are unsure which function is failable, perform error handling after calling any function. For example:
 
     ```c
     void my_failable_function() {
@@ -166,8 +166,8 @@ Please IFJ23 project, please follow these code guidelines:
 
     void other_function() {
         my_failable_function();
-        
-        if (get_error()) {
+
+        if (got_error()) {
             // Perform error handling here, usually early exit
             return;
         }
