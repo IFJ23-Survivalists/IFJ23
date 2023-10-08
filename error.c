@@ -15,7 +15,7 @@ const char *MSG[] = {
     "sémantická chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech.",
     "sémantická chyba odvození typu – typ proměnné nebo parametru není uveden a nelze odvodit od použitého výrazu.",
     "ostatní sémantické chyby.",
-    "interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)."
+    [99] = "interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)."
 };
 
 Error ERROR = Error_None;
