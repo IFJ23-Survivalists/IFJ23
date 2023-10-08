@@ -167,7 +167,7 @@ Please IFJ23 project, please follow these code guidelines:
     void other_function() {
         my_failable_function();
         
-        if (got_error()) {
+        if (get_error()) {
             // Perform error handling here, usually early exit
             return;
         }
