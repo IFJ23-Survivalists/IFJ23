@@ -1,8 +1,9 @@
 /**
- * File: error.h
- * Author: Le Duy Nguyen, xnguye27, VUT FIT
- * Date: 08/10/2023
- * Brief: Define the `Error` enum type and its related function to be used for error handling in the project 
+ * @brief Define the `Error` enum type and its related function to be used for error handling in the project
+ *
+ * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @date 08/10/2023
+ * @file error.h
  */
 
 #ifndef ERROR_H
@@ -64,8 +65,17 @@ typedef enum {
     Error_Internal = 99,
 } Error;
 
+/**
+ * @brief Set global error state.
+ */
 void set_error(Error);
 
+/**
+ * @brief Get the global error state.
+ *
+ * This function will return the error that was last set with set_error() function.
+ * @return Global error state.
+ */
 Error got_error();
 
 /// @brief Print the `error` message to `stderr`
