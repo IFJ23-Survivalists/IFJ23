@@ -137,7 +137,7 @@ Please IFJ23 project, please follow these code guidelines:
       int g_error = 0;
       ```
 
-    - Static variables: Use prefix `s_` for gloval static variables. For example:
+    - Static variables: Use prefix `s_` for global static variables. For example:
 
       ```c
       int foo() {
