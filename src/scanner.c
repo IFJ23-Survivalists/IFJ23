@@ -77,6 +77,7 @@ typedef enum {
     State_BlockString,
     State_BlockStringEnd1,
     State_BlockStringEnd2,
+    State_BlockStringEnd3,
     State_BlockStringEscape,
     State_BlockStringEscapeUnicode,
     State_BlockStringEscapeHexStart,
@@ -784,8 +785,42 @@ static State step_block_string(char ch) {
 }
 
 static State step_block_string_end(char ch, int nth) {
+    if (nth == 1) {
+        int ident = ch == ' ' ? 1
+                  : ch == '\t' ? 4
+                  : 0;
+
+        if (ident) {
+            scanner.number += ident;
+            return State_BlockStringEnd1;
+        }
+    }
+
     if (ch == '"') {
-        return nth == 2 ? State_StringEnd : State_BlockStringEnd2;
+        switch (nth) {
+            case 1: return State_BlockStringEnd2;
+            case 2: return State_BlockStringEnd3;
+            case 3: {
+                string_remove_ident(&scanner.string, scanner.number);
+
+                if (got_error()) {
+                    set_error(Error_Lexical);
+                    return State_EOF;
+                }
+
+                return State_StringEnd;
+            }
+            default: {
+                set_error(Error_Internal);
+                print_position();
+                eprint("Something when wrong");
+                return State_EOF;
+            }
+        }
+    }
+
+    while (scanner.number--) {
+        string_push(&scanner.string, ' ');
     }
 
     while (nth-- > 0) {
@@ -833,6 +868,7 @@ static State step(char ch) {
         case State_BlockString: return step_block_string(ch);
         case State_BlockStringEnd1: return step_block_string_end(ch, 1);
         case State_BlockStringEnd2: return step_block_string_end(ch, 2);
+        case State_BlockStringEnd3: return step_block_string_end(ch, 3);
         case State_BlockStringEscape: return step_string_escape(ch, false);
         case State_BlockStringEscapeUnicode: return step_string_escape_unicode(ch, false);
         case State_BlockStringEscapeHexStart: return step_string_escape_hex_start(ch, false);

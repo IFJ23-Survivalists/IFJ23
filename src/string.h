@@ -114,5 +114,6 @@ String string_take(String *str);
  */
 String string_clone(String *str);
 
+void string_remove_ident(String *str, int ident_level);
 
 #endif
