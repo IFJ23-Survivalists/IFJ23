@@ -125,12 +125,26 @@ Please IFJ23 project, please follow these code guidelines:
         }
         ```
 
-    - Global Variables / Constants: Use `UPPERCASE` for global variables and constants. For example:
+    - Global constants: Use `UPPERCASE` for global constants. For example:
 
         ```c
-        double EULER_NUMBER = 2.7;
+        const double EULER_NUMBER = 2.7;
         ```
+        
+    - Global variables: Use prefix `g_` for global variables. For example:
+      
+      ```c
+      int g_error = 0;
+      ```
 
+    - Static variables: Use prefix `s_` for gloval static variables. For example:
+
+      ```c
+      int foo() {
+         static int s_num = 0;
+      }
+      ```
+      
     - Functions: Use `snake_case` for function names. For example:
 
         ```c
