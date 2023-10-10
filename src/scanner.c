@@ -100,7 +100,7 @@ typedef struct {
     unsigned comment_block_level;
 } Scanner;
 
-Scanner scanner;
+Scanner g_scanner;
 
 void scanner_init(FILE *src) {
     if (!src) {
@@ -109,22 +109,22 @@ void scanner_init(FILE *src) {
         return;
     }
 
-    scanner.src = src;
-    scanner.line = 1;
-    scanner.position_in_line = 0;
-    scanner.current_state = State_Start;
-    string_init(&scanner.string);
+    g_scanner.src = src;
+    g_scanner.line = 1;
+    g_scanner.position_in_line = 0;
+    g_scanner.current_state = State_Start;
+    string_init(&g_scanner.string);
 }
 
 void scanner_free() {
-    if (scanner.src) fclose(scanner.src);
-    string_free(&scanner.string);
+    if (g_scanner.src) fclose(g_scanner.src);
+    string_free(&g_scanner.string);
 }
 
 static State step(char ch);
 
 void print_position() {
-    eprintf("Line: %d Position: %d>", scanner.line, scanner.position_in_line);
+    eprintf("Line: %d Position: %d>", g_scanner.line, g_scanner.position_in_line);
 }
 
 double make_number_double(int full, int decimalpart) {
@@ -150,7 +150,7 @@ double make_number_double(int full, int decimalpart) {
 }
 
 void get_current_token(Token *token) {
-    switch (scanner.current_state) {
+    switch (g_scanner.current_state) {
         case State_EOF:
             token->type = Token_EOF;
             break;
@@ -179,10 +179,10 @@ void get_current_token(Token *token) {
             bool found = false;
 
             for (int i = 0; KEYWORD[i]; i++) {
-                if (strcmp(scanner.string.data, KEYWORD[i]) == 0) {
+                if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
                     token->type = Token_Keyword;
                     token->attribute.keyword = KEYWORD_TYPE[i];
-                    string_clear(&scanner.string);
+                    string_clear(&g_scanner.string);
                     found = true;
                     break;
                 }
@@ -191,10 +191,10 @@ void get_current_token(Token *token) {
             if (found) break;
 
             for (int i = 0; DATA_TYPE_IDENTIFIER[i]; i++) {
-                if (strcmp(scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
+                if (strcmp(g_scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
                     token->type = Token_DataType;
                     token->attribute.data_type = DATA_TYPE[i];
-                    string_clear(&scanner.string);
+                    string_clear(&g_scanner.string);
                     found = true;
                     break;
                 }
@@ -203,7 +203,7 @@ void get_current_token(Token *token) {
             if (found) break;
 
             token->type = Token_Identifier;
-            token->attribute.data.value.string = string_take(&scanner.string);
+            token->attribute.data.value.string = string_take(&g_scanner.string);
             break;
         }
 
@@ -254,10 +254,10 @@ void get_current_token(Token *token) {
 
         case State_MaybeNilType:
             for (int i = 0; DATA_TYPE_IDENTIFIER[i]; i++) {
-                if (strcmp(scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
+                if (strcmp(g_scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
                     token->type = Token_DataType;
                     token->attribute.data_type = OPTIONAL_DATA_TYPE[i];
-                    string_clear(&scanner.string);
+                    string_clear(&g_scanner.string);
                     break;
                 }
             }
@@ -266,28 +266,28 @@ void get_current_token(Token *token) {
             break;
         case State_Number:
             token->attribute.data.type = DataType_Int;
-            token->attribute.data.value.number = scanner.number;
+            token->attribute.data.value.number = g_scanner.number;
             token->type = Token_Data;
             break;
         case State_NumberDouble:
             token->attribute.data.type = DataType_Double;
-            token->attribute.data.value.number_double = make_number_double(scanner.number, scanner.decimalpoint);
+            token->attribute.data.value.number_double = make_number_double(g_scanner.number, g_scanner.decimalpoint);
             token->type = Token_Data;
             break;
         case State_NumberExponent: {
-            double number = make_number_double(scanner.number, scanner.decimalpoint);
+            double number = make_number_double(g_scanner.number, g_scanner.decimalpoint);
 
             if (got_error()) {
                 break;
             }
 
-            if (scanner.is_exponent_negative) {
-                while (scanner.exponent--) {
+            if (g_scanner.is_exponent_negative) {
+                while (g_scanner.exponent--) {
                     number /= 10;
                 }
 
             } else {
-                while (scanner.exponent--) {
+                while (g_scanner.exponent--) {
                     number *= 10;
                 }
             }
@@ -299,7 +299,7 @@ void get_current_token(Token *token) {
         }
         case State_StringEnd:
             token->attribute.data.type = DataType_String;
-            token->attribute.data.value.string = string_take(&scanner.string);
+            token->attribute.data.value.string = string_take(&g_scanner.string);
             token->type = Token_Data;
             break;
 
@@ -321,7 +321,7 @@ Token scanner_advance() {
     bool got_token = false;
 
     while (!got_token) {
-        int ch = fgetc(scanner.src);
+        int ch = fgetc(g_scanner.src);
 
         State next_state = ch != EOF ? step(ch) : EOF;
 
@@ -329,18 +329,18 @@ Token scanner_advance() {
             return token; /// panik
         }
 
-        token.line = scanner.line;
-        token.position_in_line = scanner.position_in_line;
+        token.line = g_scanner.line;
+        token.position_in_line = g_scanner.position_in_line;
 
         if (ch == '\n') {
-            scanner.line += 1;
-            scanner.position_in_line = 0;
+            g_scanner.line += 1;
+            g_scanner.position_in_line = 0;
         } else {
-            scanner.position_in_line += 1;
+            g_scanner.position_in_line += 1;
         }
 
         if (next_state == State_Start || next_state == State_EOF) {
-            ungetc(ch, scanner.src);
+            ungetc(ch, g_scanner.src);
             get_current_token(&token);
 
             if (got_error()) {
@@ -350,7 +350,7 @@ Token scanner_advance() {
             got_token = true;
         }
 
-        scanner.current_state = next_state;
+        g_scanner.current_state = next_state;
     }
 
     return token;
@@ -395,17 +395,17 @@ static int parse_hexadecimal(char ch) {
 
 static State step_start(char ch) {
     if (ch >= '0' && ch <= '9') {
-        scanner.number = ch - '0';
-        scanner.decimalpoint = 0;
-        scanner.exponent = 0;
-        scanner.is_exponent_negative = false;
-        scanner.is_number_double = false;
+        g_scanner.number = ch - '0';
+        g_scanner.decimalpoint = 0;
+        g_scanner.exponent = 0;
+        g_scanner.is_exponent_negative = false;
+        g_scanner.is_number_double = false;
         return State_Number;
     }
 
     if (ch == '_' || is_character(ch)) {
-        string_clear(&scanner.string);
-        string_push(&scanner.string, ch);
+        string_clear(&g_scanner.string);
+        string_push(&g_scanner.string, ch);
 
         if (got_error()) {
             return State_EOF;
@@ -462,7 +462,7 @@ static State step_question_mark(char ch) {
 static State step_divide(char ch) {
     switch (ch) {
         case '*':
-            scanner.comment_block_level++;
+            g_scanner.comment_block_level++;
             return State_BlockCommentStart;
         case '/': return State_LineComment;
         default: return State_Start;
@@ -471,7 +471,7 @@ static State step_divide(char ch) {
 
 static State step_identifier(char ch) {
     if (ch == '_' || is_character(ch) || parse_decimal(ch) != -1) {
-        string_push(&scanner.string, ch);
+        string_push(&g_scanner.string, ch);
 
         if (got_error()) {
             return State_EOF;
@@ -481,9 +481,9 @@ static State step_identifier(char ch) {
     }
 
     bool maybe_nil = ch == '?' && (
-           strcmp(scanner.string.data, "Int") == 0
-        || strcmp(scanner.string.data, "Double") == 0
-        || strcmp(scanner.string.data, "String") == 0
+           strcmp(g_scanner.string.data, "Int") == 0
+        || strcmp(g_scanner.string.data, "Double") == 0
+        || strcmp(g_scanner.string.data, "String") == 0
     );
 
     if (maybe_nil) {
@@ -521,7 +521,7 @@ static State step_number(char ch) {
         return State_Start;
     }
 
-    push_number(&scanner.number, num);
+    push_number(&g_scanner.number, num);
 
     if (got_error()) {
         return State_EOF;
@@ -540,8 +540,8 @@ static State step_number_double_start(char ch) {
         return State_EOF;
     }
 
-    scanner.decimalpoint = num;
-    scanner.is_number_double = true;
+    g_scanner.decimalpoint = num;
+    g_scanner.is_number_double = true;
     return State_NumberDouble;
 }
 
@@ -556,18 +556,18 @@ static State step_number_double(char ch) {
         return State_Start;
     }
 
-    push_number(&scanner.decimalpoint, num);
+    push_number(&g_scanner.decimalpoint, num);
 
     return State_NumberDouble;
 }
 static State step_number_exponent_start(char ch) {
     if (ch == '+') {
-        scanner.is_exponent_negative = false;
+        g_scanner.is_exponent_negative = false;
         return State_NumberExponentSign;
     }
 
     if (ch == '-') {
-        scanner.is_exponent_negative = true;
+        g_scanner.is_exponent_negative = true;
         return State_NumberExponentSign;
     }
 
@@ -580,7 +580,7 @@ static State step_number_exponent_start(char ch) {
         return State_EOF;
     }
 
-    scanner.exponent = num;
+    g_scanner.exponent = num;
     return State_NumberExponent;
 
 
@@ -595,7 +595,7 @@ static State step_number_exponent_sign(char ch) {
         return State_EOF;
     }
 
-    scanner.exponent = num;
+    g_scanner.exponent = num;
     return State_NumberExponent;
 }
 
@@ -607,7 +607,7 @@ static State step_number_exponent(char ch) {
     }
 
 
-    push_number(&scanner.exponent, num);
+    push_number(&g_scanner.exponent, num);
     return State_NumberExponent;
 }
 
@@ -616,8 +616,8 @@ static State step_string_start(char ch) {
         return State_DoubleQuote;
     }
 
-    ungetc(ch, scanner.src);
-    string_init(&scanner.string);
+    ungetc(ch, g_scanner.src);
+    string_init(&g_scanner.string);
     return State_LineString;
 }
 
@@ -637,7 +637,7 @@ static State step_line_string(char ch) {
         return State_EOF;
     }
 
-    string_push(&scanner.string, ch);
+    string_push(&g_scanner.string, ch);
 
     if (got_error()) {
         return State_EOF;
@@ -651,7 +651,7 @@ static State step_double_quote(char ch) {
         return State_BlockString;
     }
 
-    ungetc(ch, scanner.src);
+    ungetc(ch, g_scanner.src);
     return State_StringEnd;
 }
 
@@ -682,7 +682,7 @@ static State step_string_escape(char ch, bool is_line_string) {
             return State_EOF;
     }
 
-    string_push(&scanner.string, to_push);
+    string_push(&g_scanner.string, to_push);
 
     if (got_error()) {
         return State_EOF;
@@ -712,13 +712,13 @@ static State step_string_escape_hex_start(char ch, bool is_line_string) {
         return State_EOF;
     }
 
-    scanner.number = num;
+    g_scanner.number = num;
     return is_line_string ? State_LineStringEscapeHex1 : State_BlockStringEscapeHex1;
 }
 
 static State step_string_escape_hex(char ch, int nth, bool is_line_string) {
     if (ch == '}') {
-        string_push(&scanner.string, ch);
+        string_push(&g_scanner.string, ch);
 
         if (got_error()) {
             return State_EOF;
@@ -742,8 +742,8 @@ static State step_string_escape_hex(char ch, int nth, bool is_line_string) {
         return State_EOF;
     }
 
-    scanner.number *= 16;
-    scanner.number += num;
+    g_scanner.number *= 16;
+    g_scanner.number += num;
     return is_line_string ? State_LineStringEscapeHex2 : State_BlockStringEscapeHex2;
 }
 
@@ -763,7 +763,7 @@ static State step_block_string(char ch) {
         return State_EOF;
     }
 
-    string_push(&scanner.string, ch);
+    string_push(&g_scanner.string, ch);
 
     if (got_error()) {
         return State_EOF;
@@ -779,7 +779,7 @@ static State step_block_string_end(char ch, int nth) {
                   : 0;
 
         if (ident) {
-            scanner.number += ident;
+            g_scanner.number += ident;
             return State_BlockStringEnd1;
         }
     }
@@ -789,7 +789,7 @@ static State step_block_string_end(char ch, int nth) {
             case 1: return State_BlockStringEnd2;
             case 2: return State_BlockStringEnd3;
             case 3: {
-                string_remove_ident(&scanner.string, scanner.number);
+                string_remove_ident(&g_scanner.string, g_scanner.number);
 
                 if (got_error()) {
                     set_error(Error_Lexical);
@@ -807,12 +807,12 @@ static State step_block_string_end(char ch, int nth) {
         }
     }
 
-    while (scanner.number--) {
-        string_push(&scanner.string, ' ');
+    while (g_scanner.number--) {
+        string_push(&g_scanner.string, ' ');
     }
 
     while (nth-- > 0) {
-        string_push(&scanner.string, '"');
+        string_push(&g_scanner.string, '"');
 
         if (got_error()) {
             return State_EOF;
@@ -824,7 +824,7 @@ static State step_block_string_end(char ch, int nth) {
 
 static State step_multiply(char ch) {
     if (ch == '/') {
-        scanner.comment_block_level--;
+        g_scanner.comment_block_level--;
         return State_BlockCommentEnd;
     }
 
@@ -832,7 +832,7 @@ static State step_multiply(char ch) {
 }
 
 static State step(char ch) {
-    switch (scanner.current_state) {
+    switch (g_scanner.current_state) {
         case State_EOF: return State_EOF;
 
         case State_Start: return step_start(ch);
