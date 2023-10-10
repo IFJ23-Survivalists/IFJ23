@@ -95,6 +95,8 @@ typedef enum {
     Token_ArrowRight,
     /// =
     Token_Equal,
+    /// ,
+    Token_Comma,
 
     /// Data value, can be a string or number or double
     Token_Data,

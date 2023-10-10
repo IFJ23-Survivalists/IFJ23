@@ -38,6 +38,7 @@ typedef enum {
     State_ParenLeft,
     State_ParenRight,
     State_DoubleColon,
+    State_Comma,
     State_At,
     State_Plus,
     State_Minus,
@@ -395,15 +396,15 @@ static int parse_hexadecimal(char ch) {
 static State step_start(char ch) {
     if (ch >= '0' && ch <= '9') {
         scanner.number = ch - '0';
-        // scanner.decimalpoint = 0;
-        // scanner.exponent = 0;
-        // scanner.is_exponent_negative = false;
-        // scanner.is_number_double = false;
+        scanner.decimalpoint = 0;
+        scanner.exponent = 0;
+        scanner.is_exponent_negative = false;
+        scanner.is_number_double = false;
         return State_Number;
     }
 
     if (ch == '_' || is_character(ch)) {
-        // string_clear(&scanner.string);
+        string_clear(&scanner.string);
         string_push(&scanner.string, ch);
 
         if (got_error()) {
@@ -429,6 +430,7 @@ static State step_start(char ch) {
         case '>': return State_MoreThan;
         case '?': return State_QuestionMark;
         case '"': return State_StringStart;
+        case ',': return State_Comma;
 
         case 0x20:
         case 0x0A:
@@ -474,6 +476,8 @@ static State step_identifier(char ch) {
         if (got_error()) {
             return State_EOF;
         }
+
+        return State_Identifier;
     }
 
     bool maybe_nil = ch == '?' && (
@@ -612,25 +616,9 @@ static State step_string_start(char ch) {
         return State_DoubleQuote;
     }
 
-    if (ch >= 0x20 && ch != '\\' && ch != '\n') {
-        string_push(&scanner.string, ch);
-
-        if (got_error()) {
-            return State_EOF;
-        }
-
-        return State_LineString;
-    }
-
-    if (ch == '\\') {
-        return State_LineStringEscape;
-    }
-
-
-    print_position();
-    eprint("Special character must be escaped by `\\`\n");
-    set_error(Error_Lexical);
-    return State_EOF;
+    ungetc(ch, scanner.src);
+    string_init(&scanner.string);
+    return State_LineString;
 }
 
 static State step_line_string(char ch) {
@@ -887,6 +875,7 @@ static State step(char ch) {
         case State_BracketLeft:
         case State_BracketRight:
         case State_DoubleColon:
+        case State_Comma:
         case State_At:
         case State_Plus:
         case State_ArrowRight:
