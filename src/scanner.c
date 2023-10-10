@@ -304,6 +304,7 @@ void get_current_token(Token *token) {
             break;
 
         case State_Whitespace:
+        case State_LineComment:
         case State_BlockCommentEnd:
             token->type = Token_Whitespace;
             break;
@@ -461,9 +462,7 @@ static State step_question_mark(char ch) {
 
 static State step_divide(char ch) {
     switch (ch) {
-        case '*':
-            g_scanner.comment_block_level++;
-            return State_BlockCommentStart;
+        case '*': return State_BlockCommentStart;
         case '/': return State_LineComment;
         default: return State_Start;
     }
@@ -822,16 +821,36 @@ static State step_block_string_end(char ch, int nth) {
     return State_BlockString;
 }
 
-static State step_multiply(char ch) {
-    if (ch == '/') {
-        g_scanner.comment_block_level--;
-        return State_BlockCommentEnd;
-    }
+State step_comment_block(char ch) {
+    switch (g_scanner.current_state) {
+        case State_Start:
+            switch (ch) {
+                case '/': return State_Divide;
+                case '*': return State_Multiply;
+                default: return State_Start;
+            }
 
-    return State_Start;
+        case State_Divide: return ch == '*' ? State_BlockCommentStart : State_Start;
+        case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
+        case State_BlockCommentStart:
+            g_scanner.comment_block_level++;
+            return State_Start;
+
+        case State_BlockCommentEnd:
+            /// Doesn't need to check for underflow since we only get
+            /// into this scope when the `comment_block_level` is greater than 0
+            g_scanner.comment_block_level--;
+            return State_Start;
+
+        default: return State_Start;
+    }
 }
 
 static State step(char ch) {
+    if (g_scanner.comment_block_level) {
+        return step_comment_block(ch);
+    }
+
     switch (g_scanner.current_state) {
         case State_EOF: return State_EOF;
 
@@ -864,7 +883,7 @@ static State step(char ch) {
         case State_BlockStringEscapeHex2: return step_string_escape_hex(ch, 2, false);
 
         case State_Minus: return ch == '>' ? State_ArrowRight : State_Start;
-        case State_Multiply: return step_multiply(ch);
+        case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
         case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
         case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
         case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
@@ -886,9 +905,19 @@ static State step(char ch) {
         case State_Whitespace:
         case State_MaybeNilType:
         case State_StringEnd:
-        case State_BlockCommentStart:
-        case State_BlockCommentEnd:
             return State_Start;
+
+        case State_BlockCommentStart:
+            g_scanner.comment_block_level++;
+            return State_Start;
+
+        case State_BlockCommentEnd:
+            /// We already ensure that we are currently outside of the comment block
+            /// at the beginning of this function
+            print_position();
+            eprint("unexpected end of block comment");
+            set_error(Error_Lexical);
+            return State_EOF;
     }
 
     set_error(Error_Lexical);
