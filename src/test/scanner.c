@@ -239,5 +239,17 @@ int main() {
         test(got_error());
     }
 
+    suite("Test Scanner seek back") {
+        scanner_reset_to_beginning();
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Keyword);
+        test(token.attribute.keyword == Keyword_If);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Keyword);
+        test(token.attribute.keyword == Keyword_Let);
+    }
+
     scanner_free();
 }
