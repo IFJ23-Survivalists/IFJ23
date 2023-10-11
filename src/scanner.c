@@ -9,6 +9,7 @@
 #include <limits.h>
 #include <string.h>
 #include <stdbool.h>
+#include <stdlib.h>
 
 #include "scanner.h"
 #include "error.h"
@@ -20,13 +21,53 @@ char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
 DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_Nil};
 
-void token_free(Token *token) {
-    bool is_string = token->type == Token_Identifier
-        || (token->type == Token_Data && token->attribute.data.type == DataType_String);
+typedef struct {
+    Token *tokens;
+    unsigned capacity;
+    unsigned len;
+} TokenList;
 
-    if (is_string) {
-        string_free(&token->attribute.data.value.string);
+const int c_chunk = 10;
+
+static void tokenlist_init(TokenList *list) {
+    list->tokens = malloc(sizeof(Token) * c_chunk);
+    list->capacity = c_chunk;
+    list->len = 0;
+
+    if (!list->tokens) {
+        set_error(Error_Internal);
+        eprint("Out Of Memory\n");
     }
+}
+
+static void tokenlist_free(TokenList* list) {
+    for (unsigned i = 0; i < list->len; i++) {
+        Token token = list->tokens[i];
+        bool is_string = token.type == Token_Identifier
+            || (token.type == Token_Data && token.attribute.data.type == DataType_String);
+
+        if (is_string) {
+            string_free(&token.attribute.data.value.string);
+        }
+    }
+
+    free(list->tokens);
+}
+
+static void tokenlist_push(TokenList* list, Token token) {
+    if (list->len == list->capacity) {
+        Token* tmp = realloc(list->tokens, sizeof(Token) * (list->capacity + c_chunk));
+        if (!tmp) {
+            set_error(Error_Internal);
+            eprint("Out Of Memory\n");
+            return;
+        }
+
+        list->tokens = tmp;
+        list->capacity += c_chunk;
+    }
+
+    list->tokens[list->len++] = token;
 }
 
 typedef enum {
@@ -88,7 +129,11 @@ typedef enum {
 } State;
 
 typedef struct {
+    bool initialized;
     FILE *src;
+    TokenList token_list;
+    unsigned list_idx;
+
     State current_state;
     int number;
     int decimalpoint;
@@ -111,15 +156,27 @@ void scanner_init(FILE *src) {
     }
 
     g_scanner.src = src;
+    g_scanner.list_idx = 0;
     g_scanner.line = 1;
     g_scanner.position_in_line = 0;
     g_scanner.current_state = State_Start;
     string_init(&g_scanner.string);
+    tokenlist_init(&g_scanner.token_list);
+
+    if (got_error()) {
+        return;
+    }
+
+    g_scanner.initialized = true;
 }
 
 void scanner_free() {
-    if (g_scanner.src) fclose(g_scanner.src);
-    string_free(&g_scanner.string);
+    if (g_scanner.initialized) {
+        if (g_scanner.src) fclose(g_scanner.src);
+        string_free(&g_scanner.string);
+        tokenlist_free(&g_scanner.token_list);
+        g_scanner.initialized = false;
+    }
 }
 
 static State step(char ch);
@@ -344,7 +401,17 @@ int scanner_next_char() {
     return ch;
 }
 
-void scanner_clean() {
+void scanner_reset_to_beginning() {
+    if (!g_scanner.initialized) {
+        set_error(Error_Internal);
+        eprint("Scanner is not initialized\n");
+        return;
+    }
+
+    g_scanner.list_idx = 0;
+}
+
+static void scanner_cleanup() {
     g_scanner.number = 0;
     g_scanner.decimalpoint = 0;
     g_scanner.exponent = 0;
@@ -357,6 +424,16 @@ void scanner_clean() {
 Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
+
+    if (!g_scanner.initialized) {
+        set_error(Error_Internal);
+        eprint("Scanner is not initialized\n");
+        return token;
+    }
+
+    if (g_scanner.list_idx < g_scanner.token_list.len) {
+        return g_scanner.token_list.tokens[g_scanner.list_idx++];
+    }
 
     while (!got_token) {
         token.line = g_scanner.line;
@@ -374,7 +451,7 @@ Token scanner_advance() {
         if (!g_scanner.comment_block_level && (next_state == State_Start || next_state == State_EOF)) {
             scanner_step_back(ch);
             get_current_token(&token);
-            scanner_clean();
+            scanner_cleanup();
 
             if (got_error()) {
                 return token;
@@ -385,6 +462,13 @@ Token scanner_advance() {
 
         g_scanner.current_state = next_state;
     }
+
+    tokenlist_push(&g_scanner.token_list, token);
+
+    if (!got_error()) {
+        g_scanner.list_idx += 1;
+    }
+
 
     return token;
 }
