@@ -76,6 +76,7 @@ typedef enum {
     State_LineStringEscapeHex2,
     State_DoubleQuote,
     State_BlockString,
+    State_BlockStringStart,
     State_BlockStringEnd1,
     State_BlockStringEnd2,
     State_BlockStringEnd3,
@@ -320,32 +321,48 @@ void get_current_token(Token *token) {
     }
 }
 
+void scanner_step_back(char ch) {
+    if (ch == '\n') {
+        g_scanner.line -= 1;
+    }
+
+    ungetc(ch, g_scanner.src);
+}
+
+int scanner_next_char() {
+    int ch = fgetc(g_scanner.src);
+
+    if (ch == EOF) {
+        return EOF;
+    } else if (ch == '\n') {
+        g_scanner.line += 1;
+        g_scanner.position_in_line = 0;
+    } else {
+        g_scanner.position_in_line += 1;
+    }
+
+    return ch;
+}
+
 Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
 
     while (!got_token) {
-        int ch = fgetc(g_scanner.src);
+        token.line = g_scanner.line;
+        token.position_in_line = g_scanner.position_in_line;
 
-        State next_state = ch != EOF ? step(ch) : EOF;
+        int ch = scanner_next_char();
+
+        State next_state = ch != EOF ? step(ch) : State_EOF;
 
         if (got_error()) {
             return token; /// panik
         }
 
-        token.line = g_scanner.line;
-        token.position_in_line = g_scanner.position_in_line;
-
-        if (ch == '\n') {
-            g_scanner.line += 1;
-            g_scanner.position_in_line = 0;
-        } else {
-            g_scanner.position_in_line += 1;
-        }
-
         /// Skip if we are inside a block comment
         if (!g_scanner.comment_block_level && (next_state == State_Start || next_state == State_EOF)) {
-            ungetc(ch, g_scanner.src);
+            scanner_step_back(ch);
             get_current_token(&token);
 
             if (got_error()) {
@@ -619,7 +636,7 @@ static State step_string_start(char ch) {
         return State_DoubleQuote;
     }
 
-    ungetc(ch, g_scanner.src);
+    scanner_step_back(ch);
     string_init(&g_scanner.string);
     return State_LineString;
 }
@@ -651,11 +668,21 @@ static State step_line_string(char ch) {
 
 static State step_double_quote(char ch) {
     if (ch == '"') {
+        return State_BlockStringStart;
+    }
+
+    scanner_step_back(ch);
+    return State_StringEnd;
+}
+
+static State step_block_string_start(char ch) {
+    if (ch == '\n') {
         return State_BlockString;
     }
 
-    ungetc(ch, g_scanner.src);
-    return State_StringEnd;
+    print_position();
+    eprint("Triple quoted string but starts in a new line\n");
+    return State_EOF;
 }
 
 static State step_string_escape(char ch, bool is_line_string) {
@@ -751,7 +778,7 @@ static State step_string_escape_hex(char ch, int nth, bool is_line_string) {
 }
 
 static State step_block_string(char ch) {
-    if (ch == '"') {
+    if (ch == '\n') {
         return State_BlockStringEnd1;
     }
 
@@ -838,14 +865,14 @@ State step_comment_block(char ch) {
         case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
         case State_BlockCommentStart:
             g_scanner.comment_block_level += 1;
-            ungetc(ch, g_scanner.src);
+            scanner_step_back(ch);
             return State_Start;
 
         case State_BlockCommentEnd:
             /// Doesn't need to check for underflow since we only get
             /// into this scope when the `comment_block_level` is greater than 0
             g_scanner.comment_block_level -= 1;
-            ungetc(ch, g_scanner.src);
+            scanner_step_back(ch);
             return State_Start;
 
         default: return State_Start;
@@ -879,6 +906,7 @@ static State step(char ch) {
         case State_LineStringEscapeHex1: return step_string_escape_hex(ch, 1, true);
         case State_LineStringEscapeHex2: return step_string_escape_hex(ch, 2, true);
         case State_BlockString: return step_block_string(ch);
+        case State_BlockStringStart: return step_block_string_start(ch);
         case State_BlockStringEnd1: return step_block_string_end(ch, 1);
         case State_BlockStringEnd2: return step_block_string_end(ch, 2);
         case State_BlockStringEnd3: return step_block_string_end(ch, 3);
@@ -915,7 +943,7 @@ static State step(char ch) {
 
         case State_BlockCommentStart:
             g_scanner.comment_block_level += 1;
-            ungetc(ch, g_scanner.src);
+            scanner_step_back(ch);
             return State_Start;
 
         case State_BlockCommentEnd:
