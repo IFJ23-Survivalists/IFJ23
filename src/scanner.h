@@ -124,8 +124,6 @@ typedef struct {
     size_t position_in_line;
 } Token;
 
-void token_free(Token *token);
-
 /**
  * @brief Initialize a Scanner instance with a source file.
  *
@@ -142,6 +140,16 @@ void scanner_init(FILE *src);
  * This function releases any resources allocated for the scanner, such as closing the source file.
  */
 void scanner_free();
+
+/**
+ * @brief Reset the scanner to its initial position in the input source.
+ *
+ * This function resets the scanner to its initial position in the input source, allowing
+ * subsequent scans to start from the beginning. It is useful when you need to re-scan
+ * the input or when the scanner has reached the end of the source and you want to
+ * start a new parsing session.
+ */
+void scanner_reset_to_beginning();
 
 /**
  * @brief Advance the scanner to recognize the next token.
