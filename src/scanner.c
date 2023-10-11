@@ -210,6 +210,9 @@ void get_current_token(Token *token) {
         case State_At:
             token->type = Token_At;
             break;
+        case State_Comma:
+            token->type = Token_Comma;
+            break;
         case State_Plus:
             token->attribute.op = Operator_Plus;
             token->type = Token_Operator;
