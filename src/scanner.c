@@ -16,7 +16,7 @@
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
 Keyword KEYWORD_TYPE[] = {Keyword_If, Keyword_Else, Keyword_Let, Keyword_Var, Keyword_While, Keyword_Func, Keyword_Return};
 
-char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Nil", NULL};
+char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
 DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_Nil};
 
