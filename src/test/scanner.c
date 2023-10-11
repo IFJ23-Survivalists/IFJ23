@@ -209,17 +209,14 @@ int main() {
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Identifier);
         test(strcmp(token.attribute.data.value.string.data, "SomeID") == 0);
-        token_free(&token);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Identifier);
         test(strcmp(token.attribute.data.value.string.data, "Other2") == 0);
-        token_free(&token);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Identifier);
         test(strcmp(token.attribute.data.value.string.data, "_Should_be") == 0);
-        token_free(&token);
     }
 
     suite("Test Scanner string") {
@@ -227,19 +224,16 @@ int main() {
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_String);
         test(strcmp(token.attribute.data.value.string.data, "Hello \n") == 0);
-        token_free(&token);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_String);
         test(strcmp(token.attribute.data.value.string.data, "    No Indent Strip") == 0);
-        token_free(&token);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_String);
         test(strcmp(token.attribute.data.value.string.data, "Ident stripped") == 0);
-        token_free(&token);
 
         token = scanner_advance_non_whitespace();
         test(got_error());
