@@ -157,7 +157,10 @@ void scanner_reset_to_beginning();
  * This function advances the scanner's state to recognize the next token in the source file.
  * It returns the recognized token and updates the scanner's internal state accordingly.
  *
- * @note If one or more errors occur during tokenization, the LexicalError or InternalError will be set.
+ * @note If the attribute is of type String (Identifier or Data) and you intend to use it as your
+ *       own string, it's important to clone it using the `string_clone` function. You are then
+ *       responsible for deallocating this cloned string when you're done with it.
+ *       If one or more errors occur during tokenization, the LexicalError or InternalError will be set.
  *
  * @return The recognized Token.
  */
