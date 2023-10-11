@@ -89,6 +89,14 @@ void string_reserve(String *str, size_t capacity);
  */
 void string_push(String *str, char ch);
 
+/**
+ * @brief Create a new String from a C string.
+ *
+ * This function creates a new String data structure from a C string.
+ *
+ * @param str The input C string.
+ * @return A new String object containing the input C string.
+ */
 String string_from_c_str(const char *str);
 
 /**
@@ -114,5 +122,12 @@ String string_take(String *str);
  */
 String string_clone(String *str);
 
+/**
+ * @brief Remove a specified number of indentation levels from the String.
+ *
+ * @param str The String to remove indentation from.
+ * @param ident_level The number of indentation levels to remove.
+ */
+void string_remove_ident(String *str, int ident_level);
 
 #endif
