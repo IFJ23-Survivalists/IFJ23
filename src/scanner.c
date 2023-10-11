@@ -344,6 +344,16 @@ int scanner_next_char() {
     return ch;
 }
 
+void scanner_clean() {
+    g_scanner.number = 0;
+    g_scanner.decimalpoint = 0;
+    g_scanner.exponent = 0;
+    g_scanner.is_number_double = false;
+    g_scanner.is_exponent_negative = false;
+    string_clear(&g_scanner.string);
+    g_scanner.comment_block_level = 0;
+}
+
 Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
@@ -364,6 +374,7 @@ Token scanner_advance() {
         if (!g_scanner.comment_block_level && (next_state == State_Start || next_state == State_EOF)) {
             scanner_step_back(ch);
             get_current_token(&token);
+            scanner_clean();
 
             if (got_error()) {
                 return token;
@@ -418,10 +429,6 @@ static int parse_hexadecimal(char ch) {
 static State step_start(char ch) {
     if (ch >= '0' && ch <= '9') {
         g_scanner.number = ch - '0';
-        g_scanner.decimalpoint = 0;
-        g_scanner.exponent = 0;
-        g_scanner.is_exponent_negative = false;
-        g_scanner.is_number_double = false;
         return State_Number;
     }
 
