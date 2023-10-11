@@ -340,7 +340,8 @@ Token scanner_advance() {
             g_scanner.position_in_line += 1;
         }
 
-        if (next_state == State_Start || next_state == State_EOF) {
+        /// Skip if we are inside a block comment
+        if (!g_scanner.comment_block_level && (next_state == State_Start || next_state == State_EOF)) {
             ungetc(ch, g_scanner.src);
             get_current_token(&token);
 
@@ -833,13 +834,15 @@ State step_comment_block(char ch) {
         case State_Divide: return ch == '*' ? State_BlockCommentStart : State_Start;
         case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
         case State_BlockCommentStart:
-            g_scanner.comment_block_level++;
+            g_scanner.comment_block_level += 1;
+            ungetc(ch, g_scanner.src);
             return State_Start;
 
         case State_BlockCommentEnd:
             /// Doesn't need to check for underflow since we only get
             /// into this scope when the `comment_block_level` is greater than 0
-            g_scanner.comment_block_level--;
+            g_scanner.comment_block_level -= 1;
+            ungetc(ch, g_scanner.src);
             return State_Start;
 
         default: return State_Start;
@@ -908,7 +911,8 @@ static State step(char ch) {
             return State_Start;
 
         case State_BlockCommentStart:
-            g_scanner.comment_block_level++;
+            g_scanner.comment_block_level += 1;
+            ungetc(ch, g_scanner.src);
             return State_Start;
 
         case State_BlockCommentEnd:
@@ -921,5 +925,6 @@ static State step(char ch) {
     }
 
     set_error(Error_Lexical);
+    eprint("Unreachable");
     return State_EOF;
 }
