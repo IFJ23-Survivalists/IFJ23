@@ -49,8 +49,8 @@ typedef struct {
  * @brief Represents the type of an item in the symbol table (variable or function).
  */
 typedef enum {
-    Item_Variable, /**< Represents a variable. */
-    Item_Function  /**< Represents a function. */
+    ItemType_Variable, /**< Represents a variable. */
+    ItemType_Function  /**< Represents a function. */
 } ItemType;
 
 /**

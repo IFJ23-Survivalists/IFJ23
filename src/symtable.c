@@ -20,6 +20,8 @@ void function_parameter_init(FunctionParameter *par) {
 void function_parameter_free(FunctionParameter *par) {
     if (par && par->argc) {
         free(par->argv);
+        par->argv = NULL;
+        par->argc = 0;
     }
 }
 
@@ -124,6 +126,7 @@ static bool symtable_insert(Symtable *symtable, const char *key, ItemType type, 
         }
 
         symtable->root = item;
+        return true;
     }
 
     return item_bvs_insert(symtable->root, key, type, value);
@@ -148,7 +151,7 @@ bool symtable_insert_function(Symtable *symtable, const char *key, FunctionSymbo
 
     ItemValue value;
     value.function = function;
-    return symtable_insert(symtable, key, Item_Function, value);
+    return symtable_insert(symtable, key, ItemType_Function, value);
 }
 
 bool symtable_insert_variable(Symtable *symtable, const char *key, VariableSymbol variable) {
@@ -158,7 +161,7 @@ bool symtable_insert_variable(Symtable *symtable, const char *key, VariableSymbo
 
     ItemValue value;
     value.variable = variable;
-    return symtable_insert(symtable, key, Item_Variable, value);
+    return symtable_insert(symtable, key, ItemType_Variable, value);
 }
 
 FunctionSymbol *symtable_get_function(Symtable *symtable, const char *key) {
@@ -168,7 +171,7 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *key) {
 
     Item *item = item_bvs_get(symtable->root, key);
 
-    if (item && item->type == Item_Function) {
+    if (item && item->type == ItemType_Function) {
         return &item->value.function;
     }
 
@@ -182,7 +185,7 @@ VariableSymbol *symtable_get_variable(Symtable *symtable, const char *key) {
 
     Item *item = item_bvs_get(symtable->root, key);
 
-    if (item && item->type == Item_Function) {
+    if (item && item->type == ItemType_Function) {
         return &item->value.variable;
     }
 
