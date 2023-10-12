@@ -26,7 +26,9 @@ $(TEST_EXECUTABLES): %: $(TEST_OBJS) $(TEST_DIR)/%.c
 # Run all tests
 test: $(TEST_EXECUTABLES)
 	@for test_exec in $(TEST_EXECUTABLES); do \
+		echo Testing $$test_exec; \
 		./$$test_exec; \
+		echo; \
 	done
 
 # doc: documentation.typ
