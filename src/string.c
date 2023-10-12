@@ -78,7 +78,7 @@ String string_from_c_str(const char *str) {
     string_reserve(&res, len + 1);
 
     if (!got_error()) {
-        strlcpy(res.data, str, len);
+        strlcpy(res.data, str, len + 1);
     }
 
     return res;
