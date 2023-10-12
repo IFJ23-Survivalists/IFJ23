@@ -37,7 +37,7 @@ void string_reserve(String *str, size_t capacity) {
         return;
     }
 
-    char *new = (char *)realloc(str->data, capacity);
+    char *new = (char *)realloc(str->data, sizeof(char) * capacity);
 
     if (!new) {
         set_error(Error_Internal);
