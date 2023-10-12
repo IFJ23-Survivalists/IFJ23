@@ -6,6 +6,7 @@
  */
 
 #include "symtable.h"
+#include <stdbool.h>
 #include <stdlib.h>
 #include <string.h>
 #include "error.h"
@@ -30,7 +31,7 @@ void function_parameter_push(FunctionParameter *par, DataType type) {
         return;
     }
 
-    DataType *reallocated = realloc(par->argv, par->argc + 1);
+    DataType *reallocated = realloc(par->argv, sizeof(DataType) + (par->argc + 1));
 
     if (!reallocated) {
         set_error(Error_Internal);
@@ -80,7 +81,7 @@ static Item *create_item(const char *key, ItemType type, ItemValue value) {
     item->left = NULL;
     item->right = NULL;
 
-    if (!got_error()) {
+    if (got_error()) {
         free(item);
         return NULL;
     }
@@ -88,28 +89,27 @@ static Item *create_item(const char *key, ItemType type, ItemValue value) {
     return item;
 }
 
-static bool item_bvs_insert(Item *item, const char *key, ItemType type, ItemValue value) {
+static Item* item_bvs_insert(Item *item, const char *key, ItemType type, ItemValue value, bool *inserted) {
+    if (!item) {
+        Item *new_item = create_item(key, type, value);
+
+        if (!new_item) {
+            return false;
+        }
+
+        *inserted = true;
+        return new_item;
+    }
+
     int cmp = strcmp(key, item->key.data);
 
-    if (!cmp) {
-        /// the key matches with the key of this item
-        return false;
+    if (cmp > 0) {
+        item->right = item_bvs_insert(item->right, key, type, value, inserted);
+    } else if (cmp < 0) {
+        item->left = item_bvs_insert(item->left, key, type, value, inserted);
     }
 
-    Item **next = cmp > 0 ? &item->right : &item->left;
-
-    if (*next) {
-        return item_bvs_insert(*next, key, type, value);
-    }
-
-    Item *new_item = create_item(key, type, value);
-
-    if (!new_item) {
-        return false;
-    }
-
-    *next = new_item;
-    return true;
+    return item;
 }
 
 
@@ -118,18 +118,9 @@ static bool symtable_insert(Symtable *symtable, const char *key, ItemType type, 
         return false;
     }
 
-    if (!symtable->root) {
-        Item *item = create_item(key, type, value);
-
-        if (!item) {
-            return false;
-        }
-
-        symtable->root = item;
-        return true;
-    }
-
-    return item_bvs_insert(symtable->root, key, type, value);
+    bool inserted = false;
+    symtable->root = item_bvs_insert(symtable->root, key, type, value, &inserted);
+    return inserted;
 }
 
 static Item *item_bvs_get(Item *item, const char *key) {
@@ -145,30 +136,18 @@ static Item *item_bvs_get(Item *item, const char *key) {
 }
 
 bool symtable_insert_function(Symtable *symtable, const char *key, FunctionSymbol function) {
-    if (!symtable || !key) {
-        return false;
-    }
-
     ItemValue value;
     value.function = function;
     return symtable_insert(symtable, key, ItemType_Function, value);
 }
 
 bool symtable_insert_variable(Symtable *symtable, const char *key, VariableSymbol variable) {
-    if (!symtable || !key) {
-        return false;
-    }
-
     ItemValue value;
     value.variable = variable;
     return symtable_insert(symtable, key, ItemType_Variable, value);
 }
 
 FunctionSymbol *symtable_get_function(Symtable *symtable, const char *key) {
-    if (!symtable || !key) {
-        return NULL;
-    }
-
     Item *item = item_bvs_get(symtable->root, key);
 
     if (item && item->type == ItemType_Function) {
@@ -179,10 +158,6 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *key) {
 }
 
 VariableSymbol *symtable_get_variable(Symtable *symtable, const char *key) {
-    if (!symtable || !key) {
-        return NULL;
-    }
-
     Item *item = item_bvs_get(symtable->root, key);
 
     if (item && item->type == ItemType_Function) {
