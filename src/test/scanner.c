@@ -1,7 +1,7 @@
 /**
  * @file test/scanner.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
- * @date 25/09/2023
+ * @date 10/10/2023
  * @brief Tester for scanner.h
  */
 
