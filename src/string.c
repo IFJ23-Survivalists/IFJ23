@@ -64,6 +64,26 @@ void string_push(String *str, char ch) {
     str->data[str->length] = '\0';
 }
 
+void string_concat_c_str(String *str, const char *str2) {
+    size_t length = strlen(str2);
+
+    if (!length) {
+        return;
+    }
+
+    size_t new_length = str->length + length;
+
+    if (new_length >= str->capacity) {
+        string_reserve(str, new_length + 1);
+        if (got_error()) {
+            return;
+        }
+    }
+
+    strlcpy(str->data + str->length, str2, length + 1);
+    str->length = new_length;
+}
+
 String string_from_c_str(const char *str) {
     String res;
 
