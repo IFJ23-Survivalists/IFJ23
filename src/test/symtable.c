@@ -44,17 +44,17 @@ int main() {
 
     suite("Test symtable_insert_function") {
         FunctionSymbol foo;
-        foo.return_value = DataType_Nil;
+        foo.return_value_type = DataType_Nil;
 
         test(symtable_insert_function(&symtable, "foo", foo));
 
         FunctionSymbol foo2;
-        foo2.return_value = DataType_Double;
+        foo2.return_value_type = DataType_Double;
         function_parameter_init(&foo2.parameters);
         function_parameter_push(&foo2.parameters, DataType_Double);
         function_parameter_push(&foo2.parameters, DataType_Int);
-        test(!symtable_insert_function(&symtable, "foo", foo));
-        test(symtable_insert_function(&symtable, "foo2", foo));
+        test(!symtable_insert_function(&symtable, "foo", foo2));
+        test(symtable_insert_function(&symtable, "foo2", foo2));
     }
 
     suite("Test symtable_insert_variable") {
@@ -82,12 +82,12 @@ int main() {
 
         FunctionSymbol *func = symtable_get_function(&symtable, "foo");
         test(func);
-        test(func->return_value == DataType_Nil);
+        test(func->return_value_type == DataType_Nil);
 
         FunctionSymbol* func2 = symtable_get_function(&symtable, "foo2");
         test(func2);
         test(func != func2);
-        test(func2->return_value == DataType_Double);
+        test(func2->return_value_type == DataType_Double);
         test(func2->parameters.argc == 2);
         test(func2->parameters.argv[0] == DataType_Double);
         test(func2->parameters.argv[1] == DataType_Int);
