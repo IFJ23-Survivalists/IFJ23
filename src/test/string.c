@@ -57,12 +57,12 @@ int main() {
     suite("Test string_reserve") {
         test(str.capacity == 5 && str.length == 4);
         string_reserve(&str, 4);
-        /// cannot reserve less than the number of data in string
-        test(got_error());
-        set_error(Error_None);
+        /// nothing happens if reserve less than the current reserved in string
+        test(str.capacity == 5);
 
         string_reserve(&str, 10);
         test(str.capacity == 10);
+        // Should not affect the inner data
         test(str.length == 4);
     }
 
