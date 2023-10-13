@@ -31,7 +31,7 @@ typedef struct {
 
 typedef struct {
     FunctionParameter parameters; /**< Parameters of the function. */
-    DataType return_value;       /**< Return value data type. */
+    DataType return_value_type;       /**< Return value data type. */
 } FunctionSymbol;
 
 /**
