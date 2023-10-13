@@ -65,6 +65,7 @@ void symtable_free(Symtable *symtable) {
     if (!symtable || !symtable->root) return;
     item_free_childs(symtable->root);
     free(symtable->root);
+    symtable->root = NULL;
 }
 
 static Item *create_item(const char *key, ItemType type, ItemValue value) {
@@ -160,7 +161,7 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *key) {
 VariableSymbol *symtable_get_variable(Symtable *symtable, const char *key) {
     Item *item = item_bvs_get(symtable->root, key);
 
-    if (item && item->type == ItemType_Function) {
+    if (item && item->type == ItemType_Variable) {
         return &item->value.variable;
     }
 
