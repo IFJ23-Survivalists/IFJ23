@@ -33,7 +33,7 @@ void string_clear(String *str) {
 }
 
 void string_reserve(String *str, size_t capacity) {
-    if (capacity < str->capacity) {
+    if (capacity <= str->capacity) {
         return;
     }
 
@@ -99,6 +99,7 @@ String string_from_c_str(const char *str) {
 
     if (!got_error()) {
         strlcpy(res.data, str, len + 1);
+        res.length = len;
     }
 
     return res;
