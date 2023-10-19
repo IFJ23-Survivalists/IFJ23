@@ -952,8 +952,20 @@ State step_comment_block(char ch) {
                 default: return State_Start;
             }
 
-        case State_Divide: return ch == '*' ? State_BlockCommentStart : State_Start;
-        case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
+        case State_Divide:
+            switch (ch) {
+                case '*': return State_BlockCommentStart;
+                case '/': return State_Divide;
+                default: return State_Start;
+            }
+
+        case State_Multiply:
+            switch (ch) {
+                case '*': return State_Multiply;
+                case '/': return State_BlockCommentEnd;
+                default: return State_Start;
+            }
+
         case State_BlockCommentStart:
             g_scanner.comment_block_level += 1;
             scanner_step_back(ch);
