@@ -116,7 +116,7 @@ Please IFJ23 project, please follow these code guidelines:
 - **Data Types**: All data types in header files should be declared with `typedef`.
 
 - **Naming Convention**:
-    - *Variables*: Use `snake_case` for variable names. For example:
+    - **Variables**: Use `snake_case` for variable names. For example:
 
         ```c
         int main() {
@@ -125,19 +125,19 @@ Please IFJ23 project, please follow these code guidelines:
         }
         ```
 
-    - *Global constants*: Use `UPPERCASE` for global constants. For example:
+    - **Global constants**: Use `UPPERCASE` for global constants. For example:
 
         ```c
         const double EULER_NUMBER = 2.7;
         ```
         
-    - *Global variables*: Use prefix `g_` for global variables. For example:
+    - **Global variables**: Use prefix `g_` for global variables. For example:
       
       ```c
       int g_error = 0;
       ```
 
-    - *Static variables*: Use prefix `s_` for global static variables. For example:
+    - **Static variables**: Use prefix `s_` for global static variables. For example:
 
       ```c
       int foo() {
@@ -145,19 +145,19 @@ Please IFJ23 project, please follow these code guidelines:
       }
       ```
       
-    - *Functions*: Use `snake_case` for function names. For example:
+    - **Functions**: Use `snake_case` for function names. For example:
 
         ```c
         void my_beautiful_function();
         ```
 
-    - *Typedef*: Use `PascalCase` for `typedef` declarations. For example:
+    - **Typedef**: Use `PascalCase` for `typedef` declarations. For example:
 
         ```c
         typedef struct { ... } TheUltimateStruct;
         ```
 
-    - *Enum Items*: Prefix them with the enum name, followed by an underscore, and then use `PascalCase`. For example:
+    - **Enum Items**: Prefix them with the enum name, followed by an underscore, and then use `PascalCase`. For example:
 
         ```c
         typedef enum {
