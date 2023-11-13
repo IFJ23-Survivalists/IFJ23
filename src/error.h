@@ -2,6 +2,7 @@
  * @brief Define the `Error` enum type and its related function to be used for error handling in the project
  *
  * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 08/10/2023
  * @file error.h
  */
@@ -80,4 +81,64 @@ Error got_error();
 
 /// @brief Print the `error` message to `stderr`
 void print_error_msg();
+
+/// Represents type of internal error.
+typedef enum {
+    /// No interal error.
+    IntError_None = 0,
+
+    /// Invalid arguments passed to a function.
+    IntError_InvalidArgument,
+
+    /// Memory allocation errors.
+    IntError_Memory,
+
+    /// Out-of-range errors.
+    IntError_Range,
+
+    /// Other runtime errors.
+    IntError_Runtime,
+} IntErrorType;
+
+/// Represents an interal error data.
+typedef struct {
+    IntErrorType type;
+    const char* msg;
+    const char* file;
+    unsigned int line;
+} IntError;
+
+/**
+ * @brief Set internal error state.
+ *
+ * @param type Type of the internal error.
+ * @param msg Static message to store. DO NOT PUT A DYNAMIC MSG HERE (the msg needs to be valid when printing).
+ * @param file Static string representing the file where an error happened.
+ * @param line Line in the file where the error happened.
+ * @note This will also set error state to `Error_Internal`
+ */
+void set_int_error(IntErrorType type, const char *msg, const char *file, unsigned int line);
+
+/// Automatically add file and line when setting internal error.
+#define SET_INT_ERROR(type, msg) set_int_error(type, msg, __FILE__, __LINE__)
+
+/// Get the global internal error state.
+IntErrorType got_int_error();
+
+/// Print the internal error message.
+void print_int_error_msg();
+
+/**
+ * @brief Clear the internal error state
+ * @note This will also reset the global error state to `Error_None`.
+ */
+void clear_int_error();
+
+/// Assert with custom message printed to stderr.
+#define MASSERT(expr, msg) do {                                                                     \
+    if (!(expr)) {                                                                                  \
+        fprintf(stderr, __FILE__":%i: Assertion `" #expr "` failed. Message: %s\n", __LINE__, msg); \
+        exit(1);                                                                                    \
+    }} while(false)
+
 #endif
