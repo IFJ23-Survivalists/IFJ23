@@ -2,7 +2,8 @@ PROJ=ifj2023
 TEAM=xkloub03
 
 CC=gcc
-CFLAGS=-Wall -Wextra -O2 -MMD -Werror -Wpedantic -g
+DEFINES=-DPRINT_INT_ERR
+CFLAGS=-Wall -Wextra -O2 -MMD -Werror -Wpedantic -g $(DEFINES)
 
 ZIP_FILE=$(TEAM).zip
 TEST_DIR=test
@@ -21,7 +22,7 @@ build: $(PROJ)
 
 # Compile each test file to its executable
 $(TEST_EXECUTABLES): %: $(TEST_OBJS) $(TEST_DIR)/%.c
-	$(CC) $(CFLAGS) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@
+	$(CC) $(CFLAGS) $(DEFINES) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@
 
 # Run all tests
 test: $(TEST_EXECUTABLES)
