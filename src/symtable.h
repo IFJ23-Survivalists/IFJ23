@@ -45,41 +45,42 @@ typedef struct {
 } VariableSymbol;
 
 /**
- * @enum ItemType
+ * @enum NodeType
  * @brief Represents the type of an item in the symbol table (variable or function).
  */
 typedef enum {
-    ItemType_Variable, /**< Represents a variable. */
-    ItemType_Function  /**< Represents a function. */
-} ItemType;
+    NodeType_Variable, /**< Represents a variable. */
+    NodeType_Function  /**< Represents a function. */
+} NodeType;
 
 /**
- * @union ItemValue
+ * @union NodeValue
  * @brief Represents the value of an item in the symbol table (variable or function).
  */
 typedef union {
     VariableSymbol variable; /**< Value for a variable item. */
     FunctionSymbol function; /**< Value for a function item. */
-} ItemValue;
+} NodeValue;
 
 /**
- * @struct Item
- * @brief Represents an item (variable or function) in the symbol table.
+ * @struct Node
+ * @brief Represents a node of an AVL tree that contains an item (variable or function) in the symbol table.
  */
 typedef struct item_t {
     String key;             /**< Key (name) of the item. */
-    ItemType type;          /**< Type of the item (a function or a variable)*/
-    ItemValue value;        /**< Value of the item */
+    NodeType type;          /**< Type of the node (a function or a variable)*/
+    NodeValue value;        /**< Value of the node */
     struct item_t *left;    /**< Pointer to the left item */
     struct item_t *right;   /**< Pointer to the right item */
-} Item;
+    int height;            /**< Height of the current AVL node*/
+} Node;
 
 /**
  * @struct Symtable
  * @brief Represents the symbol table.
  */
 typedef struct {
-    Item *root;
+    Node *root;
 } Symtable;
 
 /**
