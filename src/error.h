@@ -11,6 +11,7 @@
 #define ERROR_H
 
 #include <stdio.h>
+#include <stdlib.h>
 
 #ifdef NDEBUG
 #define debug(s)
