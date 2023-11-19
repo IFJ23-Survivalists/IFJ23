@@ -49,9 +49,9 @@ typedef struct {
  * @brief Represents the type of an item in the symbol table (variable or function).
  */
 typedef enum {
-    NodeType_Variable, /**< Represents a variable. */
-    NodeType_Function  /**< Represents a function. */
-} NodeType;
+    SymbolType_Variable, /**< Represents a variable. */
+    SymbolType_Function  /**< Represents a function. */
+} SymbolType;
 
 /**
  * @union NodeValue
@@ -68,7 +68,7 @@ typedef union {
  */
 typedef struct item_t {
     String key;             /**< Key (name) of the item. */
-    NodeType type;          /**< Type of the node (a function or a variable)*/
+    SymbolType type;          /**< Type of the node (a function or a variable)*/
     NodeValue value;        /**< Value of the node */
     struct item_t *left;    /**< Pointer to the left item */
     struct item_t *right;   /**< Pointer to the right item */
@@ -174,5 +174,16 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *str);
  * @return A pointer to the VariableSymbol if found; otherwise, NULL.
  */
 VariableSymbol *symtable_get_variable(Symtable *symtable, const char *str);
+
+/**
+ * TODO
+ *
+ *
+ *
+ *
+ *
+ *
+ */
+SymbolType symtable_get_symbol_type(Symtable *symtable, const char *str);
 
 #endif
