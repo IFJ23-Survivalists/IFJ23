@@ -172,6 +172,17 @@ struct Rule {
 struct Grammar {
     std::map<NTerm, std::vector<Rule>> rules;
 
+    /**
+     * @brief Create a rule from given tokens
+     * @param lhs Left-hand side of the rule
+     * @param rhsfmt Format of the right-hand side.
+     *      k -> Keyword,
+     *      n -> NTerm,
+     *      a -> Automatic from char,
+     *      t -> TokenType,
+     * @pre Will set Error_Internal on error.
+     * @return Created rule. This rule needs to be freed by `destroy_rule()` function.
+     */
     void add_rule(NTerm nterm, const char* rhsfmt, ...);
     void print();
     Grammar();
