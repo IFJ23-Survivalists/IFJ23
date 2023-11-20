@@ -8,10 +8,10 @@ extern "C" {
 
 struct PrgArgs {
     bool print_rules = true;
-    bool print_empty = true;
-    bool print_first = true;
-    bool print_follow = true;
-    bool print_predict = true;
+    bool print_empty = false;
+    bool print_first = false;
+    bool print_follow = false;
+    bool print_predict = false;
     bool check_predict = true;
     bool print_lltable = true;
     bool help = false;
@@ -148,6 +148,6 @@ void usage(FILE* fs, char* prg_name) {
             "   -p      Print predict\n"
             "   -c      Check predict for errors\n"
             "   -l      Print LL-table\n\n"
-            "By default all of these options are active.\n"
+            "By default, only options `-r`, `-c` and `-l` are used.\n"
             , prg_name);
 }
