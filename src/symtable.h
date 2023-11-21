@@ -49,9 +49,9 @@ typedef struct {
  * @brief Represents the type of an item in the symbol table (variable or function).
  */
 typedef enum {
-    SymbolType_Variable, /**< Represents a variable. */
-    SymbolType_Function  /**< Represents a function. */
-} SymbolType;
+    NodeType_Variable, /**< Represents a variable. */
+    NodeType_Function  /**< Represents a function. */
+} NodeType;
 
 /**
  * @union NodeValue
@@ -68,7 +68,7 @@ typedef union {
  */
 typedef struct item_t {
     String key;             /**< Key (name) of the item. */
-    SymbolType type;          /**< Type of the node (a function or a variable)*/
+    NodeType type;          /**< Type of the node (a function or a variable)*/
     NodeValue value;        /**< Value of the node */
     struct item_t *left;    /**< Pointer to the left item */
     struct item_t *right;   /**< Pointer to the right item */
@@ -176,14 +176,16 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *str);
 VariableSymbol *symtable_get_variable(Symtable *symtable, const char *str);
 
 /**
- * TODO
+ * @brief Get the data type of a symbol in the symbol table by name.
  *
+ * This function retrieves the data type of a symbol from the symbol table
+ * by its name (key). It returns a pointer to the NodeType representing the data type.
  *
- *
- *
- *
- *
+ * @param[in] symtable The Symtable struct to search.
+ * @param[in] str The name of the symbol for which to retrieve the data type.
+ * @return A pointer to the NodeType representing the data type of the symbol if found;
+ *         otherwise, NULL.
  */
-SymbolType symtable_get_symbol_type(Symtable *symtable, const char *str);
+NodeType *symtable_get_symbol_type(Symtable *symtable, const char *str);
 
 #endif

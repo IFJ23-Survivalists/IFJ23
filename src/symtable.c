@@ -141,7 +141,30 @@ static Node* node_bvs_insert(Node *node, const char *key, NodeType type, NodeVal
         node->left = node_bvs_insert(node->left, key, type, value, inserted);
     }
 
-    // todo Balance
+    // Balance
+    int balance = node_height(node->left) - node_height(node->right);
+
+    // Left Left Case
+    if (balance > 1 && strcmp(key, node->left->key.data) < 0) {
+        return node_rotate_right(node);
+    }
+
+    // Right Right Case
+    if (balance < -1 && strcmp(key, node->right->key.data) > 0) {
+        return node_rotate_left(node);
+    }
+
+    // Left Right Case
+    if (balance > 1 && strcmp(key, node->left->key.data) > 0) {
+        node->left = node_rotate_left(node->left);
+        return node_rotate_right(node);
+    }
+
+    // Right Left Case
+    if (balance < -1 && strcmp(key, node->right->key.data) < 0) {
+        node->right = node_rotate_right(node->right);
+        return node_rotate_left(node);
+    }
 
     return node;
 }
@@ -199,4 +222,9 @@ VariableSymbol *symtable_get_variable(Symtable *symtable, const char *key) {
     }
 
     return NULL;
+}
+
+NodeType *symtable_get_symbol_type(Symtable *symtable, const char *key) {
+    Node *node = node_bvs_get(symtable->root, key);
+    return node == NULL ? NULL : &node->type;
 }
