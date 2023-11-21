@@ -1,3 +1,8 @@
+/**
+ * @file grammar.h
+ * @brief Rule and grammar definitions for LL-table generation
+ * @author Jakub Kloub, xkloub03, VUT FIT
+ */
 #pragma once
 #include <map>
 #include <string_view>
@@ -7,33 +12,9 @@
 #include <cstdarg>
 extern "C" {
 #include "../scanner.h"    // Token
+#include "../cfl.h"
 }
 
-const int KW_COUNT = Keyword_Return + 1;
-const int TOK_COUNT = Token_Identifier + 1;
-
- /// All possible non-terminals
-enum class NTerm : int{
-    StatementList = 0,
-    Statement,
-    Params,
-    Params_n,
-    ArgumentLabel,
-    ReturnExpr,
-    IfCondition,
-    Else,
-    AssignType,
-    AssignExpr,
-    Expr,
-    ExprInner,
-    FunctionCall,
-    FunctionCallParams,
-    FunctionCallParams_n,
-    ParamName,
-
-    /// Number of non-terminals in this enum.
-    count
-};
 
 static const char* NTERM_NAMES[] = {
     "<statementList>",
@@ -89,22 +70,15 @@ static const char* TOKENTYPE_NAMES[] = {
 
 inline std::string_view to_string(TokenType t) { return std::string_view(TOKENTYPE_NAMES[t]); }
 
-struct Terminal {
-    bool is_kw{ false };
-    union {
-        Keyword kw;
-        TokenType tok;
-    };
+inline bool operator==(const Terminal& lhs, const Terminal& rhs) {
+    if (lhs.is_kw != rhs.is_kw)
+        return false;
+    return lhs.is_kw ? lhs.kw == rhs.kw : lhs.tok == rhs.tok;
+}
 
-    bool operator==(const Terminal& rhs) const {
-        if (is_kw != rhs.is_kw)
-            return false;
-        return is_kw ? kw == rhs.kw : tok == rhs.tok;
-    }
-    bool operator!=(const Terminal& rhs) const {
-        return !(*this == rhs);
-    }
-};
+inline bool operator!=(const Terminal& lhs, const Terminal& rhs) {
+    return !(lhs == rhs);
+}
 
 class TerminalIterator {
     int val;
@@ -121,9 +95,6 @@ public:
     bool operator!=(const TerminalIterator& rhs) const;
     Terminal operator*();
     Terminal operator->();
-
-    static Terminal val_to_term(int val);
-    static int term_to_val(const Terminal& t);
 };
 
 template<>
@@ -133,25 +104,15 @@ struct std::hash<Terminal> {
     }
 };
 
-/// Represents a right-hand side of a grammar rule.
-struct Symbol {
-    bool is_term{ false };
-    union {
-        Terminal term;
-        NTerm nterm;
-    };
+inline bool operator==(const Symbol& lhs, const Symbol& rhs) {
+    if (lhs.is_term != rhs.is_term)
+        return false;
+    return lhs.is_term ? lhs.term == rhs.term : lhs.nterm == rhs.nterm;
+}
 
-    Symbol() {}
-
-    bool operator==(const Symbol& rhs) const {
-        if (is_term != rhs.is_term)
-            return false;
-        return is_term ? term == rhs.term : nterm == rhs.nterm;
-    }
-    bool operator!=(const Symbol& rhs) const {
-        return !((*this) == rhs);
-    }
-};
+inline bool operator!=(const Symbol& lhs, const Symbol& rhs) {
+    return !(lhs == rhs);
+}
 
 inline std::string_view to_string(Terminal t) {
     return t.is_kw ? to_string(t.kw) : to_string(t.tok);

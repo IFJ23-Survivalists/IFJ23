@@ -1,3 +1,7 @@
+/**
+ * @file llgen.cpp
+ * @author Jakub Kloub, xkloub03, VUT FIT
+ */
 #include "llgen.h"
 #include <algorithm>
 #include <cstring>
@@ -14,7 +18,7 @@
 #define CM "\033[35m"
 
 Empty::Empty(Grammar& g) {
-    for (int nterm = 0; nterm < (int)NTerm::count; nterm++) {
+    for (int nterm = 0; nterm < (int)NTerm_count; nterm++) {
         for (auto& rule : g.rules[NTerm(nterm)]) {
             if (rule.eps())
                 empty[NTerm(nterm)] = true;
@@ -127,7 +131,7 @@ void First::print() {
 
 Follow::Follow(Grammar& g, Empty& empty, First& first) {
     // Follow(S) := { $ }
-    follow[NTerm::StatementList].insert(Terminal{ .is_kw = false, .tok = Token_EOF });
+    follow[NTerm_StatementList].insert(Terminal{ .is_kw = false, .tok = Token_EOF });
 
     bool changed;
     do {
@@ -238,7 +242,7 @@ void print_lltable(Grammar& g) {
     std::cout << "LL-Table" << std::endl;
 
     size_t vheader_width = 0;
-    for (int i = 0; i < (int)NTerm::count; i++)
+    for (int i = 0; i < (int)NTerm_count; i++)
         if (strlen(NTERM_NAMES[i]) > vheader_width)
             vheader_width = strlen(NTERM_NAMES[i]);
     vheader_width += 2 + 1;     // 2 spaces and 1 border on the right.
@@ -283,7 +287,7 @@ void print_lltable(Grammar& g) {
 
     separator();
 
-    for (int i = 0; i < (int)NTerm::count; i++) {
+    for (int i = 0; i < (int)NTerm_count; i++) {
         NTerm nterm = (NTerm)i;
         std::cout << " " << CG << std::left << std::setw(vheader_width - 3) << to_string(nterm) << CD;
         std::cout << " " << VLINE;
@@ -322,7 +326,7 @@ void print_lltable(Grammar& g) {
 template<>
 struct std::hash<std::pair<NTerm, Terminal>> {
     size_t operator()(const std::pair<NTerm, Terminal>& p) const {
-        return TerminalIterator::term_to_val(p.second) * (int)NTerm::count + (int)p.first;
+        return term_to_val(&p.second) * (int)NTerm_count + (int)p.first;
     }
 };
 

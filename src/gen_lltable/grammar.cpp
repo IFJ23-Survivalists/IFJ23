@@ -1,3 +1,8 @@
+/**
+ * @file grammar.cpp
+ * @brief Definitions for grammar.h
+ * @author Jakub Kloub, xkloub03, VUT FIT
+ */
 #include "grammar.h"
 #include <cstdarg>
 #include <cstring>
@@ -35,7 +40,7 @@ Rule create_rule(NTerm lhs, const char* rhsfmt, va_list args) {
                 break;
             case 'n':       // Non-terminal
                 sym.is_term = false;
-                sym.nterm = va_arg(args, NTerm);
+                sym.nterm = (NTerm)va_arg(args, int);
                 break;
             case 't':       // TokenType
                 sym.is_term = true;
@@ -105,23 +110,6 @@ void Grammar::print() {
 Grammar::Grammar() {}
 Grammar::~Grammar() {}
 
-Terminal TerminalIterator::val_to_term(int val) {
-    MASSERT(val >= 0, ("Invalid value for convertsion to terminal. val = " + std::to_string(val)).c_str());
-    Terminal t;
-    t.is_kw = val < KW_COUNT;
-    if (val < KW_COUNT)
-        t.kw = (Keyword)val;
-    else
-        t.tok = TokenType(val - KW_COUNT);
-    return t;
-}
-
-int TerminalIterator::term_to_val(const Terminal& t) {
-    if (t.is_kw)
-        return t.kw;
-    return t.tok + KW_COUNT;
-}
-
 TerminalIterator TerminalIterator::begin(int val) {
     TerminalIterator it;
     it.val = val;
@@ -178,8 +166,8 @@ bool TerminalIterator::operator!=(const TerminalIterator& rhs) const {
     return this->val != rhs.val;
 }
 Terminal TerminalIterator::operator*() {
-    return val_to_term(this->val);
+    return term_from_val(this->val);
 }
 Terminal TerminalIterator::operator->() {
-    return val_to_term(this->val);
+    return term_from_val(this->val);
 }
