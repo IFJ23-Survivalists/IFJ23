@@ -113,6 +113,30 @@ int main() {
         test(var2->allow_modification == true);
     }
 
+    suite("Test Balance") {
+        test((symtable.root->left->height - symtable.root->right->height) <= 1);
+    }
+
+    suite("Test symtable_get_symbol_type") {
+        test(!symtable_get_symbol_type(&symtable, ""));
+        test(!symtable_get_symbol_type(&symtable, "unknown"));
+        NodeType *node = symtable_get_symbol_type(&symtable, "foo");
+        test(node);
+        test(*node == NodeType_Function);
+
+        node = symtable_get_symbol_type(&symtable, "foo2");
+        test(node);
+        test(*node == NodeType_Function);
+
+        node = symtable_get_symbol_type(&symtable, "bar");
+        test(node);
+        test(*node == NodeType_Variable);
+
+        node = symtable_get_symbol_type(&symtable, "baz");
+        test(node);
+        test(*node == NodeType_Variable);
+    }
+
     suite("Test symtable_free") {
         symtable_free(&symtable);
         test(!symtable.root);
