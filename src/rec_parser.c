@@ -2,7 +2,7 @@
  * @file pred_parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
-#include "pred_parser.h"
+#include "rec_parser.h"
 #include "error.h"
 #include "scanner.h"
 #include <stdarg.h>
@@ -28,7 +28,7 @@ bool rule_else();
 bool rule_assignType();
 bool rule_assignExpr();
 
-bool pred_parser_begin() {
+bool rec_parser_begin() {
     get_next_token();
     return rule_statementList();
 }
@@ -73,22 +73,25 @@ bool rule_statementList() {
     return res;
 }
 
-typedef bool RuleFunc()
+// typedef bool RuleFunc();
 
 bool expand_list(const char *fmt, va_list args) {
-    size_t fmt_len = strlen(fmt);
-    for (size_t i = 0; i < fmt_len; i++) {
-        switch (fmt[i]) {
-            case 'k': {
-                RuleFunc* f = va_arg(args, RuleFunc*);
-            } break;
-            case 'r':
-                break;
-            case 't':
-                break;
-            default: break;
-        }
-    }
+    (void)fmt;
+    (void)args;
+    return true;
+    // size_t fmt_len = strlen(fmt);
+    // for (size_t i = 0; i < fmt_len; i++) {
+    //     switch (fmt[i]) {
+    //         case 'k': {
+    //             RuleFunc* f = va_arg(args, RuleFunc*);
+    //         } break;
+    //         case 'r':
+    //             break;
+    //         case 't':
+    //             break;
+    //         default: break;
+    //     }
+    // }
 }
 
 bool expand(const char *fmt, ...) {
@@ -127,34 +130,34 @@ bool rule_statement() {
         default:
             break;
     }
-    return false;
+    return res;
 }
 bool rule_params() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_params_n() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_returnExpr() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_ifCondition() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_else() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_assignType() {
     bool res = false;
-    return false;
+    return res;
 }
 bool rule_assignExpr() {
     bool res = false;
-    return false;
+    return res;
 }
 

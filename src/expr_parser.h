@@ -10,6 +10,6 @@
 #include <stdbool.h>
 
 /// Begin the precedence analysis.
-bool prec_parser_begin();
+bool expr_parser_begin();
 
 #endif // _PREC_PARSER_H_

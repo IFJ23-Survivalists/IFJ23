@@ -10,6 +10,6 @@
 #include <stdbool.h>
 
 /// Begin the predictive analysis.
-bool pred_parser_begin();
+bool rec_parser_begin();
 
 #endif

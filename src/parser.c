@@ -3,13 +3,13 @@
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
 #include "parser.h"
-#include "prec_parser.h"
+#include "rec_parser.h"
 
 
 void parser_init() {}
 
 bool parser_begin() {
-    return prec_parser_begin();
+    return rec_parser_begin();
 }
 
 void parser_free() {}
