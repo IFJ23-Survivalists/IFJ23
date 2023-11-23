@@ -1071,7 +1071,6 @@ static State step(char ch) {
         case State_BlockStringEscapeHex2: return step_string_escape_hex(ch, 2, false);
 
         case State_Minus: return ch == '>' ? State_ArrowRight : State_Start;
-        case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
         case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
         case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
         case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
@@ -1085,6 +1084,7 @@ static State step(char ch) {
         case State_Comma:
         case State_At:
         case State_Plus:
+        case State_Multiply:
         case State_ArrowRight:
         case State_DoubleEqualSign:
         case State_LessOrEqual:
