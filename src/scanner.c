@@ -310,6 +310,22 @@ void get_current_token(Token *token) {
             token->attribute.op = Operator_MoreOrEqual;
             token->type = Token_Operator;
             break;
+        case State_Negation:
+            token->attribute.op = Operator_Negation;
+            token->type = Token_Operator;
+            break;
+        case State_NotEqual:
+            token->attribute.op = Operator_NotEqual;
+            token->type = Token_Operator;
+            break;
+        case State_Or:
+            token->attribute.op = Operator_Or;
+            token->type = Token_Operator;
+            break;
+        case State_And:
+            token->attribute.op = Operator_And;
+            token->type = Token_Operator;
+            break;
         case State_DoubleQuestionMark:
             token->attribute.op = Operator_DoubleQuestionMark;
             token->type = Token_Operator;
