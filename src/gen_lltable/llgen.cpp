@@ -130,8 +130,11 @@ void First::print() {
 }
 
 Follow::Follow(Grammar& g, Empty& empty, First& first) {
+
     // Follow(S) := { $ }
-    follow[NTerm_StatementList].insert(Terminal{ .is_kw = false, .tok = Token_EOF });
+    for (auto& [nterm, _] : g.rules) {
+        follow[nterm].insert(Terminal{ .is_kw = false, .tok = Token_EOF });
+    }
 
     bool changed;
     do {
