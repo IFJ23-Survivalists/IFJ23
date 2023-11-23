@@ -59,11 +59,11 @@ void string_clear(String *str) {
 }
 
 void string_reserve(String *str, size_t capacity) {
-    if (capacity < str->capacity) {
+    if (capacity <= str->capacity) {
         return;
     }
 
-    char *new = (char *)realloc(str->data, capacity);
+    char *new = (char *)realloc(str->data, sizeof(char) * capacity);
 
     if (!new) {
         set_error(Error_Internal);
@@ -90,6 +90,26 @@ void string_push(String *str, char ch) {
     str->data[str->length] = '\0';
 }
 
+void string_concat_c_str(String *str, const char *str2) {
+    size_t length = strlen(str2);
+
+    if (!length) {
+        return;
+    }
+
+    size_t new_length = str->length + length;
+
+    if (new_length >= str->capacity) {
+        string_reserve(str, new_length + 1);
+        if (got_error()) {
+            return;
+        }
+    }
+
+    strlcpy(str->data + str->length, str2, length + 1);
+    str->length = new_length;
+}
+
 String string_from_c_str(const char *str) {
     String res;
 
@@ -104,7 +124,8 @@ String string_from_c_str(const char *str) {
     string_reserve(&res, len + 1);
 
     if (!got_error()) {
-        strlcpy(res.data, str, len);
+        strlcpy(res.data, str, len + 1);
+        res.length = len;
     }
 
     return res;
