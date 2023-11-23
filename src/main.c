@@ -21,5 +21,6 @@ int main(int argc, char **argv) {
 
     // TODO do something with the file we just got
 
+    fclose(file);
     return got_error();
 }
