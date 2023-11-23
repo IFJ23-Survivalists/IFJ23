@@ -14,7 +14,7 @@
 #include "error.h"
 
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
-Keyword KEYWORD_TYPE[] = {Keyword_If, Keyword_Else, Keyword_Let, Keyword_Var, Keyword_While, Keyword_Func, Keyword_Return};
+TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
 char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
@@ -243,8 +243,7 @@ void get_current_token(Token *token) {
 
             for (int i = 0; KEYWORD[i]; i++) {
                 if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
-                    token->type = Token_Keyword;
-                    token->attribute.keyword = KEYWORD_TYPE[i];
+                    token->type = KEYWORD_TYPE[i];
                     string_clear(&g_scanner.string);
                     found = true;
                     break;

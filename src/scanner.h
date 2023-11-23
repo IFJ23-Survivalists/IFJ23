@@ -15,17 +15,6 @@
 #include <stdbool.h>
 #include "string.h"
 
-/// Represents built-in keywords (but not data type)
-typedef enum {
-    Keyword_If,
-    Keyword_Else,
-    Keyword_Let,
-    Keyword_Var,
-    Keyword_While,
-    Keyword_Func,
-    Keyword_Return,
-} Keyword;
-
 /// Represents data type
 typedef enum {
     DataType_Int,
@@ -103,20 +92,26 @@ typedef enum {
     /// ,
     Token_Comma,
 
+    /// Keywords
+    Token_If,
+    Token_Else,
+    Token_Let,
+    Token_Var,
+    Token_While,
+    Token_Func,
+    Token_Return,
+
     /// Data value, can be a string or number or double
     Token_Data,
     /// String, Int, Double
     Token_DataType,
     /// Operator such as + - * / == > >= < <= ??
     Token_Operator,
-    /// Language defined keyword
-    Token_Keyword,
     /// User defined identifier
     Token_Identifier
 } TokenType;
 
 typedef union {
-    Keyword keyword;
     DataType data_type;
     Operator op;
     Data data;
