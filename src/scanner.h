@@ -70,7 +70,13 @@ typedef enum {
     /// >=
     Operator_MoreOrEqual,
     /// ??
-    Operator_DoubleQuestionMark
+    Operator_DoubleQuestionMark,
+    /// !
+    Operator_Negation,
+    /// ||
+    Operator_Or,
+    /// &&
+    Operator_And,
 } Operator;
 
 typedef enum {
