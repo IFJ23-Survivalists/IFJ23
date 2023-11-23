@@ -8,7 +8,6 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include "scanner.h"
@@ -144,6 +143,7 @@ typedef struct {
     int line;
     int position_in_line;
     unsigned comment_block_level;
+    bool has_eol;
 } Scanner;
 
 Scanner g_scanner;
@@ -265,9 +265,6 @@ void get_current_token(Token *token) {
             break;
         }
 
-        case State_At:
-            token->type = Token_At;
-            break;
         case State_Comma:
             token->type = Token_Comma;
             break;
@@ -368,6 +365,7 @@ void get_current_token(Token *token) {
         case State_LineComment:
         case State_BlockCommentEnd:
             token->type = Token_Whitespace;
+            token->attribute.has_eol = g_scanner.has_eol;
             break;
 
         default:
@@ -419,11 +417,16 @@ static void scanner_cleanup() {
     g_scanner.is_exponent_negative = false;
     string_clear(&g_scanner.string);
     g_scanner.comment_block_level = 0;
+    g_scanner.has_eol = false;
 }
 
 Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
+    bool getting_whitespaces = false;
+    Token whitespace_token;
+    whitespace_token.type = Token_Whitespace;
+    whitespace_token.attribute.has_eol = false;
 
     if (!g_scanner.initialized) {
         set_error(Error_Internal);
@@ -455,6 +458,34 @@ Token scanner_advance() {
 
             if (got_error()) {
                 return token;
+            }
+
+            if (token.type == Token_Whitespace) {
+                getting_whitespaces = true;
+
+                whitespace_token.attribute.has_eol = whitespace_token.attribute.has_eol || token.attribute.has_eol;
+
+                whitespace_token.line = whitespace_token.line
+                    ? whitespace_token.line : token.line;
+
+                whitespace_token.position_in_line = whitespace_token.position_in_line
+                    ? whitespace_token.position_in_line : token.line;
+
+                g_scanner.current_state = next_state;
+                continue;
+            }
+
+            if (getting_whitespaces) {
+                tokenlist_push(&g_scanner.token_list, whitespace_token);
+                tokenlist_push(&g_scanner.token_list, token);
+
+                getting_whitespaces = false;
+                whitespace_token.attribute.has_eol = false;
+                whitespace_token.line = 0;
+                whitespace_token.position_in_line = 0;
+
+                g_scanner.current_state = next_state;
+                return g_scanner.token_list.tokens[g_scanner.list_idx++];
             }
 
             got_token = true;
@@ -982,7 +1013,26 @@ State step_comment_block(char ch) {
     }
 }
 
+static State step_whitespace(char ch) {
+    switch (ch) {
+        case 0x20:
+        case 0x0A:
+        case 0x0D:
+        case 0x09:
+        case 0x0B:
+        case 0x0C:
+        case 0x00:
+            return State_Whitespace;
+
+        default: return State_Start;
+    }
+}
+
 static State step(char ch) {
+    if (ch == '\n') {
+        g_scanner.has_eol = true;
+    }
+
     if (g_scanner.comment_block_level) {
         return step_comment_block(ch);
     }
@@ -991,6 +1041,7 @@ static State step(char ch) {
         case State_EOF: return State_EOF;
 
         case State_Start: return step_start(ch);
+        case State_Whitespace: return step_whitespace(ch);
         case State_QuestionMark: return step_question_mark(ch);
         case State_Divide: return step_divide(ch);
         case State_Identifier: return step_identifier(ch);
@@ -1024,7 +1075,7 @@ static State step(char ch) {
         case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
         case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
         case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
-        case State_LineComment: return ch == '\n' ? State_Start : State_LineComment;
+        case State_LineComment: return ch == '\n' ? State_Whitespace : State_LineComment;
 
         case State_ParenLeft:
         case State_ParenRight:
@@ -1039,7 +1090,6 @@ static State step(char ch) {
         case State_LessOrEqual:
         case State_MoreOrEqual:
         case State_DoubleQuestionMark:
-        case State_Whitespace:
         case State_MaybeNilType:
         case State_StringEnd:
             return State_Start;

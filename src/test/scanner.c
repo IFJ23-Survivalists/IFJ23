@@ -29,24 +29,7 @@ int main() {
 	suite("Test Scanner Whitespace") {
         token = scanner_advance();
         test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
-
-        token = scanner_advance();
-        test(token.type == Token_Whitespace);
+        test(token.attribute.has_eol);
     }
 
     suite("Test Scanner keyword") {

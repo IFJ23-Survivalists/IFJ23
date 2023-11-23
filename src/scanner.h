@@ -12,6 +12,7 @@
 #define SCANNER_H
 
 #include <stdio.h>
+#include <stdbool.h>
 #include "string.h"
 
 /// Represents built-in keywords (but not data type)
@@ -87,8 +88,6 @@ typedef enum {
     Token_ParenLeft,
     /// )
     Token_ParenRight,
-    /// @
-    Token_At,
     /// :
     Token_DoubleColon,
     /// ->
@@ -115,6 +114,7 @@ typedef union {
     DataType data_type;
     Operator op;
     Data data;
+    bool has_eol;
 } TokenAttribute;
 
 typedef struct {
