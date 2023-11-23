@@ -54,15 +54,105 @@ The implementation of our scanner functions aligns precisely with the determinis
 
 #pagebreak()
 
-#figure(
-  image("img/ifj23-text.png", width: 100%),
+== State Names
+\
+S Start
+
+#box(
+    height: 150pt,
+    width: 109%,
+    columns(3, gutter: 5pt)[
+          F1 DoubleColon
+        \ F2 BracketRight
+        \ F3 BracketLeft
+        \ F4 ParenRight
+        \ F5 ParenLeft
+        \ F6 Multiply
+        \ F7 Plus
+        \ F8 Minus
+        \ F9 Divide
+        \ F10 EqualSign
+        \ F11 DoubleEqualSign
+        \ F12 LessThan
+        \ F13 LessOrEqual
+        \ F14 MoreThan
+        \ F15 MoreOrEqual
+        \ F16 DoubleQuestionMark
+        \ F17 Whitespace
+        \ F18 Identifier
+        \ F19 MaybeNilType
+        \ F20 Number
+        \ F21 NumberDouble
+        \ F22 NumberExponent
+        \ F23 StringEnd
+        \ F24 BlockCommentStart
+        \ F25 Negation
+        \ F26 NotEqual
+        \ F27 Or
+        \ F26 And
+    ]
 )
 
-#lorem(60)
-
-#figure(
-  image("img/ifj23-block_comment_diagram.png", width: 100%),
-  caption: [Block Comment - Deterministic Finite Automata],
+#box(
+    height: 130pt,
+    width: 109%,
+    columns(3, gutter: 5pt)[
+          Q1 LineComment
+        \ Q2 QuestionMark
+        \ Q3 NumberDoubleStart
+        \ Q4 NumberExponentStart
+        \ Q5 NumberExponentSign
+        \ Q6 StringStart
+        \ Q7 LineString
+        \ Q8 LineStringEscape
+        \ Q9 LineStringEscapeUnicode
+        \ Q10 LineStringEscapeHexStart
+        \ Q11 LineStringEscapeHex1
+        \ Q12 LineStringEscapeHex2
+        \ Q13 DoubleQuote
+        \ Q14 BlockStringString
+        \ Q15 BlockString
+        \ Q16 BlockStringEnd1
+        \ Q17 BlockStringEnd2
+        \ Q18 BlockStringEnd3
+        \ Q19 BlockStringEscape
+        \ Q20 BlockStringEscapeUnicode
+        \ Q21 BlockStringEscapeHexStart
+        \ Q22 BlockStringEscapeHex1
+        \ Q23 BlockStringEscapeHex2
+        \ Q24 Pipe
+        \ Q25 Ampersand
+    ]
 )
 
-#lorem(60)
+== Note
+
+- *F17 Whitespace*: Combines multiple adjacent whitespaces into one. It also has an attribute (has_eol) to check for End-of-Line (EOL) characters inside the whitespaces.
+
+- *F24 BlockCommentStart*: Whenever the scanner enters this state, it transitions into _Block Comment Mode_ due to the limitation of deterministic finite automata in detecting matching open and close states. In Block Comment Mode:
+    - Set internal counter to 1.
+    - Utilizes the automata for block comments instead of the one used above.
+    - When it encounters *F1 BlockCommentStart*: increase the counter by 1.
+    - When it encounters *F2 BlockCommentEnd*: decrease the counter by 1.
+    - Returns to normal mode when either counter is 0 or when in *F3 EOF* state.
+
+#figure(
+    grid(
+        columns: (1.3fr, 1fr),
+        gutter: 20pt,
+        image("img/ifj23-block_comment_diagram.png", width: 80%),
+        [
+            #v(50pt)
+            #align(left, grid(columns: (1fr, 2fr), gutter: 5pt)[
+                  S Start
+                \ Q1 Divide
+                \ Q2 Multiply
+            ][
+                  F1 BlockCommentStart
+                \ F2 BlockCommentEnd
+                \ F3 EOF
+            ])
+        ]
+    ),
+    caption: [Block Comment - Deterministic Finite Automata],
+)

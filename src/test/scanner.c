@@ -103,6 +103,21 @@ int main() {
         test(token.type == Token_Operator);
         test(token.attribute.op == Operator_MoreOrEqual);
 
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_Negation);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_NotEqual);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_Or);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_And);
     }
 
     suite("Test Scanner literal") {
