@@ -1,4 +1,4 @@
-#let project(title: "", authors: (), logo: none, body) = {
+#let project(title: "", year: "", authors: (), logo: none, body) = {
   // Set the document's basic properties.
   set document(author: authors.map(a => a.name), title: title)
   set page(numbering: "1", number-align: center)
@@ -6,30 +6,35 @@
   show math.equation: set text(weight: 400)
   set heading(numbering: "1.1.")
 
-  // Title page.
-  // The page can contain a logo if you pass one with `logo: "logo.png"`.
   v(0.6fr)
   if logo != none {
-    align(right, image(logo, width: 26%))
+    align(center, image(logo, width: 100%))
   }
-  v(9.6fr)
 
-  text(2em, weight: 700, title)
+  v(1fr)
 
-  // Author information.
-  pad(
-    top: 0.7em,
-    right: 20%,
-    grid(
-      columns: (1fr,) * calc.min(2, authors.len()),
-      gutter: 1em,
-      ..authors.map(author => align(start)[
-        *#author.name* \
-        #author.email \
-        #author.affiliation
-      ]),
-    ),
-  )
+  align(center)[
+      #text(2em, weight: 700, title) \
+      #text(1.5em, year)
+
+      #v(0.6fr)
+
+      // Author information.
+      #pad(
+        top: 0.7em,
+        right: 20%,
+        left: 20%,
+        grid(
+          columns: (1fr,) * calc.min(2, authors.len()),
+          gutter: 3em,
+          ..authors.map(author => align(center)[
+            *#author.name* - #author.distribution \
+            #author.xlogin \
+            #author.works.join("\n")
+          ]),
+        ),
+      )
+  ]
 
   v(2.4fr)
   pagebreak()
@@ -41,13 +46,16 @@
   body
 }
 
+
 #show: project.with(
-  title: "IFJ23",
+  title: "Formal Languages and Compilers",
+  year: "2023-2024",
+  logo: "img/fit_logo.png",
   authors: (
-    (name: "Jakub Kloub - 25%", email: "xkloub03 - vedouci", affiliation: ""),
-    (name: "Matúš Moravčík - 25%", email: "xmorav48", affiliation: ""),
-    (name: "Le Duy Nguyen - 25%", email: "xnguye27", affiliation: "Lexical Analysis Symbol Table"),
-    (name: "Lukáš Habr - 25%", email: "xhabrl01", affiliation: ""),
+    (name: "Jakub Kloub", distribution: 25%, xlogin: "xkloub03 - vedouci", works: ("Syntaxtical Analysis",)),
+    (name: "Matúš Moravčík", distribution: 25%, xlogin: "xmorav48", works: ("Precedence Table",)),
+    (name: "Le Duy Nguyen", distribution: 25%, xlogin: "xnguye27", works: ("Lexical Analysis", "Symbol Table")),
+    (name: "Lukáš Habr", distribution: 25%, xlogin: "xhabrl01", works: ("Code Generation",)),
   ),
 )
 
