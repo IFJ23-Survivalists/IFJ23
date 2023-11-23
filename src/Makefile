@@ -32,8 +32,11 @@ test: $(TEST_EXECUTABLES)
 # doc: documentation.typ
 # 	typst c $^
 
-pack:
-	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozhodnuti.txt
+doc:
+	typst c ../doc/documentation.typ ./dokumentace.pdf
+
+pack: doc
+	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozhodnuti.txt dokumentace.pdf
 
 -include $(DEPS)
 
