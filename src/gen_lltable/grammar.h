@@ -21,18 +21,12 @@ static const char* NTERM_NAMES[] = {
     "<statement>",
     "<params>",
     "<params_n>",
-    "<argumentLabel>",
     "<returnExpr>",
     "<ifCondition>",
     "<else>",
     "<assignType>",
     "<assignExpr>",
     "<expr>",
-    "<exprInner>",
-    "<functionCall>",
-    "<functionCallParams>",
-    "<functionCallParams_n>",
-    "<paramName>",
 };
 
 inline std::string_view to_string(NTerm t) { return std::string_view(NTERM_NAMES[(int)t]); }
@@ -51,7 +45,7 @@ inline std::string_view to_string(Keyword k) { return std::string_view(KEYWORD_N
 
 static const char* TOKENTYPE_NAMES[] = {
     "$",
-    "Whitespace",
+    "EOL",      // FIXME: Make sure this is not a Whitespace in the future.
     "{",
     "}",
     "(",

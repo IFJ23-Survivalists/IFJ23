@@ -22,18 +22,12 @@ typedef enum {
     NTerm_Statement,
     NTerm_Params,
     NTerm_Params_n,
-    NTerm_ArgumentLabel,
     NTerm_ReturnExpr,
     NTerm_IfCondition,
     NTerm_Else,
     NTerm_AssignType,
     NTerm_AssignExpr,
     NTerm_Expr,
-    NTerm_ExprInner,
-    NTerm_FunctionCall,
-    NTerm_FunctionCallParams,
-    NTerm_FunctionCallParams_n,
-    NTerm_ParamName,
 
     /// Number of non-terminals in this enum.
     NTerm_count

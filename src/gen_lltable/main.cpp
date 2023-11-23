@@ -34,45 +34,30 @@ int main(int argc, char* argv[]) {
     }
 
     Grammar g;
-    g.add_rule(NTerm_StatementList, "nn", NTerm_Statement, NTerm_StatementList);
+    g.add_rule(NTerm_StatementList, "ntn", NTerm_Statement, Token_Whitespace, NTerm_StatementList);
     g.add_rule(NTerm_StatementList, NULL);
-    g.add_rule(NTerm_Statement, "kanaana", Keyword_While, '(', NTerm_Expr, ')', '{', NTerm_StatementList, '}');
-    g.add_rule(NTerm_Statement, "ktanattana", Keyword_Func, Token_Identifier, '(', NTerm_Params, ')', Token_ArrowRight, Token_DataType, '{', NTerm_StatementList, '}');
+    g.add_rule(NTerm_Statement, "kanaanan", Keyword_While, '(', NTerm_Expr, ')', '{', NTerm_StatementList, '}', NTerm_StatementList);
+    g.add_rule(NTerm_Statement, "ktanattanan", Keyword_Func, Token_Identifier, '(', NTerm_Params, ')', Token_ArrowRight, Token_DataType, '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Statement, "kn", Keyword_Return, NTerm_ReturnExpr);
     g.add_rule(NTerm_Statement, "knanan", Keyword_If, NTerm_IfCondition, '{', NTerm_StatementList, '}', NTerm_Else);
     g.add_rule(NTerm_Statement, "ktntn", Keyword_Let, Token_Identifier, NTerm_AssignType, Token_Equal, NTerm_Expr);
     g.add_rule(NTerm_Statement, "ktnn", Keyword_Var, Token_Identifier, NTerm_AssignType, NTerm_AssignExpr);
     g.add_rule(NTerm_Statement, "ttn", Token_Identifier, Token_Equal, NTerm_Expr);
     g.add_rule(NTerm_Statement, "n", NTerm_Expr);
-    g.add_rule(NTerm_Params, "ntttn", NTerm_ArgumentLabel, Token_Identifier, Token_DoubleColon, Token_DataType, NTerm_Params_n);
+    g.add_rule(NTerm_Params, "ttttn", Token_Identifier, Token_Identifier, Token_DoubleColon, Token_DataType, NTerm_Params_n);
     g.add_rule(NTerm_Params, NULL);
     g.add_rule(NTerm_Params_n, "tn", Token_Comma, NTerm_Params);
     g.add_rule(NTerm_Params_n, NULL);
-    g.add_rule(NTerm_ArgumentLabel, "t", Token_Identifier);
-    g.add_rule(NTerm_ArgumentLabel, NULL);
     g.add_rule(NTerm_ReturnExpr, "n", NTerm_Expr);
     g.add_rule(NTerm_ReturnExpr, NULL);
     g.add_rule(NTerm_IfCondition, "n", NTerm_Expr);
     g.add_rule(NTerm_IfCondition, "kn", Keyword_Let, NTerm_Expr);
-    g.add_rule(NTerm_Else, "kana", Keyword_Else, '{', NTerm_StatementList, '}');
+    g.add_rule(NTerm_Else, "kanan", Keyword_Else, '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Else, NULL);
     g.add_rule(NTerm_AssignType, "tt", Token_DoubleColon, Token_DataType);
     g.add_rule(NTerm_AssignType, NULL);
     g.add_rule(NTerm_AssignExpr, "tn", Token_Equal, NTerm_Expr);
     g.add_rule(NTerm_AssignExpr, NULL);
-    g.add_rule(NTerm_Expr, "tnn", Token_Identifier, NTerm_FunctionCall, NTerm_ExprInner);
-    g.add_rule(NTerm_Expr, "tn", Token_Data, NTerm_ExprInner);
-    g.add_rule(NTerm_Expr, "anan", '(', NTerm_Expr, ')', NTerm_ExprInner);
-    g.add_rule(NTerm_ExprInner, "tttn", Token_Whitespace, Token_Operator, Token_Whitespace, NTerm_Expr);
-    g.add_rule(NTerm_ExprInner, NULL);
-    g.add_rule(NTerm_FunctionCall, "ana", '(', NTerm_FunctionCallParams, ')');
-    g.add_rule(NTerm_FunctionCall, NULL);
-    g.add_rule(NTerm_FunctionCallParams, "ntn", NTerm_ParamName, Token_Identifier, NTerm_FunctionCallParams_n);
-    g.add_rule(NTerm_FunctionCallParams, NULL);
-    g.add_rule(NTerm_FunctionCallParams_n, "tn", Token_Comma, NTerm_FunctionCallParams);
-    g.add_rule(NTerm_FunctionCallParams_n, NULL);
-    g.add_rule(NTerm_ParamName, "tt", Token_Identifier, Token_DoubleColon);
-    g.add_rule(NTerm_ParamName, NULL);
 
     if (args.print_rules) {
         g.print();
