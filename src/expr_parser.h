@@ -8,8 +8,14 @@
 #define _PREC_PARSER_H_
 
 #include <stdbool.h>
+#include "scanner.h"
 
-/// Begin the precedence analysis.
-bool expr_parser_begin();
+/**
+ * @brief Begin the precedence analysis
+ *
+ * @param[in] first_token First token to be processed by the precedence parser
+ * @return `True` if the precedence analysis succeded, `false` otherwise.
+ */
+bool expr_parser_begin(Token first_token);
 
 #endif // _PREC_PARSER_H_

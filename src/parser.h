@@ -8,7 +8,13 @@
 #define _PARSER_H_
 
 #include <stdbool.h>
+#include "symtable.h"
 
+/**
+ * @brief Symbol table used by parsers for semantic analysis.
+ * @note Defined in `main.c`.
+ */
+extern Symtable g_symtable;
 
 /// Initialize the token parser.
 void parser_init();

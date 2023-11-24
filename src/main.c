@@ -37,11 +37,20 @@ int main(int argc, char **argv) {
         return 99;
     }
 
+    symtable_init(&g_symtable);
+    if (got_int_error()) {
+        print_int_error_msg();
+        return 99;
+    }
+
     // Parse the source file.
     parser_begin();
     if (got_error())
         print_error_msg();
 
+
+    symtable_free(&g_symtable);
+    parser_free();
     scanner_free();
     fclose(file);
     return got_error();

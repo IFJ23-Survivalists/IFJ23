@@ -2,16 +2,23 @@
  * @file pred_parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
-#include "rec_parser.h"
-#include "error.h"
-#include "scanner.h"
 #include <stdarg.h>
 #include <string.h>
+
+#include "rec_parser.h"
+#include "expr_parser.h"
+#include "error.h"
+#include "scanner.h"
+#include "parser.h"
 
 // Current token on the input.
 Token g_token;
 
 inline void get_next_token() {
+    g_token = scanner_advance_non_whitespace();
+}
+
+inline void get_next_token_ws() {
     g_token = scanner_advance();
 }
 
@@ -33,9 +40,16 @@ bool rec_parser_begin() {
     return rule_statementList();
 }
 
-bool rule_statementList() {
-    bool res = false;
+bool check_token(TokenType tok) {
+    if (g_token.type == tok) {
+        get_next_token();
+        return true;
+    }
+    set_error(Error_Syntax);
+    return false;
+}
 
+bool rule_statementList() {
     switch (g_token.type) {
         case Token_Keyword:
             switch (g_token.attribute.keyword) {        // FIXME: May be moved to TokenType in the future.
@@ -46,8 +60,8 @@ bool rule_statementList() {
                 case Keyword_Func:
                 case Keyword_Return: {
                     bool stmt_res = rule_statement();
-                    get_next_token();
-                    bool has_eol = true;
+                    get_next_token_ws();
+                    bool has_eol = g_token.type == Token_Whitespace && g_token.attribute.has_eol;
                     get_next_token();
                     return stmt_res && has_eol && rule_statementList();
                 } break;
@@ -70,94 +84,149 @@ bool rule_statementList() {
             break;
     }
 
-    return res;
-}
-
-// typedef bool RuleFunc();
-
-bool expand_list(const char *fmt, va_list args) {
-    (void)fmt;
-    (void)args;
-    return true;
-    // size_t fmt_len = strlen(fmt);
-    // for (size_t i = 0; i < fmt_len; i++) {
-    //     switch (fmt[i]) {
-    //         case 'k': {
-    //             RuleFunc* f = va_arg(args, RuleFunc*);
-    //         } break;
-    //         case 'r':
-    //             break;
-    //         case 't':
-    //             break;
-    //         default: break;
-    //     }
-    // }
-}
-
-bool expand(const char *fmt, ...) {
-    va_list args;
-    va_start(args, fmt);
-    bool res = expand_list(fmt, args);
-    va_end(args);
-    return res;
+    return false;
 }
 
 bool rule_statement() {
-    bool res = false;
     switch (g_token.type) {
         case Token_Keyword:
             switch (g_token.attribute.keyword) {
                 case Keyword_If:
-                    res = expand("krtrtr", Keyword_If, rule_ifCondition, Token_BracketLeft,
-                                 rule_statementList, Token_BracketRight, rule_statementList);
-                    break;
+                    get_next_token();
+                    return rule_ifCondition()
+                        && check_token(Token_BracketLeft)
+                        && rule_statementList()
+                        && check_token(Token_BracketRight)
+                        && rule_statementList();
                 case Keyword_Let:
-                    break;
+                    get_next_token();
+                    return check_token(Token_Identifier)
+                        && rule_assignType()
+                        && check_token(Token_Equal)
+                        && expr_parser_begin(g_token);
                 case Keyword_Var:
-                    break;
+                    get_next_token();
+                    return check_token(Token_Identifier)
+                        && rule_assignType()
+                        && rule_assignExpr();
                 case Keyword_While:
-                    break;
+                    get_next_token();
+                    return check_token(Token_ParenLeft)
+                        && expr_parser_begin(g_token)
+                        && check_token(Token_ParenRight)
+                        && check_token(Token_BracketLeft)
+                        && rule_statementList()
+                        && check_token(Token_BracketRight)
+                        && rule_statementList();
                 case Keyword_Func:
-                    break;
+                    get_next_token();
+                    return check_token(Token_Identifier)
+                        && check_token(Token_ParenLeft)
+                        && rule_params()
+                        && check_token(Token_ParenRight)
+                        && check_token(Token_ArrowRight)
+                        && check_token(Token_DataType)
+                        && check_token(Token_BracketLeft)
+                        && rule_statementList()
+                        && check_token(Token_BracketRight)
+                        && rule_statementList();
                 case Keyword_Return:
-                    break;
+                    get_next_token();
+                    return rule_returnExpr();
                 default:
                     break;
             }
             break;
         case Token_Identifier:
-            break;
+            // Check if this ID is a function or not. Based on that select the correct rule to use.
+            if (symtable_get_function(&g_symtable, g_token.attribute.data.value.string.data) != NULL) {
+                return expr_parser_begin(g_token);
+            }
+            get_next_token();
+            return check_token(Token_Equal) && expr_parser_begin(g_token);
         default:
             break;
     }
-    return res;
+    return false;
 }
 bool rule_params() {
-    bool res = false;
-    return res;
+    if (g_token.type == Token_ParenRight)
+        return true;
+    if (g_token.type == Token_Identifier || g_token.type == Token_EOF) {
+        get_next_token();
+        return check_token(Token_Identifier)
+            && check_token(Token_DoubleColon)
+            && check_token(Token_DataType)
+            && rule_params_n();
+
+    }
+    return false;
 }
 bool rule_params_n() {
-    bool res = false;
-    return res;
+    if (g_token.type == Token_ParenRight || g_token.type == Token_EOF)
+        return true;
+    if (g_token.type == Token_Comma) {
+        get_next_token();
+        return rule_params_n();
+    }
+    return false;
 }
 bool rule_returnExpr() {
-    bool res = false;
-    return res;
+    switch (g_token.type) {
+        case Token_Whitespace:
+            return g_token.attribute.has_eol;
+        case Token_EOF:
+        case Token_BracketRight:
+            return true;
+        default:
+            return expr_parser_begin(g_token);
+    }
 }
 bool rule_ifCondition() {
-    bool res = false;
-    return res;
+    if (g_token.type == Token_Keyword && g_token.attribute.keyword == Keyword_Let) {
+        get_next_token();
+    }
+    return expr_parser_begin(g_token);
 }
 bool rule_else() {
-    bool res = false;
-    return res;
+    if (g_token.type == Token_Keyword && g_token.attribute.keyword == Keyword_Else) {
+        get_next_token();
+        return check_token(Token_BracketLeft)
+            && rule_statementList()
+            && check_token(Token_BracketRight)
+            && rule_statementList();
+    }
+    if (g_token.type == Token_EOF)
+        return true;
+    if (g_token.type == Token_Whitespace)
+        return g_token.attribute.has_eol;
+    return false;
 }
 bool rule_assignType() {
-    bool res = false;
-    return res;
+    switch (g_token.type) {
+        case Token_Whitespace:
+            return g_token.attribute.has_eol;
+        case Token_EOF:
+        case Token_Equal:
+            return true;
+        case Token_DoubleColon:
+            get_next_token();
+            return check_token(Token_DataType);
+        default:
+            return false;
+    }
 }
 bool rule_assignExpr() {
-    bool res = false;
-    return res;
+    switch (g_token.type) {
+        case Token_Whitespace:
+            return g_token.attribute.has_eol;
+        case Token_EOF:
+            return true;
+        case Token_Equal:
+            get_next_token();
+            return expr_parser_begin(g_token);
+        default:
+            return false;
+    }
 }
 
