@@ -8,6 +8,8 @@
 #include "parser.h"
 #include "scanner.h"
 
+Symtable g_symtable;
+
 int main(int argc, char **argv) {
     if (argc != 2) {
         eprint("The argument count must be exactly 1\n");

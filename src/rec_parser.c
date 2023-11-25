@@ -51,24 +51,18 @@ bool check_token(TokenType tok) {
 
 bool rule_statementList() {
     switch (g_token.type) {
-        case Token_Keyword:
-            switch (g_token.attribute.keyword) {        // FIXME: May be moved to TokenType in the future.
-                case Keyword_If:
-                case Keyword_Let:
-                case Keyword_Var:
-                case Keyword_While:
-                case Keyword_Func:
-                case Keyword_Return: {
-                    bool stmt_res = rule_statement();
-                    get_next_token_ws();
-                    bool has_eol = g_token.type == Token_Whitespace && g_token.attribute.has_eol;
-                    get_next_token();
-                    return stmt_res && has_eol && rule_statementList();
-                } break;
-                default:
-                    break;
-            }
-            break;
+        case Token_If:
+        case Token_Let:
+        case Token_Var:
+        case Token_While:
+        case Token_Func:
+        case Token_Return: {
+            bool stmt_res = rule_statement();
+            get_next_token_ws();
+            bool has_eol = g_token.type == Token_Whitespace && g_token.attribute.has_eol;
+            get_next_token();
+            return stmt_res && has_eol && rule_statementList();
+        } break;
         case Token_Identifier: {
             bool stmt_res = rule_statement();
             get_next_token();
@@ -89,54 +83,48 @@ bool rule_statementList() {
 
 bool rule_statement() {
     switch (g_token.type) {
-        case Token_Keyword:
-            switch (g_token.attribute.keyword) {
-                case Keyword_If:
-                    get_next_token();
-                    return rule_ifCondition()
-                        && check_token(Token_BracketLeft)
-                        && rule_statementList()
-                        && check_token(Token_BracketRight)
-                        && rule_statementList();
-                case Keyword_Let:
-                    get_next_token();
-                    return check_token(Token_Identifier)
-                        && rule_assignType()
-                        && check_token(Token_Equal)
-                        && expr_parser_begin(g_token);
-                case Keyword_Var:
-                    get_next_token();
-                    return check_token(Token_Identifier)
-                        && rule_assignType()
-                        && rule_assignExpr();
-                case Keyword_While:
-                    get_next_token();
-                    return check_token(Token_ParenLeft)
-                        && expr_parser_begin(g_token)
-                        && check_token(Token_ParenRight)
-                        && check_token(Token_BracketLeft)
-                        && rule_statementList()
-                        && check_token(Token_BracketRight)
-                        && rule_statementList();
-                case Keyword_Func:
-                    get_next_token();
-                    return check_token(Token_Identifier)
-                        && check_token(Token_ParenLeft)
-                        && rule_params()
-                        && check_token(Token_ParenRight)
-                        && check_token(Token_ArrowRight)
-                        && check_token(Token_DataType)
-                        && check_token(Token_BracketLeft)
-                        && rule_statementList()
-                        && check_token(Token_BracketRight)
-                        && rule_statementList();
-                case Keyword_Return:
-                    get_next_token();
-                    return rule_returnExpr();
-                default:
-                    break;
-            }
-            break;
+        case Token_If:
+            get_next_token();
+            return rule_ifCondition()
+                && check_token(Token_BracketLeft)
+                && rule_statementList()
+                && check_token(Token_BracketRight)
+                && rule_statementList();
+        case Token_Let:
+            get_next_token();
+            return check_token(Token_Identifier)
+                && rule_assignType()
+                && check_token(Token_Equal)
+                && expr_parser_begin(g_token);
+        case Token_Var:
+            get_next_token();
+            return check_token(Token_Identifier)
+                && rule_assignType()
+                && rule_assignExpr();
+        case Token_While:
+            get_next_token();
+            return check_token(Token_ParenLeft)
+                && expr_parser_begin(g_token)
+                && check_token(Token_ParenRight)
+                && check_token(Token_BracketLeft)
+                && rule_statementList()
+                && check_token(Token_BracketRight)
+                && rule_statementList();
+        case Token_Func:
+            get_next_token();
+            return check_token(Token_Identifier)
+                && check_token(Token_ParenLeft)
+                && rule_params()
+                && check_token(Token_ParenRight)
+                && check_token(Token_ArrowRight)
+                && check_token(Token_DataType)
+                && check_token(Token_BracketLeft)
+                && rule_statementList()
+                && check_token(Token_BracketRight)
+                && rule_statementList();
+        case Token_Return:
+            get_next_token();
+            return rule_returnExpr();
         case Token_Identifier:
             // Check if this ID is a function or not. Based on that select the correct rule to use.
             if (symtable_get_function(&g_symtable, g_token.attribute.data.value.string.data) != NULL) {
@@ -183,13 +171,13 @@ bool rule_returnExpr() {
     }
 }
 bool rule_ifCondition() {
-    if (g_token.type == Token_Keyword && g_token.attribute.keyword == Keyword_Let) {
+    if (g_token.type == Token_Let) {
         get_next_token();
     }
     return expr_parser_begin(g_token);
 }
 bool rule_else() {
-    if (g_token.type == Token_Keyword && g_token.attribute.keyword == Keyword_Else) {
+    if (g_token.type == Token_Else) {
         get_next_token();
         return check_token(Token_BracketLeft)
             && rule_statementList()

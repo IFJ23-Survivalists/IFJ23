@@ -5,7 +5,8 @@
 #include "expr_parser.h"
 #include "error.h"
 
-bool expr_parser_begin() {
+bool expr_parser_begin(Token first_token) {
+    (void)first_token;
     MASSERT(false, "TODO");
     return true;
 }
