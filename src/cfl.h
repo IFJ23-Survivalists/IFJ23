@@ -9,9 +9,6 @@
 #include <stdbool.h>
 #include "scanner.h"
 
-/// Total number of Keyword enum elements.
-/// @note Assuming that `Keyword` enum starts from 0 and doesn't skip any numbers.
-const int KW_COUNT = Keyword_Return + 1;
 /// Total number of TokenType enum elements.
 /// @note Assuming that `TokenType` enum starts from 0 and doesn't skip any numbers.
 const int TOK_COUNT = Token_Identifier + 1;
@@ -37,16 +34,12 @@ typedef enum {
 typedef struct {
     // TODO: Add terminal attributes or change to Token.
 
-    bool is_kw;     ///< Is Keyword. To know which union member is used.
-    union {
-        Keyword kw;     ///< Which Keyword this is
-        TokenType tok;  ///< Which TokenType this is
-    };
+    TokenType tok;  ///< Which TokenType this is
 } Terminal;
 
 /// Type to use when the Terminal is translated to number.
 /// @note Translation to number can be used for indexing tables and such.
-typedef int TermValue;
+typedef TokenType TermValue;
 
 /**
  * @brief Create terminal from TermValue
@@ -57,11 +50,7 @@ typedef int TermValue;
 inline Terminal term_from_val(TermValue val) {
     MASSERT(val >= 0, "Invalid value for convertsion to terminal.");
     Terminal t;
-    t.is_kw = val < KW_COUNT;
-    if (val < KW_COUNT)
-        t.kw = (Keyword)val;
-    else
-        t.tok = TokenType(val - KW_COUNT);
+    t.tok = val;
     return t;
 }
 
@@ -72,9 +61,7 @@ inline Terminal term_from_val(TermValue val) {
  * @return TermValue representing this terminal.
  */
 inline TermValue term_to_val(const Terminal* t) {
-    if (t->is_kw)
-        return t->kw;
-    return t->tok + KW_COUNT;
+    return t->tok;
 }
 
 /// Union of Terminals and Non-Terminals
