@@ -33,30 +33,22 @@ Rule create_rule(NTerm lhs, const char* rhsfmt, va_list args) {
     for (size_t i = 0; i < rhs_count; i++) {
         Symbol sym;
         switch (rhsfmt[i]) {
-            case 'k':       // Keyword
-                sym.is_term = true;
-                sym.term.is_kw = true;
-                sym.term.kw = (Keyword)va_arg(args, int);
-                break;
             case 'n':       // Non-terminal
                 sym.is_term = false;
                 sym.nterm = (NTerm)va_arg(args, int);
                 break;
             case 't':       // TokenType
                 sym.is_term = true;
-                sym.term.is_kw = false;
                 sym.term.tok = (TokenType)va_arg(args, int);
                 break;
             case 'a':       // Automatically create a TokenType.
                 sym.is_term = true;
-                sym.term.is_kw = false;
                 switch (va_arg(args, int)) {
                     case ' ': sym.term.tok = Token_Whitespace; break;
                     case '{': sym.term.tok = Token_BracketLeft; break;
                     case '}': sym.term.tok = Token_BracketRight; break;
                     case '(': sym.term.tok = Token_ParenLeft; break;
                     case ')': sym.term.tok = Token_ParenRight; break;
-                    case '@': sym.term.tok = Token_At; break;
                     case ':': sym.term.tok = Token_DoubleColon; break;
                     case '=': sym.term.tok = Token_Equal; break;
                     case ',': sym.term.tok = Token_Comma; break;
@@ -117,14 +109,14 @@ TerminalIterator TerminalIterator::begin(int val) {
 }
 TerminalIterator TerminalIterator::end() {
     TerminalIterator it;
-    it.val = KW_COUNT + TOK_COUNT;
+    it.val = TOK_COUNT;
     return it;
 }
 TerminalIterator TerminalIterator::operator+(int val) {
     TerminalIterator it;
     it.val = this->val + val;
-    if (it.val > KW_COUNT + TOK_COUNT)
-        it.val = KW_COUNT + TOK_COUNT;
+    if (it.val > TOK_COUNT)
+        it.val = TOK_COUNT;
     return it;
 
 }
@@ -137,8 +129,8 @@ TerminalIterator TerminalIterator::operator-(int val) {
 }
 TerminalIterator& TerminalIterator::operator+=(int val) {
     this->val += val;
-    if (this->val > KW_COUNT + TOK_COUNT)
-        this->val = KW_COUNT + TOK_COUNT;
+    if (this->val > TOK_COUNT)
+        this->val = TOK_COUNT;
     return (*this);
 }
 TerminalIterator& TerminalIterator::operator-=(int val) {
@@ -149,8 +141,8 @@ TerminalIterator& TerminalIterator::operator-=(int val) {
 }
 TerminalIterator& TerminalIterator::operator++() {
     this->val++;
-    if (this->val > KW_COUNT + TOK_COUNT)
-        this->val = KW_COUNT + TOK_COUNT;
+    if (this->val > TOK_COUNT)
+        this->val = TOK_COUNT;
     return (*this);
 }
 TerminalIterator& TerminalIterator::operator--() {
@@ -166,8 +158,8 @@ bool TerminalIterator::operator!=(const TerminalIterator& rhs) const {
     return this->val != rhs.val;
 }
 Terminal TerminalIterator::operator*() {
-    return term_from_val(this->val);
+    return term_from_val((TokenType)this->val);
 }
 Terminal TerminalIterator::operator->() {
-    return term_from_val(this->val);
+    return term_from_val((TokenType)this->val);
 }

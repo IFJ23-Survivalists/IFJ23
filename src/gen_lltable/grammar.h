@@ -31,7 +31,19 @@ static const char* NTERM_NAMES[] = {
 
 inline std::string_view to_string(NTerm t) { return std::string_view(NTERM_NAMES[(int)t]); }
 
-static const char* KEYWORD_NAMES[] = {
+static const char* TOKENTYPE_NAMES[] = {
+    "$",
+    "EOL",      // FIXME: Make sure this is not a Whitespace in the future.
+
+    "{",
+    "}",
+    "(",
+    ")",
+    ":",
+    "->",
+    "=",
+    ",",
+
     "if",
     "else",
     "let",
@@ -39,22 +51,7 @@ static const char* KEYWORD_NAMES[] = {
     "while",
     "func",
     "return",
-};
 
-inline std::string_view to_string(Keyword k) { return std::string_view(KEYWORD_NAMES[k]); }
-
-static const char* TOKENTYPE_NAMES[] = {
-    "$",
-    "EOL",      // FIXME: Make sure this is not a Whitespace in the future.
-    "{",
-    "}",
-    "(",
-    ")",
-    "@",
-    ":",
-    "->",
-    "=",
-    ",",
     "Data",
     "DataType",
     "Op",
@@ -64,15 +61,9 @@ static const char* TOKENTYPE_NAMES[] = {
 
 inline std::string_view to_string(TokenType t) { return std::string_view(TOKENTYPE_NAMES[t]); }
 
-inline bool operator==(const Terminal& lhs, const Terminal& rhs) {
-    if (lhs.is_kw != rhs.is_kw)
-        return false;
-    return lhs.is_kw ? lhs.kw == rhs.kw : lhs.tok == rhs.tok;
-}
+inline bool operator==(const Terminal& lhs, const Terminal& rhs) { return lhs.tok == rhs.tok; }
 
-inline bool operator!=(const Terminal& lhs, const Terminal& rhs) {
-    return !(lhs == rhs);
-}
+inline bool operator!=(const Terminal& lhs, const Terminal& rhs) { return lhs.tok != rhs.tok; }
 
 class TerminalIterator {
     int val;
@@ -93,8 +84,8 @@ public:
 
 template<>
 struct std::hash<Terminal> {
-    size_t operator()(const Terminal& t) const {
-        return t.is_kw ? std::hash<Keyword>{}(t.kw) : std::hash<TokenType>{}(t.tok);
+    inline size_t operator()(const Terminal& t) const {
+        return std::hash<TokenType>{}(t.tok);
     }
 };
 
@@ -108,9 +99,7 @@ inline bool operator!=(const Symbol& lhs, const Symbol& rhs) {
     return !(lhs == rhs);
 }
 
-inline std::string_view to_string(Terminal t) {
-    return t.is_kw ? to_string(t.kw) : to_string(t.tok);
-}
+inline std::string_view to_string(Terminal t) { return to_string(t.tok); }
 inline std::string_view to_string(Symbol s) {
     return s.is_term ? to_string(s.term) : to_string(s.nterm);
 }
@@ -131,7 +120,6 @@ struct Grammar {
      * @brief Create a rule from given tokens
      * @param lhs Left-hand side of the rule
      * @param rhsfmt Format of the right-hand side.
-     *      k -> Keyword,
      *      n -> NTerm,
      *      a -> Automatic from char,
      *      t -> TokenType,

@@ -133,7 +133,7 @@ Follow::Follow(Grammar& g, Empty& empty, First& first) {
 
     // Follow(S) := { $ }
     for (auto& [nterm, _] : g.rules) {
-        follow[nterm].insert(Terminal{ .is_kw = false, .tok = Token_EOF });
+        follow[nterm].insert(Terminal{ .tok = Token_EOF });
     }
 
     bool changed;
@@ -231,13 +231,7 @@ std::optional<int> get_rule(Grammar& g, NTerm nterm, Terminal term) {
 std::optional<int> get_rule(Grammar& g, int n_nterm, int n_term) {
     NTerm nterm = (NTerm)n_nterm;
     Terminal t;
-    if (n_term >= KW_COUNT) {
-        t.is_kw = false;
-        t.tok = TokenType(n_term - KW_COUNT);
-    } else {
-        t.is_kw = true;
-        t.kw = Keyword(n_term);
-    }
+    t.tok = (TokenType)n_term;
     return get_rule(g, nterm, t);
 }
 
@@ -250,7 +244,7 @@ void print_lltable(Grammar& g) {
             vheader_width = strlen(NTERM_NAMES[i]);
     vheader_width += 2 + 1;     // 2 spaces and 1 border on the right.
 
-    std::vector<int> cell_widths(1 + KW_COUNT + TOK_COUNT);
+    std::vector<int> cell_widths(1 + TOK_COUNT);    // +1 for columnt with nterm names.
     cell_widths[0] = vheader_width;
 
     for (int i = 0; i < vheader_width - 1; i++)
@@ -258,19 +252,10 @@ void print_lltable(Grammar& g) {
     printf("%s", VLINE);
 
     // Print first header row of terminals.
-    // Print keywords
-    for (int kw = 0; kw < KW_COUNT; kw++) {
-        int kw_len = (int)to_string((Keyword)kw).length();
-        cell_widths[1 + kw] = std::max(kw_len, 2) + 2 + 1;
-        if (kw_len == 1)
-            printf("  " CY "%s" CD " %s", to_string((Keyword)kw).data(), VLINE);
-        else
-            printf(" " CY "%s" CD " %s", to_string((Keyword)kw).data(), VLINE);
-    }
-    // Print tokentypes
+    // Print TokenTypes
     for (int tok = 0; tok < TOK_COUNT; tok++) {
         int tok_len = (int)to_string((TokenType)tok).length();
-        cell_widths[1 + KW_COUNT + tok] = std::max(tok_len, 2) + 2 + 1;
+        cell_widths[1 + tok] = std::max(tok_len, 2) + 2 + 1;
         if (tok_len == 1)
             printf("  " CY "%s" CD " %s", to_string((TokenType)tok).data(), VLINE);
         else
@@ -294,22 +279,9 @@ void print_lltable(Grammar& g) {
         NTerm nterm = (NTerm)i;
         std::cout << " " << CG << std::left << std::setw(vheader_width - 3) << to_string(nterm) << CD;
         std::cout << " " << VLINE;
-        // Print keywords
-        for (int kw = 0; kw < KW_COUNT; kw++) {
-            int width_idx = 1 + kw;
-            auto rule_n = get_rule(g, i, width_idx - 1);
-            if (rule_n.has_value()) {
-                std::cout << " " << CB << std::right << std::setw(cell_widths[width_idx] - 3)
-                    << rule_n.value() << CD;
-                std::cout << " " << VLINE;
-            } else {
-                std::cout << std::right << std::setw(cell_widths[width_idx] - 1) << " ";
-                std::cout << VLINE;
-            }
-        }
         // Print tokentypes
         for (int tok = 0; tok < TOK_COUNT; tok++) {
-            int width_idx = 1 + KW_COUNT + tok;
+            int width_idx = 1 + tok;
             auto rule_n = get_rule(g, i, width_idx - 1);
             if (rule_n.has_value()) {
                 std::cout << " " << CB << std::right << std::setw(cell_widths[width_idx] - 3)
