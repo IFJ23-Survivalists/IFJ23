@@ -36,17 +36,20 @@ bool symstack_init(SymStack* ss);
  * @brief Free all resources of symbol table stack.
  * @param[in,out] ss Symstack to free resources of.
  * @note Calling `symstack_` functions on free'd symstack is undefined.
+ * @pre Will set Error_Internal on error.
  */
 void symstack_free(SymStack* ss);
 /**
  * @brief Pop and free all symbol tables on the stack.
  * @param[in,out] ss Symbol table stack to clear.
+ * @pre Will set Error_Internal on error.
  */
 void symstack_clear(SymStack* ss);
 /**
  * @brief Check if the symbol table stack is empty
  * @param[in] ss Symbol table stack to check.
  * @return `True` if empty, `false` if not.
+ * @pre Will set Error_Internal on error.
  */
 bool symstack_empty(const SymStack* ss);
 /**
@@ -55,6 +58,7 @@ bool symstack_empty(const SymStack* ss);
  * For example when we are in definition of function this will return the first
  * symtable that is on the symtable stack.
  * @param[in] ss Symbol table stack to create symtable in.
+ * @pre Will set Error_Internal on error.
  */
 Symtable* symstack_top(const SymStack* ss);
 /**
@@ -68,6 +72,7 @@ Symtable* symstack_push(SymStack* ss);
  * @brief Destroy and pop symbol table on the top of the stack
  * @param[in,out] ss Symbol table stack to create symtable in.
  * @return `True` on success, `False` on failure.
+ * @pre Will set Error_Internal on error.
  */
 bool symstack_pop(SymStack* ss);
 /**
@@ -78,6 +83,7 @@ bool symstack_pop(SymStack* ss);
  * @param[in] ss Symbol table stack to create symtable in.
  * @param[in] sym_name Symbol to search for.
  * @return `Pointer to symbol table` containing symbol or `NULL` if the symbol doesn't exist.
+ * @pre Will set Error_Internal on error.
  */
 Symtable* symstack_search(const SymStack* ss, const char* sym_name);
 
