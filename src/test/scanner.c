@@ -34,33 +34,25 @@ int main() {
 
     suite("Test Scanner keyword") {
         token = scanner_advance();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_If);
+        test(token.type == Token_If);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Let);
+        test(token.type == Token_Let);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Var);
+        test(token.type == Token_Var);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Else);
+        test(token.type == Token_Else);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_While);
+        test(token.type == Token_While);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Func);
+        test(token.type == Token_Func);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Return);
-
+        test(token.type == Token_Return);
     }
 
     suite("Test Scanner operator") {
@@ -103,6 +95,21 @@ int main() {
         test(token.type == Token_Operator);
         test(token.attribute.op == Operator_MoreOrEqual);
 
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_Negation);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_NotEqual);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_Or);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Operator);
+        test(token.attribute.op == Operator_And);
     }
 
     suite("Test Scanner literal") {
@@ -226,12 +233,10 @@ int main() {
         scanner_reset_to_beginning();
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_If);
+        test(token.type == Token_If);
 
         token = scanner_advance_non_whitespace();
-        test(token.type == Token_Keyword);
-        test(token.attribute.keyword == Keyword_Let);
+        test(token.type == Token_Let);
     }
 
     scanner_free();

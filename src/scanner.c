@@ -14,7 +14,7 @@
 #include "error.h"
 
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
-Keyword KEYWORD_TYPE[] = {Keyword_If, Keyword_Else, Keyword_Let, Keyword_Var, Keyword_While, Keyword_Func, Keyword_Return};
+TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
 char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
@@ -79,7 +79,6 @@ typedef enum {
     State_ParenRight,
     State_DoubleColon,
     State_Comma,
-    State_At,
     State_Plus,
     State_Minus,
     State_ArrowRight,
@@ -91,6 +90,10 @@ typedef enum {
     State_LessOrEqual,
     State_MoreThan,
     State_MoreOrEqual,
+    State_Negation,
+    State_NotEqual,
+    State_And,
+    State_Or,
     State_DoubleQuestionMark,
     State_Whitespace,
     State_Identifier,
@@ -104,6 +107,8 @@ typedef enum {
 
     State_LineComment,
     State_QuestionMark,
+    State_Ampersand,
+    State_Pipe,
     State_NumberDoubleStart,
     State_NumberExponentStart,
     State_NumberExponentSign,
@@ -238,8 +243,7 @@ void get_current_token(Token *token) {
 
             for (int i = 0; KEYWORD[i]; i++) {
                 if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
-                    token->type = Token_Keyword;
-                    token->attribute.keyword = KEYWORD_TYPE[i];
+                    token->type = KEYWORD_TYPE[i];
                     string_clear(&g_scanner.string);
                     found = true;
                     break;
@@ -303,6 +307,22 @@ void get_current_token(Token *token) {
             break;
         case State_MoreOrEqual:
             token->attribute.op = Operator_MoreOrEqual;
+            token->type = Token_Operator;
+            break;
+        case State_Negation:
+            token->attribute.op = Operator_Negation;
+            token->type = Token_Operator;
+            break;
+        case State_NotEqual:
+            token->attribute.op = Operator_NotEqual;
+            token->type = Token_Operator;
+            break;
+        case State_Or:
+            token->attribute.op = Operator_Or;
+            token->type = Token_Operator;
+            break;
+        case State_And:
+            token->attribute.op = Operator_And;
             token->type = Token_Operator;
             break;
         case State_DoubleQuestionMark:
@@ -564,7 +584,6 @@ static State step_start(char ch) {
         case '{': return State_BracketLeft;
         case ')': return State_ParenRight;
         case '(': return State_ParenLeft;
-        case '@': return State_At;
         case '+': return State_Plus;
         case '-': return State_Minus;
         case '*': return State_Multiply;
@@ -572,6 +591,9 @@ static State step_start(char ch) {
         case '=': return State_EqualSign;
         case '<': return State_LessThan;
         case '>': return State_MoreThan;
+        case '|': return State_Pipe;
+        case '&': return State_Ampersand;
+        case '!': return State_Negation;
         case '?': return State_QuestionMark;
         case '"': return State_StringStart;
         case ',': return State_Comma;
@@ -1074,6 +1096,9 @@ static State step(char ch) {
         case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
         case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
         case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
+        case State_Negation: return ch == '=' ? State_NotEqual : State_Start;
+        case State_Pipe: return ch == '|' ? State_Or : State_Start;
+        case State_Ampersand: return ch == '&' ? State_And : State_Start;
         case State_LineComment: return ch == '\n' ? State_Whitespace : State_LineComment;
 
         case State_ParenLeft:
@@ -1082,13 +1107,15 @@ static State step(char ch) {
         case State_BracketRight:
         case State_DoubleColon:
         case State_Comma:
-        case State_At:
         case State_Plus:
         case State_Multiply:
         case State_ArrowRight:
         case State_DoubleEqualSign:
         case State_LessOrEqual:
         case State_MoreOrEqual:
+        case State_NotEqual:
+        case State_And:
+        case State_Or:
         case State_DoubleQuestionMark:
         case State_MaybeNilType:
         case State_StringEnd:
