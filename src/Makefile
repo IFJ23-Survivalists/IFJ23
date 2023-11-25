@@ -27,14 +27,19 @@ $(TEST_EXECUTABLES): %: $(TEST_OBJS) $(TEST_DIR)/%.c
 # Run all tests
 test: $(TEST_EXECUTABLES)
 	@for test_exec in $(TEST_EXECUTABLES); do \
+		echo; \
+		echo Testing $$test_exec; \
 		./$$test_exec; \
 	done
 
 # doc: documentation.typ
 # 	typst c $^
 
-pack:
-	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozhodnuti.txt
+doc:
+	typst c ../doc/documentation.typ ./dokumentace.pdf
+
+pack: doc
+	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozhodnuti.txt dokumentace.pdf
 
 -include $(DEPS)
 

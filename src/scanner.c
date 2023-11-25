@@ -8,14 +8,13 @@
 #include <stdio.h>
 #include <limits.h>
 #include <string.h>
-#include <stdbool.h>
 #include <stdlib.h>
 
 #include "scanner.h"
 #include "error.h"
 
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
-Keyword KEYWORD_TYPE[] = {Keyword_If, Keyword_Else, Keyword_Let, Keyword_Var, Keyword_While, Keyword_Func, Keyword_Return};
+TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
 char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
@@ -80,7 +79,6 @@ typedef enum {
     State_ParenRight,
     State_DoubleColon,
     State_Comma,
-    State_At,
     State_Plus,
     State_Minus,
     State_ArrowRight,
@@ -92,6 +90,10 @@ typedef enum {
     State_LessOrEqual,
     State_MoreThan,
     State_MoreOrEqual,
+    State_Negation,
+    State_NotEqual,
+    State_And,
+    State_Or,
     State_DoubleQuestionMark,
     State_Whitespace,
     State_Identifier,
@@ -105,6 +107,8 @@ typedef enum {
 
     State_LineComment,
     State_QuestionMark,
+    State_Ampersand,
+    State_Pipe,
     State_NumberDoubleStart,
     State_NumberExponentStart,
     State_NumberExponentSign,
@@ -144,6 +148,7 @@ typedef struct {
     int line;
     int position_in_line;
     unsigned comment_block_level;
+    bool has_eol;
 } Scanner;
 
 Scanner g_scanner;
@@ -238,8 +243,7 @@ void get_current_token(Token *token) {
 
             for (int i = 0; KEYWORD[i]; i++) {
                 if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
-                    token->type = Token_Keyword;
-                    token->attribute.keyword = KEYWORD_TYPE[i];
+                    token->type = KEYWORD_TYPE[i];
                     string_clear(&g_scanner.string);
                     found = true;
                     break;
@@ -265,9 +269,6 @@ void get_current_token(Token *token) {
             break;
         }
 
-        case State_At:
-            token->type = Token_At;
-            break;
         case State_Comma:
             token->type = Token_Comma;
             break;
@@ -306,6 +307,22 @@ void get_current_token(Token *token) {
             break;
         case State_MoreOrEqual:
             token->attribute.op = Operator_MoreOrEqual;
+            token->type = Token_Operator;
+            break;
+        case State_Negation:
+            token->attribute.op = Operator_Negation;
+            token->type = Token_Operator;
+            break;
+        case State_NotEqual:
+            token->attribute.op = Operator_NotEqual;
+            token->type = Token_Operator;
+            break;
+        case State_Or:
+            token->attribute.op = Operator_Or;
+            token->type = Token_Operator;
+            break;
+        case State_And:
+            token->attribute.op = Operator_And;
             token->type = Token_Operator;
             break;
         case State_DoubleQuestionMark:
@@ -368,6 +385,7 @@ void get_current_token(Token *token) {
         case State_LineComment:
         case State_BlockCommentEnd:
             token->type = Token_Whitespace;
+            token->attribute.has_eol = g_scanner.has_eol;
             break;
 
         default:
@@ -419,11 +437,16 @@ static void scanner_cleanup() {
     g_scanner.is_exponent_negative = false;
     string_clear(&g_scanner.string);
     g_scanner.comment_block_level = 0;
+    g_scanner.has_eol = false;
 }
 
 Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
+    bool getting_whitespaces = false;
+    Token whitespace_token;
+    whitespace_token.type = Token_Whitespace;
+    whitespace_token.attribute.has_eol = false;
 
     if (!g_scanner.initialized) {
         set_error(Error_Internal);
@@ -455,6 +478,34 @@ Token scanner_advance() {
 
             if (got_error()) {
                 return token;
+            }
+
+            if (token.type == Token_Whitespace) {
+                getting_whitespaces = true;
+
+                whitespace_token.attribute.has_eol = whitespace_token.attribute.has_eol || token.attribute.has_eol;
+
+                whitespace_token.line = whitespace_token.line
+                    ? whitespace_token.line : token.line;
+
+                whitespace_token.position_in_line = whitespace_token.position_in_line
+                    ? whitespace_token.position_in_line : token.line;
+
+                g_scanner.current_state = next_state;
+                continue;
+            }
+
+            if (getting_whitespaces) {
+                tokenlist_push(&g_scanner.token_list, whitespace_token);
+                tokenlist_push(&g_scanner.token_list, token);
+
+                getting_whitespaces = false;
+                whitespace_token.attribute.has_eol = false;
+                whitespace_token.line = 0;
+                whitespace_token.position_in_line = 0;
+
+                g_scanner.current_state = next_state;
+                return g_scanner.token_list.tokens[g_scanner.list_idx++];
             }
 
             got_token = true;
@@ -533,7 +584,6 @@ static State step_start(char ch) {
         case '{': return State_BracketLeft;
         case ')': return State_ParenRight;
         case '(': return State_ParenLeft;
-        case '@': return State_At;
         case '+': return State_Plus;
         case '-': return State_Minus;
         case '*': return State_Multiply;
@@ -541,6 +591,9 @@ static State step_start(char ch) {
         case '=': return State_EqualSign;
         case '<': return State_LessThan;
         case '>': return State_MoreThan;
+        case '|': return State_Pipe;
+        case '&': return State_Ampersand;
+        case '!': return State_Negation;
         case '?': return State_QuestionMark;
         case '"': return State_StringStart;
         case ',': return State_Comma;
@@ -982,7 +1035,26 @@ State step_comment_block(char ch) {
     }
 }
 
+static State step_whitespace(char ch) {
+    switch (ch) {
+        case 0x20:
+        case 0x0A:
+        case 0x0D:
+        case 0x09:
+        case 0x0B:
+        case 0x0C:
+        case 0x00:
+            return State_Whitespace;
+
+        default: return State_Start;
+    }
+}
+
 static State step(char ch) {
+    if (ch == '\n') {
+        g_scanner.has_eol = true;
+    }
+
     if (g_scanner.comment_block_level) {
         return step_comment_block(ch);
     }
@@ -991,6 +1063,7 @@ static State step(char ch) {
         case State_EOF: return State_EOF;
 
         case State_Start: return step_start(ch);
+        case State_Whitespace: return step_whitespace(ch);
         case State_QuestionMark: return step_question_mark(ch);
         case State_Divide: return step_divide(ch);
         case State_Identifier: return step_identifier(ch);
@@ -1020,11 +1093,13 @@ static State step(char ch) {
         case State_BlockStringEscapeHex2: return step_string_escape_hex(ch, 2, false);
 
         case State_Minus: return ch == '>' ? State_ArrowRight : State_Start;
-        case State_Multiply: return ch == '/' ? State_BlockCommentEnd : State_Start;
         case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
         case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
         case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
-        case State_LineComment: return ch == '\n' ? State_Start : State_LineComment;
+        case State_Negation: return ch == '=' ? State_NotEqual : State_Start;
+        case State_Pipe: return ch == '|' ? State_Or : State_Start;
+        case State_Ampersand: return ch == '&' ? State_And : State_Start;
+        case State_LineComment: return ch == '\n' ? State_Whitespace : State_LineComment;
 
         case State_ParenLeft:
         case State_ParenRight:
@@ -1032,14 +1107,16 @@ static State step(char ch) {
         case State_BracketRight:
         case State_DoubleColon:
         case State_Comma:
-        case State_At:
         case State_Plus:
+        case State_Multiply:
         case State_ArrowRight:
         case State_DoubleEqualSign:
         case State_LessOrEqual:
         case State_MoreOrEqual:
+        case State_NotEqual:
+        case State_And:
+        case State_Or:
         case State_DoubleQuestionMark:
-        case State_Whitespace:
         case State_MaybeNilType:
         case State_StringEnd:
             return State_Start;

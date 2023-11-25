@@ -90,6 +90,17 @@ void string_reserve(String *str, size_t capacity);
 void string_push(String *str, char ch);
 
 /**
+ * @brief Concatenate a C-style string to the end of a String.
+ *
+ * This function appends a C-style string (null-terminated) to the end of the existing String.
+ * It modifies the original String in place.
+ *
+ * @param[in,out] str The String to which the C-style string is concatenated.
+ * @param[in] str2 The C-style string to concatenate.
+ */
+void string_concat_c_str(String *str, const char *str2);
+
+/**
  * @brief Create a new String from a C string.
  *
  * This function creates a new String data structure from a C string.
