@@ -11,21 +11,21 @@
 #include "scanner.h"
 #include "parser.h"
 
-// Current token on the input.
+// Current non-whitespace token.
 Token g_token;
+// Whitespace token if the `g_token` has a whitespace before it.
+// Otherwise it is equal to g_token.
+Token g_token_ws;
 
 inline void get_next_token() {
-    g_token = scanner_advance_non_whitespace();
+    g_token_ws = scanner_advance();
+    g_token = g_token_ws.type == Token_Whitespace
+            ? scanner_advance()
+            : g_token_ws;
 }
-
-inline void get_next_token_ws() {
-    g_token = scanner_advance();
-}
-
-// FIXME: This is not needed after it will be changed in scanner.h
-#define Token_EOL Token_Whitespace
 
 bool rule_statementList();
+bool rule_statementSeparator();
 bool rule_statement();
 bool rule_params();
 bool rule_params_n();
@@ -58,10 +58,9 @@ bool rule_statementList() {
         case Token_Func:
         case Token_Return: {
             bool stmt_res = rule_statement();
-            get_next_token_ws();
-            bool has_eol = g_token.type == Token_Whitespace && g_token.attribute.has_eol;
+            bool sep_res = rule_statementSeparator();
             get_next_token();
-            return stmt_res && has_eol && rule_statementList();
+            return stmt_res && sep_res && rule_statementList();
         } break;
         case Token_Identifier: {
             bool stmt_res = rule_statement();
@@ -70,14 +69,32 @@ bool rule_statementList() {
             get_next_token();
             return stmt_res && has_eol && rule_statementList();
         } break;
+        case Token_Whitespace:
+            if (g_token_ws.attribute.has_eol)
+                return true;
+            break;
         case Token_EOF:
-        case Token_EOL:
         case Token_BracketRight:
             return true;
         default:
             break;
     }
 
+    set_error(Error_Syntax);
+    return false;
+}
+
+bool rule_statementSeparator() {
+    if (g_token_ws.type == Token_Whitespace) {
+        if (g_token.attribute.has_eol)
+            return true;
+    }
+    if (g_token.type == Token_BracketRight) {
+        // NOTE: We don't want to consume the '}' here, so that it can be processed
+        //       by the end of `while` and such.
+        return true;
+    }
+    set_error(Error_Syntax);
     return false;
 }
 
@@ -135,6 +152,7 @@ bool rule_statement() {
         default:
             break;
     }
+    set_error(Error_Syntax);
     return false;
 }
 bool rule_params() {
@@ -148,6 +166,7 @@ bool rule_params() {
             && rule_params_n();
 
     }
+    set_error(Error_Syntax);
     return false;
 }
 bool rule_params_n() {
@@ -157,6 +176,7 @@ bool rule_params_n() {
         get_next_token();
         return rule_params_n();
     }
+    set_error(Error_Syntax);
     return false;
 }
 bool rule_returnExpr() {
@@ -188,6 +208,7 @@ bool rule_else() {
         return true;
     if (g_token.type == Token_Whitespace)
         return g_token.attribute.has_eol;
+    set_error(Error_Syntax);
     return false;
 }
 bool rule_assignType() {
@@ -201,6 +222,7 @@ bool rule_assignType() {
             get_next_token();
             return check_token(Token_DataType);
         default:
+            set_error(Error_Syntax);
             return false;
     }
 }
@@ -214,6 +236,7 @@ bool rule_assignExpr() {
             get_next_token();
             return expr_parser_begin(g_token);
         default:
+            set_error(Error_Syntax);
             return false;
     }
 }

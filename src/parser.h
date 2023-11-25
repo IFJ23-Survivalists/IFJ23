@@ -12,7 +12,7 @@
 
 /**
  * @brief Symbol table used by parsers for semantic analysis.
- * @note Defined in `main.c`.
+ * @note Defined in `parser.c`.
  */
 extern Symtable g_symtable;
 

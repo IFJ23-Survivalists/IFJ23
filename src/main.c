@@ -8,7 +8,6 @@
 #include "parser.h"
 #include "scanner.h"
 
-Symtable g_symtable;
 
 int main(int argc, char **argv) {
     if (argc != 2) {
