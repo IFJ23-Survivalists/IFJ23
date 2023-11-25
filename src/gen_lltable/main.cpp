@@ -34,7 +34,9 @@ int main(int argc, char* argv[]) {
     }
 
     Grammar g;
-    g.add_rule(NTerm_StatementList, "ntn", NTerm_Statement, Token_Whitespace, NTerm_StatementList);
+    g.add_rule(NTerm_StatementList, "nnn", NTerm_Statement, NTerm_StatementSeparator, NTerm_StatementList);
+    g.add_rule(NTerm_StatementSeparator, "t", Token_Whitespace);     // Whitespace with `has_eol` attribute.
+    g.add_rule(NTerm_StatementSeparator, "t", Token_BracketRight);
     g.add_rule(NTerm_StatementList, NULL);
     g.add_rule(NTerm_Statement, "tanaanan", Token_While, '(', NTerm_Expr, ')', '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Statement, "ttanattanan", Token_Func, Token_Identifier, '(', NTerm_Params, ')', Token_ArrowRight, Token_DataType, '{', NTerm_StatementList, '}', NTerm_StatementList);

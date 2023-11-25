@@ -18,6 +18,7 @@ extern "C" {
 
 static const char* NTERM_NAMES[] = {
     "<statementList>",
+    "<statementSeparator>",
     "<statement>",
     "<params>",
     "<params_n>",
@@ -55,7 +56,6 @@ static const char* TOKENTYPE_NAMES[] = {
     "Data",
     "DataType",
     "Op",
-    "Keyword",
     "ID",
 };
 

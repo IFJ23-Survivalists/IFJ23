@@ -16,6 +16,7 @@ const int TOK_COUNT = Token_Identifier + 1;
  /// All possible non-terminals
 typedef enum {
     NTerm_StatementList = 0,
+    NTerm_StatementSeparator,
     NTerm_Statement,
     NTerm_Params,
     NTerm_Params_n,
