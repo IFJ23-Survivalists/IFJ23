@@ -45,4 +45,4 @@ pack: doc
 
 .PHONY: clean
 clean:
-	rm $(PROJ) $(OBJS) $(DEPS)
+	rm $(PROJ) $(OBJS) $(DEPS) $(TEST_EXECUTABLES)
