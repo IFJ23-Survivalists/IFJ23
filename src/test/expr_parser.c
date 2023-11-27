@@ -53,7 +53,8 @@ int main() {
   suite("Test valid expression") {
     for (size_t i = 0; i < expr_count; i++) {
       //   printf("\n%s\n", expressions[i]);
-      test(expr_parser_begin(scanner_advance_non_whitespace()) == true);
+    Data expr_data;
+      test(expr_parser_begin(scanner_advance_non_whitespace(), &expr_data) == true);
     }
   }
 

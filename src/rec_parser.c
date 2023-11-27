@@ -107,11 +107,11 @@ bool handle_let_statement() {
 
     // Check if the ID is already in symtable.
     // if (symstack_search(&g_symstack, g_token.attribute.data.value.string.data))
-
+    Data expr_data;
     return check_token(Token_Identifier)
         && rule_assignType()
         && check_token(Token_Equal)
-        && expr_parser_begin(g_token);
+        && expr_parser_begin(g_token, &expr_data);
 }
 
 bool rule_statement() {
@@ -133,8 +133,9 @@ bool rule_statement() {
                 && rule_assignExpr();
         case Token_While:
             get_next_token();
+            Data expr_data;
             return check_token(Token_ParenLeft)
-                && expr_parser_begin(g_token)
+                && expr_parser_begin(g_token, &expr_data)
                 && check_token(Token_ParenRight)
                 && check_token(Token_BracketLeft)
                 && rule_statementList()
@@ -155,13 +156,16 @@ bool rule_statement() {
         case Token_Return:
             get_next_token();
             return rule_returnExpr();
-        case Token_Identifier:
+        case Token_Identifier: {
             // Check if this ID is a function or not. Based on that select the correct rule to use.
             if (*symtable_get_symbol_type(symstack_top(&g_symstack), g_token.attribute.data.value.string.data) == NodeType_Function) {
-                return expr_parser_begin(g_token);
+                Data expr_data;
+                return expr_parser_begin(g_token, &expr_data);
             }
             get_next_token();
-            return check_token(Token_Equal) && expr_parser_begin(g_token);
+            Data expr_data;
+            return check_token(Token_Equal) && expr_parser_begin(g_token, &expr_data);
+        }
         default:
             break;
     }
@@ -201,8 +205,10 @@ bool rule_returnExpr() {
         case Token_EOF:
         case Token_BracketRight:
             return true;
-        default:
-            return expr_parser_begin(g_token);
+        default: {
+            Data expr_data;
+            return expr_parser_begin(g_token, &expr_data);
+        }
     }
 }
 
@@ -210,7 +216,8 @@ bool rule_ifCondition() {
     if (g_token.type == Token_Let) {
         get_next_token();
     }
-    return expr_parser_begin(g_token);
+    Data expr_data;
+    return expr_parser_begin(g_token, &expr_data);
 }
 
 bool rule_else() {
@@ -253,7 +260,8 @@ bool rule_assignExpr() {
             return true;
         case Token_Equal:
             get_next_token();
-            return expr_parser_begin(g_token);
+            Data expr_data;
+            return expr_parser_begin(g_token, &expr_data);
         default:
             set_error(Error_Syntax);
             return false;
