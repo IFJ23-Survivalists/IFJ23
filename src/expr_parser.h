@@ -9,7 +9,6 @@
 #define _PREC_PARSER_H_
 
 #include <stdbool.h>
-#include "pushdown.h"
 #include "scanner.h"
 
 #define RULE_COUNT 13
@@ -84,7 +83,7 @@ struct PushdownItem;
  * @param[out] data Data of the resulting reduced nonterminal after applying operator precedence rules.
  * @return `true` if expression was successfully parsed (reduced to just one nonterminal), otherwise `false`.
  */
-bool expr_parser_begin(Token token, Data* data);
+bool expr_parser_begin(Data* data);
 
 /**
  * @brief Classify `token` to precedence category. ambiguous token as - or ! are decided be `prev_token`

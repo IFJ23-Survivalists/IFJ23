@@ -11,19 +11,6 @@
 #include "scanner.h"
 #include "parser.h"
 
-// Current non-whitespace token.
-Token g_token;
-// Whitespace token if the `g_token` has a whitespace before it.
-// Otherwise it is equal to g_token.
-Token g_token_ws;
-
-inline void get_next_token() {
-    g_token_ws = scanner_advance();
-    g_token = g_token_ws.type == Token_Whitespace
-            ? scanner_advance()
-            : g_token_ws;
-}
-
 bool rule_statementList();
 bool rule_statementSeparator();
 bool rule_statement();
@@ -37,13 +24,13 @@ bool rule_assignExpr();
 
 bool rec_parser_begin(ParserMode mode) {
     (void)mode;
-    get_next_token();
+    parser_next_token();
     return rule_statementList();
 }
 
 bool check_token(TokenType tok) {
-    if (g_token.type == tok) {
-        get_next_token();
+    if (g_parser.token.type == tok) {
+        parser_next_token();
         return true;
     }
     set_error(Error_Syntax);
@@ -51,7 +38,7 @@ bool check_token(TokenType tok) {
 }
 
 bool rule_statementList() {
-    switch (g_token.type) {
+    switch (g_parser.token.type) {
         case Token_If:
         case Token_Let:
         case Token_Var:
@@ -60,18 +47,18 @@ bool rule_statementList() {
         case Token_Return: {
             bool stmt_res = rule_statement();
             bool sep_res = rule_statementSeparator();
-            get_next_token();
+            parser_next_token();
             return stmt_res && sep_res && rule_statementList();
         } break;
         case Token_Identifier: {
             bool stmt_res = rule_statement();
-            get_next_token();
+            parser_next_token();
             bool has_eol = true;
-            get_next_token();
+            parser_next_token();
             return stmt_res && has_eol && rule_statementList();
         } break;
         case Token_Whitespace:
-            if (g_token_ws.attribute.has_eol)
+            if (g_parser.token_ws.attribute.has_eol)
                 return true;
             break;
         case Token_EOF:
@@ -86,11 +73,11 @@ bool rule_statementList() {
 }
 
 bool rule_statementSeparator() {
-    if (g_token_ws.type == Token_Whitespace) {
-        if (g_token.attribute.has_eol)
+    if (g_parser.token_ws.type == Token_Whitespace) {
+        if (g_parser.token.attribute.has_eol)
             return true;
     }
-    if (g_token.type == Token_BracketRight) {
+    if (g_parser.token.type == Token_BracketRight) {
         // NOTE: We don't want to consume the '}' here, so that it can be processed
         //       by the end of `while` and such.
         return true;
@@ -100,49 +87,49 @@ bool rule_statementSeparator() {
 }
 
 bool handle_let_statement() {
-    if (g_token.type != Token_Identifier) {
+    if (g_parser.token.type != Token_Identifier) {
         set_error(Error_Syntax);
         return false;
     }
+    parser_next_token();
 
     // Check if the ID is already in symtable.
-    // if (symstack_search(&g_symstack, g_token.attribute.data.value.string.data))
+    // if (symstack_search(&g_symstack, g_parser.token.attribute.data.value.string.data))
     Data expr_data;
-    return check_token(Token_Identifier)
-        && rule_assignType()
+    return rule_assignType()
         && check_token(Token_Equal)
-        && expr_parser_begin(g_token, &expr_data);
+        && expr_parser_begin(&expr_data);
 }
 
 bool rule_statement() {
-    switch (g_token.type) {
+    switch (g_parser.token.type) {
         case Token_If:
-            get_next_token();
+            parser_next_token();
             return rule_ifCondition()
                 && check_token(Token_BracketLeft)
                 && rule_statementList()
                 && check_token(Token_BracketRight)
                 && rule_statementList();
         case Token_Let:
-            get_next_token();
+            parser_next_token();
             return handle_let_statement();
         case Token_Var:
-            get_next_token();
+            parser_next_token();
             return check_token(Token_Identifier)
                 && rule_assignType()
                 && rule_assignExpr();
         case Token_While:
-            get_next_token();
+            parser_next_token();
             Data expr_data;
             return check_token(Token_ParenLeft)
-                && expr_parser_begin(g_token, &expr_data)
+                && expr_parser_begin(&expr_data)
                 && check_token(Token_ParenRight)
                 && check_token(Token_BracketLeft)
                 && rule_statementList()
                 && check_token(Token_BracketRight)
                 && rule_statementList();
         case Token_Func:
-            get_next_token();
+            parser_next_token();
             return check_token(Token_Identifier)
                 && check_token(Token_ParenLeft)
                 && rule_params()
@@ -154,17 +141,17 @@ bool rule_statement() {
                 && check_token(Token_BracketRight)
                 && rule_statementList();
         case Token_Return:
-            get_next_token();
+            parser_next_token();
             return rule_returnExpr();
         case Token_Identifier: {
             // Check if this ID is a function or not. Based on that select the correct rule to use.
-            if (*symtable_get_symbol_type(symstack_top(&g_symstack), g_token.attribute.data.value.string.data) == NodeType_Function) {
+            if (parser_tok_is_fun_id()) {
                 Data expr_data;
-                return expr_parser_begin(g_token, &expr_data);
+                return expr_parser_begin(&expr_data);
             }
-            get_next_token();
+            parser_next_token();
             Data expr_data;
-            return check_token(Token_Equal) && expr_parser_begin(g_token, &expr_data);
+            return check_token(Token_Equal) && expr_parser_begin(&expr_data);
         }
         default:
             break;
@@ -173,10 +160,10 @@ bool rule_statement() {
     return false;
 }
 bool rule_params() {
-    if (g_token.type == Token_ParenRight)
+    if (g_parser.token.type == Token_ParenRight)
         return true;
-    if (g_token.type == Token_Identifier || g_token.type == Token_EOF) {
-        get_next_token();
+    if (g_parser.token.type == Token_Identifier || g_parser.token.type == Token_EOF) {
+        parser_next_token();
         return check_token(Token_Identifier)
             && check_token(Token_DoubleColon)
             && check_token(Token_DataType)
@@ -188,10 +175,10 @@ bool rule_params() {
 }
 
 bool rule_params_n() {
-    if (g_token.type == Token_ParenRight || g_token.type == Token_EOF)
+    if (g_parser.token.type == Token_ParenRight || g_parser.token.type == Token_EOF)
         return true;
-    if (g_token.type == Token_Comma) {
-        get_next_token();
+    if (g_parser.token.type == Token_Comma) {
+        parser_next_token();
         return rule_params_n();
     }
     set_error(Error_Syntax);
@@ -199,52 +186,52 @@ bool rule_params_n() {
 }
 
 bool rule_returnExpr() {
-    switch (g_token.type) {
+    switch (g_parser.token.type) {
         case Token_Whitespace:
-            return g_token.attribute.has_eol;
+            return g_parser.token.attribute.has_eol;
         case Token_EOF:
         case Token_BracketRight:
             return true;
         default: {
             Data expr_data;
-            return expr_parser_begin(g_token, &expr_data);
+            return expr_parser_begin(&expr_data);
         }
     }
 }
 
 bool rule_ifCondition() {
-    if (g_token.type == Token_Let) {
-        get_next_token();
+    if (g_parser.token.type == Token_Let) {
+        parser_next_token();
     }
     Data expr_data;
-    return expr_parser_begin(g_token, &expr_data);
+    return expr_parser_begin(&expr_data);
 }
 
 bool rule_else() {
-    if (g_token.type == Token_Else) {
-        get_next_token();
+    if (g_parser.token.type == Token_Else) {
+        parser_next_token();
         return check_token(Token_BracketLeft)
             && rule_statementList()
             && check_token(Token_BracketRight)
             && rule_statementList();
     }
-    if (g_token.type == Token_EOF)
+    if (g_parser.token.type == Token_EOF)
         return true;
-    if (g_token.type == Token_Whitespace)
-        return g_token.attribute.has_eol;
+    if (g_parser.token.type == Token_Whitespace)
+        return g_parser.token.attribute.has_eol;
     set_error(Error_Syntax);
     return false;
 }
 
 bool rule_assignType() {
-    switch (g_token.type) {
+    switch (g_parser.token.type) {
         case Token_Whitespace:
-            return g_token.attribute.has_eol;
+            return g_parser.token.attribute.has_eol;
         case Token_EOF:
         case Token_Equal:
             return true;
         case Token_DoubleColon:
-            get_next_token();
+            parser_next_token();
             return check_token(Token_DataType);
         default:
             set_error(Error_Syntax);
@@ -253,15 +240,15 @@ bool rule_assignType() {
 }
 
 bool rule_assignExpr() {
-    switch (g_token.type) {
+    switch (g_parser.token.type) {
         case Token_Whitespace:
-            return g_token.attribute.has_eol;
+            return g_parser.token.attribute.has_eol;
         case Token_EOF:
             return true;
         case Token_Equal:
-            get_next_token();
+            parser_next_token();
             Data expr_data;
-            return expr_parser_begin(g_token, &expr_data);
+            return expr_parser_begin(&expr_data);
         default:
             set_error(Error_Syntax);
             return false;

@@ -36,7 +36,6 @@ int main(int argc, char **argv) {
             print_int_error_msg();
         print_error_msg();
         scanner_free();
-        fclose(file);
         return 99;
     }
 
@@ -47,6 +46,5 @@ int main(int argc, char **argv) {
 
     parser_free();
     scanner_free();
-    fclose(file);
     return got_error();
 }

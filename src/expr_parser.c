@@ -6,8 +6,8 @@
  */
 #include "expr_parser.h"
 #include <string.h>
-#include "error.h"
 #include "pushdown.h"
+#include "parser.h"
 
 const char* RULES[] = {
     "i", "(E)", "-E", "i!", "E+E", "E*E", "E>E", "E,E", "L,E", "i(L)", "i(E)", "i()", "i:E",
@@ -31,11 +31,11 @@ const ComprarisonResult PRECEDENCE_TABLE[11][11] = {
     {Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* : */
     {Right, Right, Right, Right, Right, Right, Right, Right, Err, Err, Err}};   /* $ */
 
-bool expr_parser_begin(Token token, Data* data) {
+bool expr_parser_begin(Data* data) {
     Pushdown* pushdown = malloc(sizeof(Pushdown));
     pushdown_init(pushdown);
 
-    parse(pushdown, token, NULL);
+    parse(pushdown, g_parser.token, NULL);
 
     NTerm* nterm = pushdown_back(pushdown).nterm;
 
@@ -204,14 +204,14 @@ void parse(Pushdown* pushdown, Token token, Token* prev_token) {
             //   printf("\t >> %c\n", token_to_char(token_prec));
             pushdown_insert(pushdown, top_term_id + 1, create_pushdown_item(NULL, NULL));  // Rule end marker
             pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), token_to_char(token_prec)));
-            parse(pushdown, scanner_advance_non_whitespace(), &token);
+            parse(pushdown, *parser_next_token(), &token);
             break;
 
         case Equal:
             //   puts("");
 
             pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), token_to_char(token_prec)));
-            parse(pushdown, scanner_advance_non_whitespace(), &token);
+            parse(pushdown, *parser_next_token(), &token);
             break;
 
         case Err:
