@@ -21,15 +21,15 @@
 struct Nterm;
 
 typedef struct PushdownItem {
-  Token* terminal;     /**< Terminal. */
-  struct NTerm* nterm; /**< Non terminal */
-  char name;
+    Token* terminal;     /**< Terminal. */
+    struct NTerm* nterm; /**< Non terminal */
+    char name;
 } PushdownItem;
 
 typedef struct Pushdown {
-  PushdownItem* data;
-  size_t size;
-  size_t capacity;
+    PushdownItem* data;
+    size_t size;
+    size_t capacity;
 } Pushdown;
 
 /**

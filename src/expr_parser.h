@@ -19,10 +19,10 @@
  * @brief Represents the result of the precedence comparison of the pushdown terminal and the input token.
  */
 typedef enum {
-  Left,  /**< Higher precedence on Pushdown. */
-  Right, /**< Current token has higher precedence. */
-  Equal, /**< Equal precedence. */
-  Err,   /**< No relation between tokens => error state */
+    Left,  /**< Higher precedence on Pushdown. */
+    Right, /**< Current token has higher precedence. */
+    Equal, /**< Equal precedence. */
+    Err,   /**< No relation between tokens => error state */
 } ComprarisonResult;
 
 /**
@@ -30,17 +30,17 @@ typedef enum {
  * @brief Represents the result of comparison of Pushdown terminal and input token.
  */
 typedef enum {
-  PrecendeceCat_PlusMinus, /**< + - */
-  PrecendeceCat_MultiDiv,  /**< * \/*/
-  PrecendeceCat_Logic,     /**< == != <= >= < > */
-  PrecendeceCat_Pre,       /**< - ! */
-  PrecendeceCat_Post,      /**< ! */
-  PrecendeceCat_LeftPar,   /**< ( */
-  PrecendeceCat_RightPar,  /**< ) */
-  PrecendeceCat_Id,        /**< id const */
-  PrecendeceCat_Comma,     /**< , */
-  PrecendeceCat_Colon,     /**< : */
-  PrecendeceCat_Expr_End,  /**< $ */
+    PrecendeceCat_PlusMinus, /**< + - */
+    PrecendeceCat_MultiDiv,  /**< * \/*/
+    PrecendeceCat_Logic,     /**< == != <= >= < > */
+    PrecendeceCat_Pre,       /**< - ! */
+    PrecendeceCat_Post,      /**< ! */
+    PrecendeceCat_LeftPar,   /**< ( */
+    PrecendeceCat_RightPar,  /**< ) */
+    PrecendeceCat_Id,        /**< id const */
+    PrecendeceCat_Comma,     /**< , */
+    PrecendeceCat_Colon,     /**< : */
+    PrecendeceCat_Expr_End,  /**< $ */
 } PrecedenceCat;
 
 /**
@@ -48,20 +48,20 @@ typedef enum {
  * @brief Rules for expression parsing
  */
 typedef enum {
-  Rule_Identif,         /**< E -> i */
-  Rule_Paren,           /**< E -> (E) */
-  Rule_Prefix,          /**< E -> -E | !E */
-  Rule_Postfix,         /**< E -> id! */
-  Rule_SumSub,          /**< E -> E + E | E - E */
-  Rule_MulDiv,          /**< E -> E * E | E / E */
-  Rule_Logic,           /**< E -> E == E | E < E E && E ... */
-  Rule_ArgsEE,          /**< L -> E, E */
-  Rule_ArgsLE,          /**< L -> L, E */
-  Rule_FnArgsProcessed, /**< E -> i(L) */
-  Rule_FnArgs,          /**< E -> i(E) */
-  Rule_FnEmpty,         /**< E -> i() */
-  Rule_NamedArg,        /**< E -> i:E */
-  NoRule,
+    Rule_Identif,         /**< E -> i */
+    Rule_Paren,           /**< E -> (E) */
+    Rule_Prefix,          /**< E -> -E | !E */
+    Rule_Postfix,         /**< E -> id! */
+    Rule_SumSub,          /**< E -> E + E | E - E */
+    Rule_MulDiv,          /**< E -> E * E | E / E */
+    Rule_Logic,           /**< E -> E == E | E < E E && E ... */
+    Rule_ArgsEE,          /**< L -> E, E */
+    Rule_ArgsLE,          /**< L -> L, E */
+    Rule_FnArgsProcessed, /**< E -> i(L) */
+    Rule_FnArgs,          /**< E -> i(E) */
+    Rule_FnEmpty,         /**< E -> i() */
+    Rule_NamedArg,        /**< E -> i:E */
+    NoRule,
 } Rule;
 
 /**
@@ -69,9 +69,9 @@ typedef enum {
  * @brief Rules for expression parsing
  */
 typedef struct NTerm {
-  DataValue value; /**< resulted value after applying a reduction rule */
-  DataType type;   /**< resulted type after applying a reduction rule */
-  char name;       /**< E or L */
+    DataValue value; /**< resulted value after applying a reduction rule */
+    DataType type;   /**< resulted type after applying a reduction rule */
+    char name;       /**< E or L */
 } NTerm;
 
 // Forward declaration
