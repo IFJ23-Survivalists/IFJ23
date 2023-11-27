@@ -35,7 +35,8 @@ bool rule_else();
 bool rule_assignType();
 bool rule_assignExpr();
 
-bool rec_parser_begin() {
+bool rec_parser_begin(ParserMode mode) {
+    (void)mode;
     get_next_token();
     return rule_statementList();
 }
@@ -181,6 +182,7 @@ bool rule_params() {
     set_error(Error_Syntax);
     return false;
 }
+
 bool rule_params_n() {
     if (g_token.type == Token_ParenRight || g_token.type == Token_EOF)
         return true;
@@ -191,6 +193,7 @@ bool rule_params_n() {
     set_error(Error_Syntax);
     return false;
 }
+
 bool rule_returnExpr() {
     switch (g_token.type) {
         case Token_Whitespace:
@@ -202,12 +205,14 @@ bool rule_returnExpr() {
             return expr_parser_begin(g_token);
     }
 }
+
 bool rule_ifCondition() {
     if (g_token.type == Token_Let) {
         get_next_token();
     }
     return expr_parser_begin(g_token);
 }
+
 bool rule_else() {
     if (g_token.type == Token_Else) {
         get_next_token();
@@ -223,6 +228,7 @@ bool rule_else() {
     set_error(Error_Syntax);
     return false;
 }
+
 bool rule_assignType() {
     switch (g_token.type) {
         case Token_Whitespace:
@@ -238,6 +244,7 @@ bool rule_assignType() {
             return false;
     }
 }
+
 bool rule_assignExpr() {
     switch (g_token.type) {
         case Token_Whitespace:

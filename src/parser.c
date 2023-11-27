@@ -16,7 +16,11 @@ void parser_init() {
 }
 
 bool parser_begin() {
-    return rec_parser_begin();
+    if (rec_parser_begin(ParserMode_Collect)) {
+        scanner_reset_to_beginning();
+        return rec_parser_begin(ParserMode_Parse);
+    }
+    return false;
 }
 
 void parser_free() {
