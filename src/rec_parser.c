@@ -89,7 +89,7 @@ bool rule_statementSeparator() {
 
 bool handle_let_statement() {
     if (g_parser.token.type != Token_Identifier) {
-        set_error(Error_Syntax);
+        syntax_err("Unexpected token after the `let` keyword. Expected identifier.");
         return false;
     }
     parser_next_token();
