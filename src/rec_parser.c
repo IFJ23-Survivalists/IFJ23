@@ -1,5 +1,5 @@
 /**
- * @file pred_parser.c
+ * @file rec_parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
 #include <stdarg.h>
@@ -98,6 +98,21 @@ bool rule_statementSeparator() {
     return false;
 }
 
+bool handle_let_statement() {
+    if (g_token.type != Token_Identifier) {
+        set_error(Error_Syntax);
+        return false;
+    }
+
+    // Check if the ID is already in symtable.
+    // if (symstack_search(&g_symstack, g_token.attribute.data.value.string.data))
+
+    return check_token(Token_Identifier)
+        && rule_assignType()
+        && check_token(Token_Equal)
+        && expr_parser_begin(g_token);
+}
+
 bool rule_statement() {
     switch (g_token.type) {
         case Token_If:
@@ -109,10 +124,7 @@ bool rule_statement() {
                 && rule_statementList();
         case Token_Let:
             get_next_token();
-            return check_token(Token_Identifier)
-                && rule_assignType()
-                && check_token(Token_Equal)
-                && expr_parser_begin(g_token);
+            return handle_let_statement();
         case Token_Var:
             get_next_token();
             return check_token(Token_Identifier)
@@ -144,7 +156,7 @@ bool rule_statement() {
             return rule_returnExpr();
         case Token_Identifier:
             // Check if this ID is a function or not. Based on that select the correct rule to use.
-            if (symtable_get_function(&g_symtable, g_token.attribute.data.value.string.data) != NULL) {
+            if (*symtable_get_symbol_type(symstack_top(&g_symstack), g_token.attribute.data.value.string.data) == NodeType_Function) {
                 return expr_parser_begin(g_token);
             }
             get_next_token();

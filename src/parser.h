@@ -3,18 +3,20 @@
  * @brief Definitions for parser
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 23/11/2023
+ *
  */
 #ifndef _PARSER_H_
 #define _PARSER_H_
 
 #include <stdbool.h>
 #include "symtable.h"
+#include "symstack.h"
 
 /**
- * @brief Symbol table used by parsers for semantic analysis.
- * @note Defined in `parser.c`.
+ * @brief Global symbol table stack to be used when parsing.
+ * @note Defined in `parser.c`, initialized in `parser_init()` and free'd in `parser_free()`.
  */
-extern Symtable g_symtable;
+extern SymStack g_symstack;
 
 /// Initialize the token parser.
 void parser_init();

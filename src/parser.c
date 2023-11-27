@@ -5,13 +5,20 @@
 #include "parser.h"
 #include "rec_parser.h"
 
+SymStack g_symstack;
 
-Symtable g_symtable;
-
-void parser_init() {}
+void parser_init() {
+    symstack_init(&g_symstack);
+    if (got_error())
+        return;
+    // Create the symbol table used for global variables.
+    symstack_push(&g_symstack);
+}
 
 bool parser_begin() {
     return rec_parser_begin();
 }
 
-void parser_free() {}
+void parser_free() {
+    symstack_free(&g_symstack);
+}
