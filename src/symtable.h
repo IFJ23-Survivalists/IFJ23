@@ -1,5 +1,6 @@
 /**
- * @file symtable.h @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @file symtable.h
+ * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 03/10/2023
  * @brief Header file for a symbol table module used for managing variables and functions.
  *
