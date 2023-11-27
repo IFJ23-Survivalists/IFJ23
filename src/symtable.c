@@ -31,7 +31,7 @@ void function_parameter_push(FunctionParameter *par, DataType type) {
         return;
     }
 
-    DataType *reallocated = realloc(par->argv, sizeof(DataType) + (par->argc + 1));
+    DataType *reallocated = realloc(par->argv, sizeof(DataType) * (par->argc + 1));
 
     if (!reallocated) {
         set_error(Error_Internal);
@@ -43,29 +43,45 @@ void function_parameter_push(FunctionParameter *par, DataType type) {
     par->argv = reallocated;
 }
 
+void function_symbol_init(FunctionSymbol *sym) {
+    sym->parameters.argv = NULL;
+    sym->parameters.argc = 0;
+    sym->return_value_type = (DataType)0;
+}
+
+void variable_symbol_init(VariableSymbol *var) {
+    var->type = (DataType)0;
+    var->is_defined = false;
+    var->allow_modification = false;
+}
+
 void symtable_init(Symtable *symtable) {
     if (symtable) {
         symtable->root = NULL;
     }
 }
 
-void node_free_childs(Node *node) {
-    if (node->left) {
-        free(node->left);
-        node->left = NULL;
-    }
+void node_free(Node **node) {
+    Node *aux = *node;
+    if (!aux)
+        return;
 
-    if (node->right) {
-        free(node->right);
-        node->right = NULL;
-    }
+    node_free(&aux->left);
+    node_free(&aux->right);
+
+    if (aux->type == NodeType_Function)
+        function_parameter_free(&aux->value.function.parameters);
+
+    string_free(&aux->key);
+
+    free(aux);
+    *node = NULL;
 }
 
 void symtable_free(Symtable *symtable) {
-    if (!symtable || !symtable->root) return;
-    node_free_childs(symtable->root);
-    free(symtable->root);
-    symtable->root = NULL;
+    if (!symtable || !symtable->root)
+        return;
+    node_free(&symtable->root);
 }
 
 static Node *create_node(const char *key, NodeType type, NodeValue value) {
