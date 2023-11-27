@@ -13,7 +13,9 @@ int main() {
     atexit(summary);
 
     FunctionSymbol fs;
+    function_symbol_init(&fs);
     VariableSymbol vs;
+    variable_symbol_init(&vs);
 
     SymStack ss;
 

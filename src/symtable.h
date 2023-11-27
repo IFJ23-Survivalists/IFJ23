@@ -1,5 +1,6 @@
 /**
- * @file symtable.h @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @file symtable.h
+ * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 03/10/2023
  * @brief Header file for a symbol table module used for managing variables and functions.
  *
@@ -110,6 +111,20 @@ void function_parameter_free(FunctionParameter *par);
  * @param[in] type The data type of the parameter.
  */
 void function_parameter_push(FunctionParameter *par, DataType type);
+
+/**
+ * @brief Initialize the function symbol.
+ * @param[in,out] sym Function symbol to initialize.
+ * @warning Using FunctionSymbol without initializing could cause some memory to not be free'd during `symtable_free()`, because there could be uninitialized values.
+ */
+void function_symbol_init(FunctionSymbol *sym);
+
+/**
+ * @brief Initialize the variable symbol.
+ * @param[in,out] var Variable symbol to initialize.
+ * @note This will set all attributes to false and datatype to 0.
+ */
+void variable_symbol_init(VariableSymbol *var);
 
 /**
  * @brief Initialize a symbol table.
