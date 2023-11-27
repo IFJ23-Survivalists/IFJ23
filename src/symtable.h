@@ -112,6 +112,20 @@ void function_parameter_free(FunctionParameter *par);
 void function_parameter_push(FunctionParameter *par, DataType type);
 
 /**
+ * @brief Initialize the function symbol.
+ * @param[in,out] sym Function symbol to initialize.
+ * @note Using FunctionSymbol without initializing could cause some memory to not be free'd during `symtable_free()`, because there could be uninitialized values.
+ */
+void function_symbol_init(FunctionSymbol *sym);
+
+/**
+ * @brief Initialize the variable symbol.
+ * @param[in,out] var Variable symbol to initialize.
+ * @note This will set all attributes to false and datatype to 0.
+ */
+void variable_symbol_init(VariableSymbol *var);
+
+/**
  * @brief Initialize a symbol table.
  *
  * This function initializes a symbol table, setting it up for use.

@@ -44,11 +44,13 @@ int main() {
 
     suite("Test symtable_insert_function") {
         FunctionSymbol foo;
+        function_symbol_init(&foo);
         foo.return_value_type = DataType_Nil;
 
         test(symtable_insert_function(&symtable, "foo", foo));
 
         FunctionSymbol foo2;
+        function_symbol_init(&foo2);
         foo2.return_value_type = DataType_Double;
         function_parameter_init(&foo2.parameters);
         function_parameter_push(&foo2.parameters, DataType_Double);

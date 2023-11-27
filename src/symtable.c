@@ -43,6 +43,18 @@ void function_parameter_push(FunctionParameter *par, DataType type) {
     par->argv = reallocated;
 }
 
+void function_symbol_init(FunctionSymbol *sym) {
+    sym->parameters.argv = NULL;
+    sym->parameters.argc = 0;
+    sym->return_value_type = (DataType)0;
+}
+
+void variable_symbol_init(VariableSymbol *var) {
+    var->type = (DataType)0;
+    var->is_defined = false;
+    var->allow_modification = false;
+}
+
 void symtable_init(Symtable *symtable) {
     if (symtable) {
         symtable->root = NULL;
