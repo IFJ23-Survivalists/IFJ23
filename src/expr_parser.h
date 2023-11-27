@@ -1,6 +1,6 @@
 /**
  * @brief Declarations for precedence analysis
- * @file prec_praser.h
+ * @file expr_parser.h
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @author Matúš Moravčík, xmorav48, FIT VUT
  * @date 23/11/2023

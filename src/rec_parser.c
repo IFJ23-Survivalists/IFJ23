@@ -1,5 +1,6 @@
 /**
  * @file rec_parser.c
+ * @brief Recursive parser logic.
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
 #include <stdarg.h>

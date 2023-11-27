@@ -1,5 +1,5 @@
 /**
- * @brief Logic for predictive parser
+ * @brief Recursive parser declarations.
  * @file rec_parser.h
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 23/12/2023

@@ -1,4 +1,5 @@
 /**
+ * @brief Implementation for the parser.h
  * @file parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  */

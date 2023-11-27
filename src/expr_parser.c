@@ -1,5 +1,6 @@
 /**
  * @file expr_parser.c
+ * @brief Implementation for the expr_parser.h
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @author Matúš Moravčík, xmorav48, FIT VUT
  * @date 27/11/2023
