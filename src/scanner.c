@@ -16,9 +16,9 @@
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
 TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
-char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "nil", NULL};
-DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Nil};
-DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_Nil};
+char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", "nil", NULL};
+DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool, DataType_Nil};
+DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool, DataType_Nil};
 
 typedef struct {
     Token *tokens;
@@ -263,6 +263,20 @@ void get_current_token(Token *token) {
             }
 
             if (found) break;
+
+            if (strcmp(g_scanner.string.data, "true") == 0) {
+                token->type = Token_Data;
+                token->attribute.data.type = DataType_Bool;
+                token->attribute.data.value.is_true = true;
+                break;
+            }
+
+            if (strcmp(g_scanner.string.data, "false") == 0) {
+                token->type = Token_Data;
+                token->attribute.data.type = DataType_Bool;
+                token->attribute.data.value.is_true = false;
+                break;
+            }
 
             token->type = Token_Identifier;
             token->attribute.data.value.string = string_take(&g_scanner.string);
@@ -644,14 +658,20 @@ static State step_identifier(char ch) {
         return State_Identifier;
     }
 
-    bool maybe_nil = ch == '?' && (
-           strcmp(g_scanner.string.data, "Int") == 0
-        || strcmp(g_scanner.string.data, "Double") == 0
-        || strcmp(g_scanner.string.data, "String") == 0
-    );
 
-    if (maybe_nil) {
-        return State_MaybeNilType;
+    if (ch == '?') {
+        bool maybe_nil_type = false;
+
+        for (int i = 0; DATA_TYPE_IDENTIFIER[i]; i++) {
+            if (strcmp(g_scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
+                maybe_nil_type = true;
+                break;
+            }
+        }
+
+        if (maybe_nil_type) {
+            return State_MaybeNilType;
+        }
     }
 
     return State_Start;

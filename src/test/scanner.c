@@ -138,6 +138,15 @@ int main() {
         test(token.attribute.data.type == DataType_Double);
         test(token.attribute.data.value.number_double == 3.14e2);
 
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Data);
+        test(token.attribute.data.type == DataType_Bool);
+        test(token.attribute.data.value.is_true);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Data);
+        test(token.attribute.data.type == DataType_Bool);
+        test(!token.attribute.data.value.is_true);
     }
 
     suite("Test Scanner data type") {
@@ -159,6 +168,10 @@ int main() {
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_DataType);
+        test(token.attribute.data_type == DataType_Bool);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DataType);
         test(token.attribute.data_type == DataType_MaybeInt);
 
         token = scanner_advance_non_whitespace();
@@ -169,6 +182,9 @@ int main() {
         test(token.type == Token_DataType);
         test(token.attribute.data_type == DataType_MaybeString);
 
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DataType);
+        test(token.attribute.data_type == DataType_MaybeBool);
     }
 
     suite("Test Scanner other token") {
