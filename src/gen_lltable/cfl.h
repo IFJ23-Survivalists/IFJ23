@@ -7,7 +7,7 @@
 #define _CFL_H_
 
 #include <stdbool.h>
-#include "scanner.h"
+#include "../scanner.h"
 
 /// Total number of TokenType enum elements.
 /// @note Assuming that `TokenType` enum starts from 0 and doesn't skip any numbers.
@@ -18,11 +18,13 @@ typedef enum {
     NTerm_StatementList = 0,
     NTerm_StatementSeparator,
     NTerm_Statement,
+    NTerm_IfStatement,
     NTerm_Params,
     NTerm_Params_n,
     NTerm_ReturnExpr,
     NTerm_IfCondition,
     NTerm_Else,
+    NTerm_ElseIf,
     NTerm_AssignType,
     NTerm_AssignExpr,
     NTerm_Expr,

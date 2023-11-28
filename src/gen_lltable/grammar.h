@@ -12,7 +12,7 @@
 #include <cstdarg>
 extern "C" {
 #include "../scanner.h"    // Token
-#include "../cfl.h"
+#include "cfl.h"
 }
 
 
@@ -20,11 +20,13 @@ static const char* NTERM_NAMES[] = {
     "<statementList>",
     "<statementSeparator>",
     "<statement>",
+    "<ifStatement>",
     "<params>",
     "<params_n>",
     "<returnExpr>",
     "<ifCondition>",
     "<else>",
+    "<elseIf>",
     "<assignType>",
     "<assignExpr>",
     "<expr>",
