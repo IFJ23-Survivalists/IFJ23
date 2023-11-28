@@ -20,16 +20,19 @@ typedef enum {
     DataType_Int,
     DataType_Double,
     DataType_String,
+    DataType_Bool,
     DataType_Nil,
     DataType_MaybeInt,
     DataType_MaybeDouble,
     DataType_MaybeString,
+    DataType_MaybeBool,
 } DataType;
 
 typedef union {
     String string;
     int number;
     double number_double;
+    bool is_true;
 } DataValue;
 
 typedef struct {
