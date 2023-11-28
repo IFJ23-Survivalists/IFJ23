@@ -90,8 +90,8 @@ static const char* token_to_string(const Token* tok) {
                 case DataType_String:
                 case DataType_MaybeString:
                     return "String literal";
-
             }
+            return "Unknown";
         case Token_DataType:
             return datatype_to_string(tok->attribute.data_type);
         case Token_Operator:
