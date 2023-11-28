@@ -62,8 +62,7 @@ static const char* TOKENTYPE_NAMES[] = {
     "EOF", "Whitespace",
     "{", "}", "(", ")", ":", "->", "=", ",",
     "If", "Else", "Let", "Var", "While", "Func", "Return", "Data", "DataType",
-    "Operator", "Identifier",
-    "EOL"   // Special case for whitespace with has_eol parameter.
+    "Operator", "Identifier"
 };
 
 /**
@@ -72,5 +71,36 @@ static const char* TOKENTYPE_NAMES[] = {
  * @return Const reference to string literal.
  */
 inline static const char* tokentype_to_string(TokenType tt) { return TOKENTYPE_NAMES[tt]; }
+
+static const char* token_to_string(const Token* tok) {
+    switch (tok->type) {
+        case Token_Whitespace:
+            if (tok->attribute.has_eol)
+                return "EOL";
+            return TOKENTYPE_NAMES[tok->type];
+        case Token_Data:
+            switch (tok->attribute.data.type) {
+                case DataType_Int:
+                case DataType_Double:
+                case DataType_MaybeInt:
+                case DataType_MaybeDouble:
+                    return "Numeric constant";
+                case DataType_Nil:
+                    return "Nil";
+                case DataType_String:
+                case DataType_MaybeString:
+                    return "String literal";
+
+            }
+        case Token_DataType:
+            return datatype_to_string(tok->attribute.data_type);
+        case Token_Operator:
+            return operator_to_string(tok->attribute.op);
+        case Token_Identifier:
+            return tok->attribute.data.value.string.data;
+        default:
+            return tokentype_to_string(tok->type);
+    }
+}
 
 #endif // _TO_STRING_H_
