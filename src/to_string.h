@@ -41,7 +41,7 @@ static const char* DATATYPE_NAMES[] = {
  * @param[in] dt DataType to convert
  * @return Const reference to string literal.
  */
-inline const char* datatype_to_string(DataType dt) { return DATATYPE_NAMES[dt]; }
+inline static const char* datatype_to_string(DataType dt) { return DATATYPE_NAMES[dt]; }
 
 /// String names for ::Operator enum.
 static const char* OPERATOR_NAMES[] = {
@@ -55,7 +55,7 @@ static const char* OPERATOR_NAMES[] = {
  * @param[in] dt Operator to convert
  * @return Const reference to string literal.
  */
-inline const char* operator_to_string(Operator op) { return OPERATOR_NAMES[op]; }
+inline static const char* operator_to_string(Operator op) { return OPERATOR_NAMES[op]; }
 
 /// String names for ::TokenType enum.
 static const char* TOKENTYPE_NAMES[] = {
@@ -71,6 +71,6 @@ static const char* TOKENTYPE_NAMES[] = {
  * @param[in] dt TokenType to convert
  * @return Const reference to string literal.
  */
-inline const char* tokentype_to_string(TokenType tt) { return TOKENTYPE_NAMES[tt]; }
+inline static const char* tokentype_to_string(TokenType tt) { return TOKENTYPE_NAMES[tt]; }
 
 #endif // _TO_STRING_H_
