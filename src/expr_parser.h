@@ -103,10 +103,10 @@ ComprarisonResult getPrecedence(PrecedenceCat pushdownItem, PrecedenceCat inputT
 
 /**
  * @brief Convert precendence category into its character representation.
- * @param[in] cat Precendence category.
+ * @param[in] cat Precedence category.
  * @return Character representation of a given precedence category.
  */
-char token_to_char(PrecedenceCat cat);
+char precedence_to_char(PrecedenceCat cat);
 
 /**
  * @brief Recursively parse expression until there is `Err` between topmost pushdown terminal and input terminal.

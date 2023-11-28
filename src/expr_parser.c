@@ -7,8 +7,9 @@
  */
 #include "expr_parser.h"
 #include <string.h>
-#include "pushdown.h"
 #include "parser.h"
+#include "pushdown.h"
+#include "to_string.h"
 
 const char* RULES[] = {
     "i", "(E)", "-E", "i!", "E+E", "E*E", "E>E", "E,E", "L,E", "i(L)", "i(E)", "i()", "i:E",
@@ -38,17 +39,20 @@ bool expr_parser_begin(Data* data) {
 
     parse(pushdown, g_parser.token, NULL);
 
-    NTerm* nterm = pushdown_back(pushdown).nterm;
+    PushdownItem item = pushdown_back(pushdown);
+    NTerm* nterm = item.nterm;
 
     // check if pushdown is reduced to one nonterminal
-    if (pushdown->size == 1 && pushdown_back(pushdown).nterm != NULL) {
-        pushdown_destroy(pushdown);
+    if (pushdown->size == 1 && nterm != NULL && nterm->name == 'E') {
         data->type = nterm->type;
         data->value = nterm->value;
+        pushdown_destroy(pushdown);
         return true;
     }
 
     // syntax error occurred during parsing
+    syntax_errf("Unexpected token: '%s'", token_to_string(&g_parser.token));
+
     pushdown_destroy(pushdown);
     return false;
 }
@@ -63,6 +67,13 @@ void print_pushdown(Pushdown* pushdown) {
         printf("%c", pushdown->data[i].name);
     }
     printf("'");
+}
+
+int get_topmost_terminal_id(Pushdown* pushdown) {
+    for (int i = pushdown->size - 1; i >= 0; i--)
+        if (pushdown_at(pushdown, i).terminal)
+            return i;
+    return -1;
 }
 
 PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
@@ -93,6 +104,9 @@ PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
                     return PrecendeceCat_MultiDiv;
 
                 case Operator_Negation:
+                    if (prev_token == NULL)
+                        return PrecendeceCat_Pre;
+
                     switch (prev_token->type) {
                         // postfix exclamation mark
                         case Token_Identifier:
@@ -129,7 +143,7 @@ PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
     return 0;
 }
 
-char token_to_char(PrecedenceCat cat) {
+char precedence_to_char(PrecedenceCat cat) {
     switch (cat) {
         case PrecendeceCat_PlusMinus:
             return '+';
@@ -185,7 +199,7 @@ PrecedenceCat char_to_precedence(char ch) {
 }
 
 void parse(Pushdown* pushdown, Token token, Token* prev_token) {
-    //   print_pushdown(pushdown);
+    // print_pushdown(pushdown);
     int top_term_id = get_topmost_terminal_id(pushdown);
     PrecedenceCat token_prec = getTokenPrecedenceCategory(token, prev_token);
 
@@ -202,16 +216,15 @@ void parse(Pushdown* pushdown, Token token, Token* prev_token) {
             break;
 
         case Right:
-            //   printf("\t >> %c\n", token_to_char(token_prec));
+            // printf("\t >> %c\n", precedence_to_char(token_prec));
             pushdown_insert(pushdown, top_term_id + 1, create_pushdown_item(NULL, NULL));  // Rule end marker
-            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), token_to_char(token_prec)));
+            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), precedence_to_char(token_prec)));
             parse(pushdown, *parser_next_token(), &token);
             break;
 
         case Equal:
-            //   puts("");
-
-            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), token_to_char(token_prec)));
+            // puts("");
+            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), precedence_to_char(token_prec)));
             parse(pushdown, *parser_next_token(), &token);
             break;
 
@@ -260,14 +273,14 @@ bool reduce(Pushdown* pushdown) {
 }
 
 Rule get_rule(char* rule) {
-    //   printf("\t R: %s", rule);
+    // printf("\t R: %s", rule);
     for (size_t i = 0; i < RULE_COUNT; i++) {
         if (strcmp(rule, RULES[i]) == 0) {
-            //   printf(" -> ID: %lu \n", i);
+            // printf(" -> ID: %lu \n", i);
             return RULE_NAMES[i];
         }
     }
-    //   printf("NO RULE\n");
+    // printf("NO RULE\n");
     return NoRule;
 }
 
@@ -276,14 +289,91 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
     (void)operands;
 
     switch (rule) {
-        case Rule_Identif:
-            break;
+        case Rule_Identif: {
+            // Token* id = operands[0].terminal;
+            // // identifier
+            // if (id->type == Token_Identifier) {
+            //     char* id_name = id->attribute.data.value.string.data;
+            //     Symtable* st = symstack_search(&g_symstack, id_name);
+
+            //     // identifier is not defined
+            //     if (st == NULL || !symtable_get_variable(st, id_name)->is_defined) {
+            //         syntax_errf("Sementic error: '%s' is undefined", token_to_string(id));
+            //         free(nterm);
+            //         return NULL;
+            //     }
+            //     nterm->type = id->attribute.data_type;
+            //     // generate("=", id, NULL, nterm->value);
+            // }
+            // // constant
+            // else {
+            //     nterm->type = id->attribute.data.type;
+            // }
+        } break;
+
         case Rule_Paren:
+            // nterm->type = operands[1].nterm->type;
+            // // nterm->value = operands[1].nterm->value;
+            // free(operands[1].nterm);
             break;
-        case Rule_Prefix:
-            break;
-        case Rule_Postfix:
-            break;
+
+        case Rule_Prefix: {
+            // NTerm* expr = operands[1].nterm;  // nonterminal to be reduced
+            // if (operands[0].terminal->attribute.op == Operator_Negation) {
+            //     if (expr->type != DataType_Int) {  // FIXME : INT TO BOOL
+            //         syntax_errf("Semantic Error: Type mismatch - Expected 'Bool', found '%s'.",
+            //                     datatype_to_string(expr->type));
+            //         free(nterm);
+            //         free(expr);
+            //         return NULL;
+            //     }
+            //     nterm->type = expr->type;
+            // } else {
+            //     if (expr->type != DataType_Int && expr->type != DataType_Double) {
+            //         syntax_errf("Semantic Error: Type mismatch - Expected 'Int' or 'Double' , found '%s'.",
+            //                     datatype_to_string(expr->type));
+            //         free(nterm);
+            //         free(expr);
+            //         return NULL;
+            //     }
+            //     nterm->type = expr->type;
+            // }
+        } break;
+        case Rule_Postfix: {
+            // Token* id = operands[0].terminal;
+            // char* id_name = id->attribute.data.value.string.data;
+            // Symtable* st = symstack_search(&g_symstack, id_name);
+
+            // // identifier
+            // if (id->type == Token_Identifier) {
+            //     // identifier is not defined
+            //     if (st == NULL || !symtable_get_variable(st, id_name)->is_defined) {
+            //         syntax_errf("Sementic error: Identifier '%s' is undefined", token_to_string(id));
+            //         free(nterm);
+            //         return NULL;
+            //     }
+            // }
+            // switch (id->attribute.data_type) {
+            //     case DataType_MaybeDouble:
+            //         nterm->type = DataType_Double;
+            //         break;
+            //     case DataType_MaybeInt:
+            //         nterm->type = DataType_Int;
+            //         break;
+            //     // case DataType_MaybeBool:
+            //     // nterm->type = DataType_Bool;
+            //     // break;
+            //     case DataType_MaybeString:
+            //         nterm->type = DataType_String;
+            //         break;
+
+            //     default:
+            //         syntax_errf("Semantic Error: cannot force unwrap value of non-optional type '%s'.",
+            //                     datatype_to_string(id->attribute.data_type));
+            //         free(nterm);
+            //         return NULL;
+            // }
+        } break;
         case Rule_SumSub:
             break;
         case Rule_MulDiv:
@@ -308,14 +398,6 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             return NULL;
     }
 
-    nterm->name = 'E';
-
+    nterm->name = 'E';  // defalut name
     return nterm;
-}
-
-int get_topmost_terminal_id(Pushdown* pushdown) {
-    for (int i = pushdown->size - 1; i >= 0; i--)
-        if (pushdown_at(pushdown, i).terminal)
-            return i;
-    return -1;
 }
