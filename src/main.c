@@ -41,8 +41,11 @@ int main(int argc, char **argv) {
 
     // Parse the source file.
     parser_begin();
-    if (got_error())
+    if (got_error()) {
+        if (got_int_error())
+            print_int_error_msg();
         print_error_msg();
+    }
 
     parser_free();
     scanner_free();

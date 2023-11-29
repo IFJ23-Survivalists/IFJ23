@@ -40,6 +40,7 @@ Token* parser_next_token() {
 }
 
 bool parser_tok_is_fun_id() {
+    MASSERT(false, "Not yet implemented.");
     return g_parser.token.type == Token_Identifier
         && *symtable_get_symbol_type(symstack_top(&g_symstack), g_parser.token.attribute.data.value.string.data) == NodeType_Function;
 }
