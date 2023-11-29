@@ -31,9 +31,9 @@
 
 /// String names for ::DataType enum.
 static const char* DATATYPE_NAMES[] = {
-    "Int", "Double", "String",
+    "Int", "Double", "String", "Bool",
     "Nil",
-    "Int?", "Double?", "String?"
+    "Int?", "Double?", "String?", "Bool?"
 };
 
 /**
@@ -91,6 +91,9 @@ static const char* token_to_string(const Token* tok) {
                 case DataType_String:
                 case DataType_MaybeString:
                     return "String literal";
+                case DataType_Bool:
+                case DataType_MaybeBool:
+                    return "Boolean value";
             }
             return "Unknown";
         case Token_DataType:
