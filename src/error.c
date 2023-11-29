@@ -37,8 +37,8 @@ void print_error_msg() {
     }
 }
 
-void print_error(const struct Token* tok, Error err_type, const char* fmt, ...) {
-    fprintf(stderr, "line:%lu:%lu " COL_R("error") ": ", tok->line, tok->position_in_line);
+void print_error(const struct Token* tok, Error err_type, const char* err_string, const char* fmt, ...) {
+    fprintf(stderr, BOLD("line:%lu:%lu ") COL_R("%s error") ": ", tok->line, tok->position_in_line, err_string);
     va_list args;
     va_start(args, fmt);
     vfprintf(stderr, fmt, args);

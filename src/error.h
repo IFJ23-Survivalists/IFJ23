@@ -98,17 +98,17 @@ struct Token;
  * @param[in] fmt Format in which to print
  * @param ... Argument to fmt
  */
-void print_error(const struct Token* tok, Error err_type, const char* fmt, ...);
+void print_error(const struct Token* tok, Error err_type, const char* err_string, const char* fmt, ...);
 
-#define lex_err(...) print_error(&g_parser.token, Error_Lexical, __VA_ARGS__)
-#define syntax_err(...) print_error(&g_parser.token, Error_Syntax, __VA_ARGS__)
-#define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, __VA_ARGS__)
-#define type_mismatch_err(...) print_error(&g_parser.token, Error_TypeMismatched, __VA_ARGS__)
-#define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, __VA_ARGS__)
-#define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, __VA_ARGS__)
-#define oper_err(...) print_error(&g_parser.token, Error_Operation, __VA_ARGS__)
-#define unknown_type_err(...) print_error(&g_parser.token, Error_UnknownType, __VA_ARGS__)
-#define semantic_err(...) print_error(&g_parser.token, Error_Semantic, __VA_ARGS__)
+#define lex_err(...) print_error(&g_parser.token, Error_Lexical, "Lexical", __VA_ARGS__)
+#define syntax_err(...) print_error(&g_parser.token, Error_Syntax, "Syntax", __VA_ARGS__)
+#define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, "Undefined function", __VA_ARGS__)
+#define fun_type_err(...) print_error(&g_parser.token, Error_TypeMismatched, "Type mismatch", __VA_ARGS__)
+#define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, "Undefined variable", __VA_ARGS__)
+#define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, "Return value missmatch", __VA_ARGS__)
+#define expr_type_err(...) print_error(&g_parser.token, Error_Operation, "Type mismatch", __VA_ARGS__)
+#define unknown_type_err(...) print_error(&g_parser.token, Error_UnknownType, "Unknown type", __VA_ARGS__)
+#define semantic_err(...) print_error(&g_parser.token, Error_Semantic, "Semantic", __VA_ARGS__)
 
 /// Represents type of internal error.
 typedef enum {
