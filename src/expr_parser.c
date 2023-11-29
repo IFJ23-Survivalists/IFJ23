@@ -337,7 +337,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 nterm->type = operand->type;
             } else {
                 if (operand->type != DataType_Int && operand->type != DataType_Double) {
-                    expr_type_err("Expected 'Int' or 'Double' , found '%s'.", datatype_to_string(expr->type));
+                    expr_type_err("Expected 'Int' or 'Double' , found '%s'.", datatype_to_string(operand->type));
                     free(nterm);
                     free(operand);
                     return NULL;
@@ -482,11 +482,11 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
             Token* id = operands[0]->terminal;
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
-                Symtable* st = symstack_search(&g_symstack, id_name);
+                Symtable* st = symstack_search(id_name);
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
-                    syntax_errf(
+                    syntax_err(
                         "Sementic error: Undefined function '%s'. Function must be declared or defined before use.",
                         token_to_string(id));
                     free(nterm);
@@ -495,7 +495,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 nterm->type = symtable_get_function(st, id_name)->return_value_type;
                 // generate("=", id, NULL, nterm->value);
             } else {
-                syntax_errf("expected identifier before '(' token not '%s'.", token_to_string(id));
+                syntax_err("expected identifier before '(' token not '%s'.", token_to_string(id));
                 free(nterm);
                 return NULL;
             }
