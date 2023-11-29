@@ -293,7 +293,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             // identifier
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
-                Symtable* st = symstack_search(&g_symstack, id_name);
+                Symtable* st = symstack_search(id_name);
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_variable(st, id_name)->is_defined) {
@@ -474,7 +474,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             Token* id = operands[0].terminal;
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
-                Symtable* st = symstack_search(&g_symstack, id_name);
+                Symtable* st = symstack_search(id_name);
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
@@ -496,7 +496,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             Token* id = operands[0].terminal;
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
-                Symtable* st = symstack_search(&g_symstack, id_name);
+                Symtable* st = symstack_search(id_name);
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {

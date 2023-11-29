@@ -6,49 +6,70 @@
  */
 #include "symstack.h"
 
+SymStack* g_symstack = NULL;
+
 // Check if `ss` argument is NULL or not. This can be made to do nothing in release build.
 // TODO: Check only in release build.
-#define CHECK_SS(ss, ret) do {   \
-        if (!ss) {          \
-            SET_INT_ERROR(IntError_InvalidArgument, "ss cannot be NULL"); \
+#define CHECK_SS(ret) do {   \
+        if (g_symstack == NULL) {          \
+            SET_INT_ERROR(IntError_Runtime, "SymStack is not initialized. Call symstack_init() first."); \
             return ret;   \
         }                   \
     } while (false)
 
-bool symstack_init(SymStack* ss) {
-    CHECK_SS(ss, false);
-    ss->top = NULL;
-    ss->size = 0;
+bool symstack_init() {
+    g_symstack = malloc(sizeof(SymStack));
+    if (!g_symstack) {
+        SET_INT_ERROR(IntError_Memory, "symstack_init: Malloc failed");
+        return false;
+    }
+    g_symstack->top = NULL;
+    g_symstack->size = 0;
     return true;
 }
 
-void symstack_free(SymStack* ss) {
-    CHECK_SS(ss, );
-    while (ss->top) {
-        SymStackNode* aux = ss->top;
-        ss->top = ss->top->next;
+void symstack_free() {
+    CHECK_SS();
+    while (g_symstack->top) {
+        SymStackNode* aux = g_symstack->top;
+        g_symstack->top = g_symstack->top->next;
         symtable_free(&aux->symtable);
         free(aux);
     }
-    ss->size = 0;
+    g_symstack->size = 0;
+    free(g_symstack);
+    g_symstack = NULL;
 }
 
-void symstack_clear(SymStack* ss) {
-    symstack_free(ss);
+void symstack_clear() {
+    CHECK_SS();
+    while (g_symstack->top) {
+        SymStackNode* aux = g_symstack->top;
+        g_symstack->top = g_symstack->top->next;
+        symtable_free(&aux->symtable);
+        free(aux);
+    }
+    g_symstack->size = 0;
+    g_symstack->top = NULL;
 }
 
-bool symstack_empty(const SymStack* ss) {
-    MASSERT(ss != NULL, "ss cannot be NULL");
-    return ss->size == 0;
+bool symstack_empty() {
+    CHECK_SS(false);
+    return g_symstack->size == 0;
 }
 
-Symtable* symstack_top(const SymStack* ss) {
-    CHECK_SS(ss, NULL);
-    return &ss->top->symtable;
+size_t symstack_size() {
+    CHECK_SS(0);
+    return g_symstack->size;
 }
 
-Symtable* symstack_push(SymStack* ss) {
-    CHECK_SS(ss, NULL);
+Symtable* symstack_top() {
+    CHECK_SS(NULL);
+    return &g_symstack->top->symtable;
+}
+
+Symtable* symstack_push() {
+    CHECK_SS(NULL);
     SymStackNode* node = malloc(sizeof(SymStackNode));
     if (!node) {
         SET_INT_ERROR(IntError_Memory, "Malloc for SymStackNode failed.");
@@ -61,24 +82,24 @@ Symtable* symstack_push(SymStack* ss) {
         return false;
     }
 
-    node->next = ss->top;
-    ss->top = node;
-    ss->size++;
+    node->next = g_symstack->top;
+    g_symstack->top = node;
+    g_symstack->size++;
 
-    return &ss->top->symtable;
+    return &g_symstack->top->symtable;
 }
 
-bool symstack_pop(SymStack* ss) {
-    CHECK_SS(ss, false);
-    if (ss->size == 0) {
+bool symstack_pop() {
+    CHECK_SS(false);
+    if (g_symstack->size == 0) {
         SET_INT_ERROR(IntError_Runtime, "Cannot call symstack_pop on empty symstack.");
         return false;
     }
 
     // Set second node as first.
-    SymStackNode* aux = ss->top;
-    ss->top = ss->top->next;
-    ss->size--;
+    SymStackNode* aux = g_symstack->top;
+    g_symstack->top = g_symstack->top->next;
+    g_symstack->size--;
 
     // Delete first node and free symtable associated with it.
     symtable_free(&aux->symtable);
@@ -91,9 +112,9 @@ bool symstack_pop(SymStack* ss) {
     return true;
 }
 
-Symtable* symstack_search(const SymStack* ss, const char* sym_name) {
-    CHECK_SS(ss, NULL);
-    for (SymStackNode* node = ss->top; node; node = node->next) {
+Symtable* symstack_search(const char* sym_name) {
+    CHECK_SS(NULL);
+    for (SymStackNode* node = g_symstack->top; node; node = node->next) {
         if (symtable_get_symbol_type(&node->symtable, sym_name) != NULL)
             return &node->symtable;
     }

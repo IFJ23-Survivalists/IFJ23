@@ -24,12 +24,6 @@ typedef struct {
  */
 extern Parser g_parser;
 
-/**
- * @brief Global symbol table stack to be used when parsing.
- * @note Defined in `parser.c`, initialized in `parser_init()` and free'd in `parser_free()`.
- */
-extern SymStack g_symstack;
-
 /// Initialize the token parser.
 void parser_init();
 

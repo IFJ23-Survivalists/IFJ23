@@ -32,10 +32,10 @@ void insert_variables() {
     name.type = DataType_String;
     y.type = DataType_MaybeInt;
 
-    symtable_insert_variable(symstack_top(&g_symstack), "a", a);
-    symtable_insert_variable(symstack_top(&g_symstack), "b", b);
-    symtable_insert_variable(symstack_top(&g_symstack), "name", name);
-    symtable_insert_variable(symstack_top(&g_symstack), "y", y);
+    symtable_insert_variable(symstack_top(), "a", a);
+    symtable_insert_variable(symstack_top(), "b", b);
+    symtable_insert_variable(symstack_top(), "name", name);
+    symtable_insert_variable(symstack_top(), "y", y);
 }
 
 void insert_functions() {
@@ -65,10 +65,10 @@ void insert_functions() {
     function_symbol_emplace_param(&str, DataType_String, NULL, "a");
     function_symbol_emplace_param(&str, DataType_String, NULL, "b");
 
-    symtable_insert_function(symstack_top(&g_symstack), "fn", fn);
-    symtable_insert_function(symstack_top(&g_symstack), "many", many);
-    symtable_insert_function(symstack_top(&g_symstack), "x", x);
-    symtable_insert_function(symstack_top(&g_symstack), "str", str);
+    symtable_insert_function(symstack_top(), "fn", fn);
+    symtable_insert_function(symstack_top(), "many", many);
+    symtable_insert_function(symstack_top(), "x", x);
+    symtable_insert_function(symstack_top(), "str", str);
 }
 
 int main() {

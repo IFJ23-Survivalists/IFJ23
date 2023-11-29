@@ -45,9 +45,11 @@ bool rule_assignType();
 bool rule_assignExpr();
 bool rule_elseIf();
 
+ParserMode g_mode;
+
 // Entry point to recursive parsing.
 bool rec_parser_begin(ParserMode mode) {
-    (void)mode;
+    g_mode = mode;
     parser_next_token();
     return rule_statementList();
 }

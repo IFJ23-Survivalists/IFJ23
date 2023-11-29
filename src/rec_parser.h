@@ -11,7 +11,7 @@
 
 /// Represents in which mode should the parser run.
 typedef enum {
-    /// Only collect variable and function definitions into the symbol table.
+    /// Only collect function definitions into the symbol table.
     ParserMode_Collect,
     /// Parse the entire file again now with semantic actions.
     ParserMode_Parse,

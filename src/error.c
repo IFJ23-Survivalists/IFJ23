@@ -74,11 +74,11 @@ void print_int_error_msg() {
     if (g_int_error.type) {
 #ifdef PRINT_INT_ERR
         if (g_int_error.msg)
-            fprintf(stderr, "%s:%u: %s. Msg:\n\n%s\n",
+            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") ": %s\n",
                     g_int_error.file, g_int_error.line,
                     INT_ERR_MSG[(int)g_int_error.type], g_int_error.msg);
         else
-            fprintf(stderr, "%s:%u: %s\n", g_int_error.file, g_int_error.line,
+            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") "\n", g_int_error.file, g_int_error.line,
                     INT_ERR_MSG[(int)g_int_error.type]);
 #endif
     }

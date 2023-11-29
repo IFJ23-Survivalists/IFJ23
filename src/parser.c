@@ -7,16 +7,15 @@
 #include "rec_parser.h"
 #include "scanner.h"
 
-SymStack g_symstack;
 Parser g_parser;
 
 void parser_init() {
-    symstack_init(&g_symstack);
+    symstack_init();
     if (got_error())
         return;
 
     // Create the symbol table used for global variables.
-    symstack_push(&g_symstack);
+    symstack_push();
 }
 
 bool parser_begin() {
@@ -28,7 +27,7 @@ bool parser_begin() {
 }
 
 void parser_free() {
-    symstack_free(&g_symstack);
+    symstack_free();
 }
 
 Token* parser_next_token() {
@@ -42,6 +41,6 @@ Token* parser_next_token() {
 bool parser_tok_is_fun_id() {
     MASSERT(false, "Not yet implemented.");
     return g_parser.token.type == Token_Identifier
-        && *symtable_get_symbol_type(symstack_top(&g_symstack), g_parser.token.attribute.data.value.string.data) == NodeType_Function;
+        && *symtable_get_symbol_type(symstack_top(), g_parser.token.attribute.data.value.string.data) == NodeType_Function;
 }
 
