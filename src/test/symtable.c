@@ -1,12 +1,14 @@
 /**
- * @file test/scanner.c
+ * @file test/symtable.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 12/10/2023
  * @brief Tester for symtable.h
  */
 
 #include "../symtable.h"
 #include "test.h"
+#include <string.h>
 
 int main() {
     atexit(summary);
@@ -16,25 +18,6 @@ int main() {
 
     suite("Test function_parameter_init") {
         function_parameter_init(&params);
-        test(!params.argc);
-        test(!params.argv);
-    }
-
-    suite("Test function_parameter_push") {
-        function_parameter_init(&params);
-        function_parameter_push(&params, DataType_Int);
-        test(params.argc == 1);
-        test(params.argv[0] == DataType_Int);
-
-        function_parameter_push(&params, DataType_Nil);
-        test(params.argc == 2);
-        test(params.argv[0] == DataType_Int);
-        test(params.argv[1] == DataType_Nil);
-    }
-
-    suite("Test function_parameter_free") {
-        function_parameter_free(&params);
-        test(!params.argv);
     }
 
     suite("Test symtable_init") {
@@ -52,9 +35,8 @@ int main() {
         FunctionSymbol foo2;
         function_symbol_init(&foo2);
         foo2.return_value_type = DataType_Double;
-        function_parameter_init(&foo2.parameters);
-        function_parameter_push(&foo2.parameters, DataType_Double);
-        function_parameter_push(&foo2.parameters, DataType_Int);
+        function_symbol_emplace_param(&foo2, DataType_Double, NULL, "p1");
+        function_symbol_emplace_param(&foo2, DataType_Int, "abc", "p2");
         test(!symtable_insert_function(&symtable, "foo", foo2));
         test(symtable_insert_function(&symtable, "foo2", foo2));
     }
@@ -90,9 +72,13 @@ int main() {
         test(func2);
         test(func != func2);
         test(func2->return_value_type == DataType_Double);
-        test(func2->parameters.argc == 2);
-        test(func2->parameters.argv[0] == DataType_Double);
-        test(func2->parameters.argv[1] == DataType_Int);
+        test(func2->param_count == 2);
+        test(func2->params[0].type == DataType_Double);
+        test(func2->params[0].oname.data == NULL);
+        test(strcmp(func2->params[0].iname.data, "p1") == 0);
+        test(func2->params[1].type == DataType_Int);
+        test(strcmp(func2->params[1].oname.data, "abc") == 0);
+        test(strcmp(func2->params[1].iname.data, "p2") == 0);
     }
 
     suite("Test symtable_get_variable") {
