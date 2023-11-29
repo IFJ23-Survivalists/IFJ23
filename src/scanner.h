@@ -121,7 +121,7 @@ typedef union {
     bool has_eol;
 } TokenAttribute;
 
-typedef struct {
+typedef struct Token {
     TokenType type;
     TokenAttribute attribute;
     size_t line;
