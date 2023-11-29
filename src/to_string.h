@@ -61,13 +61,14 @@ inline static const char* operator_to_string(Operator op) { return OPERATOR_NAME
 static const char* TOKENTYPE_NAMES[] = {
     "EOF", "Whitespace",
     "{", "}", "(", ")", ":", "->", "=", ",",
-    "If", "Else", "Let", "Var", "While", "Func", "Return", "Data", "DataType",
+    "if", "else", "let", "var", "while", "func", "return",
+    "Data", "DataType",
     "Operator", "Identifier"
 };
 
 /**
  * @brief Convert ::TokenType to string.
- * @param[in] dt TokenType to convert
+ * @param[in] tt TokenType to convert
  * @return Const reference to string literal.
  */
 inline static const char* tokentype_to_string(TokenType tt) { return TOKENTYPE_NAMES[tt]; }
