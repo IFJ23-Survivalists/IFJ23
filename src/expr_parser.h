@@ -125,14 +125,6 @@ void parse(struct Pushdown* pushdown, Token token, Token* prev_token);
 Rule get_rule(char* rule);
 
 /**
- * @brief Create non terminal by applying rule to `operands`.
- * @param[in] rule Rule that is used to reduce operand to a new non terminal.
- * @param[in] operands operands needed for reduction.
- * @return Non terminal that holds its type and value infered from `operands` by applying `rule`.
- */
-NTerm* apply_rule(Rule rule, struct PushdownItem* operands);
-
-/**
  * @brief Remove all terminals and nonterminals from `pushdown` and replace them by non terminal created by applying any
  * rule.
  * @param[in, out] pushdown Initialized pushdown.
@@ -141,10 +133,11 @@ NTerm* apply_rule(Rule rule, struct PushdownItem* operands);
 bool reduce(struct Pushdown* pushdown);
 
 /**
- * @brief Retrieves the index of the topmost terminal in the Pushdown structure.
- * @param[in] pushdown Pointer to the Pushdown structure.
- * @return The index of the topmost terminal, or -1 if no terminal is found.
+ * @brief Create non terminal by applying rule to `operands`.
+ * @param[in] rule Rule that is used to reduce operand to a new non terminal.
+ * @param[in] operands operands needed for reduction.
+ * @return Non terminal that holds its type and value infered from `operands` by applying `rule`.
  */
-int get_topmost_terminal_id(struct Pushdown* pushdown);
+NTerm* apply_rule(Rule rule, struct PushdownItem** operands);
 
 #endif  // _PREC_PARSER_H_

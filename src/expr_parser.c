@@ -34,23 +34,26 @@ const ComprarisonResult PRECEDENCE_TABLE[11][11] = {
     {Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};     /* $ */
 
 bool expr_parser_begin(Data* data) {
+    NTerm* nterm = NULL;
     Pushdown* pushdown = malloc(sizeof(Pushdown));
+
     pushdown_init(pushdown);
-
     parse(pushdown, g_parser.token, NULL);
+    PushdownItem* item = pushdown_last(pushdown);
 
-    PushdownItem item = pushdown_back(pushdown);
-    NTerm* nterm = item.nterm;
+    if (item != NULL)
+        nterm = item->nterm;
 
     // check if pushdown is reduced to one nonterminal
-    if (pushdown->size == 1 && nterm != NULL && nterm->name == 'E') {
+    if (pushdown->first == pushdown->last && nterm != NULL && nterm->name == 'E') {
         data->type = nterm->type;
         data->value = nterm->value;
+        free(nterm);
         pushdown_destroy(pushdown);
         return true;
     }
 
-    // syntax error occurred during parsing
+    // error occurred during parsing
     if (!got_error()) {
         syntax_err("Unexpected token: '%s'", token_to_string(&g_parser.token));
     }
@@ -61,13 +64,6 @@ bool expr_parser_begin(Data* data) {
 
 ComprarisonResult getPrecedence(PrecedenceCat pushdownItem, PrecedenceCat inputToken) {
     return PRECEDENCE_TABLE[pushdownItem][inputToken];
-}
-
-int get_topmost_terminal_id(Pushdown* pushdown) {
-    for (int i = pushdown->size - 1; i >= 0; i--)
-        if (pushdown_at(pushdown, i).terminal)
-            return i;
-    return -1;
 }
 
 PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
@@ -193,32 +189,48 @@ PrecedenceCat char_to_precedence(char ch) {
     }
 }
 
+void print_pushdown(Pushdown* pushdown) {
+    PushdownItem* item = pushdown->first;
+    printf("$");
+    while (item != NULL) {
+        printf("%c", item->name);
+        item = pushdown_next(item);
+    }
+}
+
 void parse(Pushdown* pushdown, Token token, Token* prev_token) {
-    int top_term_id = get_topmost_terminal_id(pushdown);
+    PushdownItem* topmost_terminal = pushdown_search_terminal(pushdown);
+    PrecedenceCat topmost_terminal_prec =
+        topmost_terminal ? char_to_precedence(topmost_terminal->name) : PrecendeceCat_Expr_End;
     PrecedenceCat token_prec = getTokenPrecedenceCategory(token, prev_token);
+    ComprarisonResult comp_res = getPrecedence(topmost_terminal_prec, token_prec);
 
-    // if there is no terminal in pushdown consider that at position -1 is '$' (PrecendeceCat_Expr_End)
-    ComprarisonResult compRes = getPrecedence(
-        top_term_id == -1 ? PrecendeceCat_Expr_End : char_to_precedence(pushdown_at(pushdown, top_term_id).name),
-        token_prec);
-
-    switch (compRes) {
+    switch (comp_res) {
         case Left:
             if (!reduce(pushdown))
                 break;
+
             parse(pushdown, token, prev_token);
             break;
 
-        case Right:
-            pushdown_insert(pushdown, top_term_id + 1, create_pushdown_item(NULL, NULL));  // Rule end marker
-            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), precedence_to_char(token_prec)));
-            parse(pushdown, *parser_next_token(), &token);
-            break;
+        case Right: {
+            PushdownItem* rule_end_marker = create_pushdown_item(NULL, NULL);
+            PushdownItem* terminal = create_pushdown_item(&token, NULL);
+            terminal->name = precedence_to_char(token_prec);
 
-        case Equal:
-            pushdown_push_back(pushdown, set_name(create_pushdown_item(&token, NULL), precedence_to_char(token_prec)));
+            pushdown_insert_after(pushdown, topmost_terminal, rule_end_marker);
+            pushdown_insert_last(pushdown, terminal);
+
             parse(pushdown, *parser_next_token(), &token);
-            break;
+        } break;
+
+        case Equal: {
+            PushdownItem* terminal = create_pushdown_item(&token, NULL);
+            terminal->name = precedence_to_char(token_prec);
+
+            pushdown_insert_last(pushdown, terminal);
+            parse(pushdown, *parser_next_token(), &token);
+        } break;
 
         case Err:
             while (reduce(pushdown))
@@ -228,36 +240,30 @@ void parse(Pushdown* pushdown, Token token, Token* prev_token) {
 }
 
 bool reduce(Pushdown* pushdown) {
-    PushdownItem rule_operands[4];
+    PushdownItem* rule_operands[MAX_RULE_LENGTH];
+    PushdownItem* rule_end_marker = pushdown_search_name(pushdown, '|');
     int idx;
 
-    // set idx to place where is topmost rule end
-    for (idx = pushdown->size - 1; idx >= 0; idx--) {
-        if (pushdown_at(pushdown, idx).name == '|')
-            break;
-    }
-
-    // no rule end => no more reduction possible
-    if (idx < 0)
+    // no rule end => no reduction possible
+    if (rule_end_marker == NULL)
         return false;
 
-    int operandCount = pushdown->size - idx - 1;
-
-    char* rule = malloc((operandCount + 1) * sizeof(char));
+    char* rule = malloc(sizeof(char) * MAX_RULE_LENGTH + 1);
+    PushdownItem* item = pushdown_next(rule_end_marker);
 
     // get rule name and operands from top of the pushdown
-    for (int i = 0; i < operandCount; i++) {
-        PushdownItem item = pushdown_at(pushdown, idx + 1 + i);
-        rule_operands[i] = item;
-        rule[i] = item.name;
+    for (idx = 0; idx < MAX_RULE_LENGTH && item != NULL; idx++) {
+        rule_operands[idx] = item;
+        rule[idx] = item->name;
+        item = pushdown_next(item);
     }
-    rule[operandCount] = '\0';
+    rule[idx] = '\0';
 
     Rule ruleName = get_rule(rule);
     NTerm* nterm = apply_rule(ruleName, rule_operands);
 
     // remove the rule from pushdown
-    pushdown_reduce_size(pushdown, idx);
+    pushdown_remove_all_from_current(pushdown, rule_end_marker);
 
     // check if rule was applyed
     if (nterm == NULL) {
@@ -265,8 +271,11 @@ bool reduce(Pushdown* pushdown) {
         return false;
     }
 
-    // push new non-terminal to pushdown
-    pushdown_push_back(pushdown, set_name(create_pushdown_item(NULL, nterm), nterm->name));
+    // push a new non-terminal to the pushdown
+    PushdownItem* nterm_item = create_pushdown_item(NULL, nterm);
+    nterm_item->name = nterm->name;
+    pushdown_insert_last(pushdown, nterm_item);
+    // print_pushdown(pushdown);
 
     free(rule);
     return true;
@@ -279,7 +288,7 @@ Rule get_rule(char* rule) {
     return NoRule;
 }
 
-NTerm* apply_rule(Rule rule, PushdownItem* operands) {
+NTerm* apply_rule(Rule rule, PushdownItem** operands) {
     NTerm* nterm = malloc(sizeof(NTerm));
 
     // default nonterminal attributes
@@ -288,7 +297,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
 
     switch (rule) {
         case Rule_Identif: {
-            Token* id = operands[0].terminal;
+            Token* id = operands[0]->terminal;
 
             // identifier
             if (id->type == Token_Identifier) {
@@ -312,36 +321,36 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
         } break;
 
         case Rule_Paren:
-            nterm->type = operands[1].nterm->type;
-            free(operands[1].nterm);
+            nterm->type = operands[1]->nterm->type;
+            free(operands[1]->nterm);
             break;
 
         case Rule_Prefix: {
-            NTerm* expr = operands[1].nterm;  // nonterminal to be reduced
-            if (operands[0].terminal->attribute.op == Operator_Negation) {
-                if (expr->type != DataType_Bool) {
-                    expr_type_err("Expected 'Bool', found '%s'.", datatype_to_string(expr->type));
+            NTerm* operand = operands[1]->nterm;  // nonterminal to be reduced
+            if (operands[0]->terminal->attribute.op == Operator_Negation) {
+                if (operand->type != DataType_Bool) {
+                    expr_type_err("Expected 'Bool', found '%s'.", datatype_to_string(operand->type));
                     free(nterm);
-                    free(expr);
+                    free(operand);
                     return NULL;
                 }
-                nterm->type = expr->type;
+                nterm->type = operand->type;
             } else {
-                if (expr->type != DataType_Int && expr->type != DataType_Double) {
+                if (operand->type != DataType_Int && operand->type != DataType_Double) {
                     expr_type_err("Expected 'Int' or 'Double' , found '%s'.", datatype_to_string(expr->type));
                     free(nterm);
-                    free(expr);
+                    free(operand);
                     return NULL;
                 }
-                nterm->type = expr->type;
+                nterm->type = operand->type;
             }
-            free(operands[1].nterm);
+            free(operand);
         } break;
 
         case Rule_Postfix: {
-            NTerm* expr = operands[0].nterm;
+            NTerm* operand = operands[0]->nterm;
 
-            switch (expr->type) {
+            switch (operand->type) {
                 case DataType_MaybeDouble:
                     nterm->type = DataType_Double;
                     break;
@@ -356,18 +365,18 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                     break;
                 default:
                     semantic_err("Cannot force unwrap value of non-optional type '%s'.",
-                                datatype_to_string(expr->type));
+                                 datatype_to_string(operand->type));
                     free(nterm);
-                    free(expr);
+                    free(operand);
                     return NULL;
             }
-            free(expr);
+            free(operand);
         } break;
         case Rule_SumSub:
         case Rule_MulDiv: {
-            NTerm* left = operands[0].nterm;
-            NTerm* right = operands[2].nterm;
-            Operator op = operands[1].terminal->attribute.op;
+            NTerm* left = operands[0]->nterm;
+            Operator op = operands[1]->terminal->attribute.op;
+            NTerm* right = operands[2]->nterm;
 
             // Pro provedení explicitního přetypování z Double na Int lze použít vestavěnou funkci
             // Double2Int, naopak pak Int2Double
@@ -386,7 +395,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 nterm->type = DataType_String;
             } else {
                 expr_type_err("Invalid operands left '%s' and right '%s' operands for operation '%s'.",
-                            datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
+                              datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
                 free(nterm);
                 free(left);
                 free(right);
@@ -411,13 +420,12 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             }
             free(left);
             free(right);
-
         } break;
 
         case Rule_Logic: {
-            NTerm* left = operands[0].nterm;
-            NTerm* right = operands[2].nterm;
-            Operator op = operands[1].terminal->attribute.op;
+            NTerm* left = operands[0]->nterm;
+            NTerm* right = operands[2]->nterm;
+            Operator op = operands[1]->terminal->attribute.op;
 
             if (left->type != right->type) {
                 // try implicit conversion if any operand is literal
@@ -438,7 +446,8 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 // implicit conversion is not possible
                 else {
                     expr_type_err("Invalid operands left '%s' and right '%s' operands for relation '%s'.",
-                        datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
+                                  datatype_to_string(left->type), datatype_to_string(right->type),
+                                  operator_to_string(op));
                     free(nterm);
                     free(left);
                     free(right);
@@ -452,8 +461,8 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
         } break;
 
         case Rule_ArgsEE: {
-            NTerm* left = operands[0].nterm;
-            NTerm* right = operands[2].nterm;
+            NTerm* left = operands[0]->nterm;
+            NTerm* right = operands[2]->nterm;
             // generate(push, left, right, nterm.value);
             nterm->name = 'L';
             free(left);
@@ -461,17 +470,40 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
         } break;
 
         case Rule_ArgsLE: {
-            NTerm* left = operands[0].nterm;
-            NTerm* right = operands[2].nterm;
+            NTerm* left = operands[0]->nterm;
+            NTerm* right = operands[2]->nterm;
             // generate(push, , right, nterm.value);
             nterm->name = 'L';
             free(left);
             free(right);
         } break;
 
-        case Rule_FnArgsProcessed:
+        case Rule_FnArgsProcessed: {
+            Token* id = operands[0]->terminal;
+            if (id->type == Token_Identifier) {
+                char* id_name = id->attribute.data.value.string.data;
+                Symtable* st = symstack_search(&g_symstack, id_name);
+
+                // identifier is not defined
+                if (st == NULL || !symtable_get_function(st, id_name)) {
+                    syntax_errf(
+                        "Sementic error: Undefined function '%s'. Function must be declared or defined before use.",
+                        token_to_string(id));
+                    free(nterm);
+                    return NULL;
+                }
+                nterm->type = symtable_get_function(st, id_name)->return_value_type;
+                // generate("=", id, NULL, nterm->value);
+            } else {
+                syntax_errf("expected identifier before '(' token not '%s'.", token_to_string(id));
+                free(nterm);
+                return NULL;
+            }
+            free(operands[2]->nterm);
+        } break;
+
         case Rule_FnEmpty: {
-            Token* id = operands[0].terminal;
+            Token* id = operands[0]->terminal;
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
                 Symtable* st = symstack_search(id_name);
@@ -479,7 +511,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
                     undef_fun_err("Undefined function '%s'. Function must be declared or defined before use.",
-                        token_to_string(id));
+                                  token_to_string(id));
                     free(nterm);
                     return NULL;
                 }
@@ -493,7 +525,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
         } break;
 
         case Rule_FnArgs: {
-            Token* id = operands[0].terminal;
+            Token* id = operands[0]->terminal;
             if (id->type == Token_Identifier) {
                 char* id_name = id->attribute.data.value.string.data;
                 Symtable* st = symstack_search(id_name);
@@ -501,7 +533,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
                     undef_fun_err("Undefined function '%s'. Function must be declared or defined before use.",
-                        token_to_string(id));
+                                  token_to_string(id));
                     free(nterm);
                     return NULL;
                 }
@@ -514,7 +546,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 return NULL;
             }
 
-            NTerm* arg = operands[2].nterm;
+            NTerm* arg = operands[2]->nterm;
             // generate(push, arg, NULL, NULL);
             // generate(call, id, NULL, nterm->value);
 
@@ -522,7 +554,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
         } break;
 
         case Rule_NamedArg: {
-            NTerm* arg = operands[2].nterm;
+            NTerm* arg = operands[2]->nterm;
             // generate("=", id, NULL, nterm->value);
             free(arg);
         } break;
