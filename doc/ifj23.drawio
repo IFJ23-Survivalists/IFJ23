@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" modified="2023-11-23T23:23:43.162Z" agent="Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/119.0" etag="dAzFo_057rF1gLNDnk29" version="22.1.3" type="device">
+<mxfile host="app.diagrams.net" modified="2023-11-28T13:11:33.715Z" agent="Mozilla/5.0 (X11; Linux x86_64; rv:120.0) Gecko/20100101 Firefox/120.0" etag="YfZFVSiTGSZ2NcQ7LvhX" version="22.1.4" type="device">
   <diagram name="Page-1" id="4lBCx5LUApBNJpp5xfdY">
-    <mxGraphModel dx="3508" dy="2148" grid="1" gridSize="5" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
+    <mxGraphModel dx="856" dy="524" grid="1" gridSize="5" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="827" pageHeight="1169" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -235,9 +235,9 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="cOMLW2albzwi6cBCAeZk-11" value="Int?, String?, Double?" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Helvetica;fontColor=default;" parent="cOMLW2albzwi6cBCAeZk-9" vertex="1" connectable="0">
+        <mxCell id="cOMLW2albzwi6cBCAeZk-11" value="Int?, String?, Double?, Bool?" style="edgeLabel;html=1;align=center;verticalAlign=middle;resizable=0;points=[];fontSize=12;fontFamily=Helvetica;fontColor=default;" parent="cOMLW2albzwi6cBCAeZk-9" vertex="1" connectable="0">
           <mxGeometry x="-0.0236" y="6" relative="1" as="geometry">
-            <mxPoint x="-13" y="9" as="offset" />
+            <mxPoint x="-10" y="9" as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="cOMLW2albzwi6cBCAeZk-5" value="F20" style="ellipse;shape=doubleEllipse;whiteSpace=wrap;html=1;aspect=fixed;fontFamily=Helvetica;fontSize=11;fontColor=default;" parent="1" vertex="1">

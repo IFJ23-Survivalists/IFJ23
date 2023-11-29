@@ -1,21 +1,17 @@
-= Lexical Analysis
+= Lexical Analysis <lexical_analysis>
 
-In the context of our Swift programming language interpreter,
-the process of lexical analysis plays a fundamental role in parsing the source code.
-This initial phase of the interpreter involves breaking down the input source file
-into a sequence of tokens. To achieve this, we have implemented a set of functions
-in the `scanner.h` header file.
+The implementation for lexical analysis can be found in `scanner.c` files. They come with a set of functions to tokenizize the given input stream, exported in the header file `scanner.h`.
 
 - *`scanner_init(FILE *file)`*:
     This function initializes the scanner with the provided source file, allowing it
     to prepare for the analysis of the source `file`.
 
 - *`scanner_free()`*:
-    Upon completion of the scanning process, this function is responsible for releasing
+    Upon completion of the scanning process, call this function to release
     any resources allocated for the scanner, such as closing the source file,
     ensuring efficient memory management.
 
-- *`scanner_reset_to_beginning`*:
+- *`scanner_reset_to_beginning()`*:
     As the name suggests, this function resets the scanner to its initial position in
     the input source, facilitating the possibility of rescanning the input or
     starting a new parsing session.
