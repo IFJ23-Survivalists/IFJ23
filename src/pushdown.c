@@ -8,74 +8,114 @@
 #include <stdlib.h>
 #include "error.h"
 
-bool pushdown_should_resize(size_t size, size_t capacity) {
-    return size == capacity;
-}
-
-bool handle_resize(void** p_data, size_t sizeof_item, size_t size, size_t* capacity) {
-    if (pushdown_should_resize(size, *capacity)) {
-        *capacity = *capacity * 2;
-        *p_data = realloc(*p_data, *capacity * sizeof_item);
-        if (!(*p_data)) {
-            SET_INT_ERROR(IntError_Memory, "handle_resize(): Realloc failed for `p_data`.");
-            return false;
-        }
-    }
-
-    return true;
-}
-
 void pushdown_init(Pushdown* pushdown) {
-    pushdown->capacity = DEFAULT_CAPACITY;
-    pushdown->size = 0;
-    pushdown->data = malloc(DEFAULT_CAPACITY * sizeof(PushdownItem));
-    if (!pushdown->data)
-        set_error(Error_Internal);
+    pushdown->first = NULL;
+    pushdown->last = NULL;
 }
 
 void pushdown_destroy(Pushdown* pushdown) {
-    for (size_t i = 0; i < pushdown->size; i++) {
-        free(&(pushdown->data[i]));
+    while (pushdown->first != NULL) {
+        PushdownItem* to_delete = pushdown->first;
+        pushdown->first = to_delete->next;
+        free(to_delete);
+    }
+    free(pushdown);
+}
+
+void pushdown_insert_last(Pushdown* pushdown, PushdownItem* value) {
+    if (value == NULL)
+        SET_INT_ERROR(IntError_InvalidArgument, "Null cannot be inserted into pushdown");
+
+    if (pushdown->first == NULL)
+        pushdown->first = value;
+
+    if (pushdown->last != NULL) {
+        pushdown->last->next = value;
+        value->prev = pushdown->last;
     }
 
-    pushdown->data = ((void*)0);
-    pushdown->size = pushdown->capacity = 0;
+    pushdown->last = value;
 }
 
-void pushdown_push_back(Pushdown* pushdown, PushdownItem* value) {
-    if (!handle_resize((void**)&pushdown->data, sizeof(Pushdown), pushdown->size, &pushdown->capacity))
-        return;
-    pushdown->data[pushdown->size++] = *value;
+void pushdown_insert_first(Pushdown* pushdown, PushdownItem* value) {
+    if (value == NULL)
+        SET_INT_ERROR(IntError_InvalidArgument, "Null cannot be inserted into pushdown");
+
+    if (pushdown->last == NULL)
+        pushdown->last = value;
+
+    if (pushdown->first != NULL) {
+        pushdown->first->prev = value;
+        value->next = pushdown->first;
+    }
+    pushdown->first = value;
 }
 
-void pushdown_insert(Pushdown* pushdown, size_t index, PushdownItem* value) {
-    if (index > pushdown->size) {
-        set_error(Error_Internal);
+void pushdown_insert_after(Pushdown* pushdown, PushdownItem* item, PushdownItem* value) {
+    if (value == NULL)
+        SET_INT_ERROR(IntError_InvalidArgument, "Null cannot be inserted into pushdown");
+
+    if (item == NULL) {
+        pushdown_insert_first(pushdown, value);
         return;
     }
-    if (!handle_resize((void**)&pushdown->data, sizeof(Pushdown), pushdown->size, &pushdown->capacity))
-        return;
-    for (size_t i = pushdown->size; i > index; i--) {
-        pushdown->data[i] = pushdown->data[i - 1];
+
+    if (item == pushdown_last(pushdown)) {
+        pushdown->last = value;
     }
-    pushdown->size++;
-    pushdown->data[index] = *value;
+
+    PushdownItem* next_item = item->next;
+    value->next = next_item;
+    value->prev = item;
+    item->next = value;
+
+    if (next_item != NULL)
+        next_item->prev = value;
 }
 
-PushdownItem pushdown_back(const Pushdown* pushdown) {
-    return pushdown->data[pushdown->size - 1];
+PushdownItem* pushdown_last(const Pushdown* pushdown) {
+    return pushdown->last;
 }
 
-PushdownItem pushdown_at(Pushdown* pushdown, size_t idx) {
-    return pushdown->data[idx];
+PushdownItem* pushdown_next(const PushdownItem* item) {
+    return item->next;
 }
 
-void pushdown_reduce_size(Pushdown* pushdown, size_t new_size) {
-    if (new_size > pushdown->size) {
-        set_error(Error_Internal);
-        return;
+PushdownItem* pushdown_search_name(Pushdown* pushdown, char name) {
+    PushdownItem* item = pushdown_last(pushdown);
+    while (item != NULL && item->name != name)
+        item = item->prev;
+
+    return item;
+}
+
+PushdownItem* pushdown_search_terminal(struct Pushdown* pushdown) {
+    PushdownItem* item = pushdown_last(pushdown);
+    while (item != NULL && item->terminal == NULL)
+        item = item->prev;
+
+    return item;
+}
+
+void pushdown_remove_all_from_current(Pushdown* pushdown, PushdownItem* item) {
+    if (item == NULL)
+        SET_INT_ERROR(IntError_InvalidArgument, "`item` cannot be NULL");
+
+    PushdownItem* to_delete = item;
+
+    if (item->prev == NULL) {
+        pushdown->first = NULL;
+        pushdown->last = NULL;
+    } else {
+        item->prev->next = NULL;
+        pushdown->last = item->prev;
     }
-    pushdown->size = new_size;
+
+    while (to_delete != NULL) {
+        PushdownItem* next = to_delete->next;
+        free(to_delete);
+        to_delete = next;
+    }
 }
 
 PushdownItem* create_pushdown_item(Token* term, struct NTerm* nterm) {
@@ -83,10 +123,7 @@ PushdownItem* create_pushdown_item(Token* term, struct NTerm* nterm) {
     item->nterm = nterm;
     item->terminal = term;
     item->name = '|';  // default name: end of rule
-    return item;
-}
-
-PushdownItem* set_name(PushdownItem* item, char name) {
-    item->name = name;
+    item->next = NULL;
+    item->prev = NULL;
     return item;
 }
