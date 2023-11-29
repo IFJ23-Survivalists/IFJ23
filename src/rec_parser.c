@@ -13,18 +13,10 @@
 #include "parser.h"
 #include "to_string.h"
 
-// Check if g_parser.token.type is `tok` and if not, set syntax_err with given msg.
-#define CHECK_TOKEN(tok, errmsg) \
-    if (g_parser.token.type != tok) { \
-        syntax_err(errmsg); \
-        return false; \
-    } \
-    parser_next_token()
-
 // Check if g_parser.token.type is `tok` and if not, set syntax_err with given msg format.
-#define CHECK_TOKENf(tok, errmsgfmt, ...) \
+#define CHECK_TOKEN(tok, ...) \
     if (g_parser.token.type != tok) { \
-        syntax_errf(errmsgfmt, __VA_ARGS__); \
+        syntax_err(__VA_ARGS__); \
         return false; \
     } \
     parser_next_token()
@@ -79,7 +71,7 @@ bool rule_statementList() {
         default:
             break;
     }
-    syntax_errf("Unexpected token `%s` in statement list.", TOK_STR);
+    syntax_err("Unexpected token `%s` in statement list.", TOK_STR);
     return false;
 }
 
@@ -89,7 +81,7 @@ bool rule_statementSeparator() {
         //       by the end of `while` and such.
         return true;
     }
-    syntax_errf("Unexpected token `%s` between statements. Expected `EOL`, `}` or `EOF`.", TOK_STR);
+    syntax_err("Unexpected token `%s` between statements. Expected `EOL`, `}` or `EOF`.", TOK_STR);
     return false;
 }
 
@@ -98,53 +90,53 @@ bool rule_ifStatement() {
         case Token_ParenLeft:
         case Token_Let:
             CALL_RULE(rule_ifCondition);
-            CHECK_TOKENf(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
+            CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
             CALL_RULE(rule_statementList);
-            CHECK_TOKENf(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
+            CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
             CALL_RULE(rule_else);
             return true;
         default:
-            syntax_errf("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
+            syntax_err("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
             return false;
     }
 }
 
 bool handle_let_statement() {
-    CHECK_TOKENf(Token_Identifier, "Unexpected token `%s` after the `let` keyword. Expected identifier.", TOK_STR);
+    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `let` keyword. Expected identifier.", TOK_STR);
     CALL_RULE(rule_assignType);
-    CHECK_TOKENf(Token_Equal, "Unexpected token `%s` in assign statement. Expected `=`.", TOK_STR);
+    CHECK_TOKEN(Token_Equal, "Unexpected token `%s` in assign statement. Expected `=`.", TOK_STR);
     Data expr_data;
     return expr_parser_begin(&expr_data);
 }
 
 bool handle_var_statement() {
-    CHECK_TOKENf(Token_Identifier, "Unexpected token `%s` after the `var` keyword. Expected identifier.", TOK_STR);
+    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `var` keyword. Expected identifier.", TOK_STR);
     CALL_RULE(rule_assignType);
     CALL_RULE(rule_assignExpr);
     return true;
 }
 
 bool handle_func_statement() {
-    CHECK_TOKENf(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.", TOK_STR);
-    CHECK_TOKENf(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
+    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.", TOK_STR);
+    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
     CALL_RULE(rule_params);
-    CHECK_TOKENf(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
+    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
     CALL_RULE(rule_funcReturnType);
-    CHECK_TOKENf(Token_BracketLeft, "Unexpected token `%s` after the `DataType` token. Expected `{`.", TOK_STR);
+    CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the `DataType` token. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
-    CHECK_TOKENf(Token_BracketRight, "Unexpected token `%s` at the end of function definition. Expected `}`.", TOK_STR);
+    CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of function definition. Expected `}`.", TOK_STR);
     CALL_RULE(rule_statementList);
     return true;
 }
 
 bool handle_while_statement() {
-    CHECK_TOKENf(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
+    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
     Data expr_data;
     if (!expr_parser_begin(&expr_data)) return false;
-    CHECK_TOKENf(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
-    CHECK_TOKENf(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
+    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
+    CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
-    CHECK_TOKENf(Token_BracketRight, "Unexpected token `%s` at the end of while statement. Expected `}`.", TOK_STR);
+    CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of while statement. Expected `}`.", TOK_STR);
     CALL_RULE(rule_statementList);
     return true;
 }
@@ -176,12 +168,12 @@ bool rule_statement() {
                 return expr_parser_begin(&expr_data);
             }
             parser_next_token();
-            CHECK_TOKENf(Token_Equal, "Unexpected token `%s`. Expected function call or assign expression.", TOK_STR);
+            CHECK_TOKEN(Token_Equal, "Unexpected token `%s`. Expected function call or assign expression.", TOK_STR);
             Data expr_data;
             return expr_parser_begin(&expr_data);
         }
         default:
-            syntax_errf("Unexpected token `%s` at the start of statement list.", TOK_STR);
+            syntax_err("Unexpected token `%s` at the start of statement list.", TOK_STR);
             return false;
     }
 }
@@ -193,10 +185,10 @@ bool rule_funcReturnType() {
             return true;
         case Token_ArrowRight:
             parser_next_token();
-            CHECK_TOKENf(Token_DataType, "Unexpected token `%s` after `->`. Expected `DataType`.", TOK_STR);
+            CHECK_TOKEN(Token_DataType, "Unexpected token `%s` after `->`. Expected `DataType`.", TOK_STR);
             return true;
         default:
-            syntax_errf("Unexpected token `%s` after ')'. Expected `->` or `{`.", TOK_STR);
+            syntax_err("Unexpected token `%s` after ')'. Expected `->` or `{`.", TOK_STR);
             return false;
     }
 }
@@ -208,15 +200,15 @@ bool rule_params() {
             return true;
         case Token_Identifier:
             parser_next_token();
-            CHECK_TOKENf(Token_Identifier, "Unexpected token `%s` after the parameter name. Expected identifier.", TOK_STR);
-            CHECK_TOKENf(Token_DoubleColon, "Unexpected token `%s` after inner parameter name. Expected `,` or `)`.", TOK_STR);
-            CHECK_TOKENf(Token_DataType, "Unexpected token `%s`. Expected `DataType`.", TOK_STR);
+            CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the parameter name. Expected identifier.", TOK_STR);
+            CHECK_TOKEN(Token_DoubleColon, "Unexpected token `%s` after inner parameter name. Expected `,` or `)`.", TOK_STR);
+            CHECK_TOKEN(Token_DataType, "Unexpected token `%s`. Expected `DataType`.", TOK_STR);
             CALL_RULE(rule_params_n);
             return true;
         default:
             break;
     }
-    syntax_errf("Unexpected token `%s` in function parameters.", TOK_STR);
+    syntax_err("Unexpected token `%s` in function parameters.", TOK_STR);
     return false;
 }
 
@@ -229,7 +221,7 @@ bool rule_params_n() {
             parser_next_token();
             return rule_params();
         default:
-            syntax_errf("Unexpected token `%s`.", TOK_STR);
+            syntax_err("Unexpected token `%s`.", TOK_STR);
             return false;
     }
 }
@@ -267,7 +259,7 @@ bool rule_else() {
         default:
             if (HAS_EOL)
                 return rule_statementList();
-            syntax_errf("Unexpected token `%s`. Expected `else` or end of statement.", TOK_STR);
+            syntax_err("Unexpected token `%s`. Expected `else` or end of statement.", TOK_STR);
             return false;
     }
 }
@@ -277,13 +269,13 @@ bool rule_elseIf() {
         case Token_BracketLeft:
             parser_next_token();
             CALL_RULE(rule_statementList);
-            CHECK_TOKENf(Token_BracketRight, "Unexpected token `%s` at the end of else clause. Expected `}`.", TOK_STR);
+            CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of else clause. Expected `}`.", TOK_STR);
             return rule_else();
         case Token_If:
             parser_next_token();
             return rule_ifStatement();
         default:
-            syntax_errf("Unexpected token `%s` after the `else` keyword. Expected `{` or `if`.", TOK_STR);
+            syntax_err("Unexpected token `%s` after the `else` keyword. Expected `{` or `if`.", TOK_STR);
             return false;
     }
 }
@@ -296,12 +288,12 @@ bool rule_assignType() {
             return true;
         case Token_DoubleColon:
             parser_next_token();
-            CHECK_TOKENf(Token_DataType, "Unexpected token `%s` in type specification. Expected `DataType`.", TOK_STR);
+            CHECK_TOKEN(Token_DataType, "Unexpected token `%s` in type specification. Expected `DataType`.", TOK_STR);
             return true;
         default:
             if (HAS_EOL)
                 return true;
-            syntax_errf("Unexpected token `%s`. Expected one of `EOF`, `EOL`, `}`, `:`, `=`.", TOK_STR);
+            syntax_err("Unexpected token `%s`. Expected one of `EOF`, `EOL`, `}`, `:`, `=`.", TOK_STR);
             return false;
     }
 }
@@ -318,7 +310,7 @@ bool rule_assignExpr() {
         default:
             if (HAS_EOL)
                 return true;
-            syntax_errf("Unexpected token `%s`. Expected one of `EOL`, `EOF`, `}`, `=`.", TOK_STR);
+            syntax_err("Unexpected token `%s`. Expected one of `EOL`, `EOF`, `}`, `=`.", TOK_STR);
             return false;
     }
 }

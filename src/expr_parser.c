@@ -52,7 +52,7 @@ bool expr_parser_begin(Data* data) {
 
     // syntax error occurred during parsing
     if (!got_error()) {
-        syntax_errf("Unexpected token: '%s'", token_to_string(&g_parser.token));
+        syntax_err("Unexpected token: '%s'", token_to_string(&g_parser.token));
     }
 
     pushdown_destroy(pushdown);
@@ -297,7 +297,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_variable(st, id_name)->is_defined) {
-                    syntax_errf("Sementic error: '%s' is undefined", token_to_string(id));
+                    syntax_err("Sementic error: '%s' is undefined", token_to_string(id));
                     free(nterm);
                     return NULL;
                 }
@@ -320,7 +320,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             NTerm* expr = operands[1].nterm;  // nonterminal to be reduced
             if (operands[0].terminal->attribute.op == Operator_Negation) {
                 if (expr->type != DataType_Bool) {
-                    syntax_errf("Semantic Error: Type mismatch - Expected 'Bool', found '%s'.",
+                    syntax_err("Semantic Error: Type mismatch - Expected 'Bool', found '%s'.",
                                 datatype_to_string(expr->type));
                     free(nterm);
                     free(expr);
@@ -329,7 +329,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 nterm->type = expr->type;
             } else {
                 if (expr->type != DataType_Int && expr->type != DataType_Double) {
-                    syntax_errf("Semantic Error: Type mismatch - Expected 'Int' or 'Double' , found '%s'.",
+                    syntax_err("Semantic Error: Type mismatch - Expected 'Int' or 'Double' , found '%s'.",
                                 datatype_to_string(expr->type));
                     free(nterm);
                     free(expr);
@@ -357,7 +357,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                     nterm->type = DataType_String;
                     break;
                 default:
-                    syntax_errf("Semantic Error: cannot force unwrap value of non-optional type '%s'.",
+                    syntax_err("Semantic Error: cannot force unwrap value of non-optional type '%s'.",
                                 datatype_to_string(expr->type));
                     free(nterm);
                     free(expr);
@@ -387,7 +387,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
             } else if (left->type == DataType_String && right->type == DataType_String) {
                 nterm->type = DataType_String;
             } else {
-                syntax_errf("Semantic Error: Invalid operands left '%s' and right '%s' operands for operation '%s'.",
+                syntax_err("Semantic Error: Invalid operands left '%s' and right '%s' operands for operation '%s'.",
                             datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
                 free(nterm);
                 free(left);
@@ -439,7 +439,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
 
                 // implicit conversion is not possible
                 else {
-                    syntax_errf(
+                    syntax_err(
                         "Semantic Error 7: Invalid operands left '%s' and right '%s' operands for relation '%s'.",
                         datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
                     free(nterm);
@@ -481,7 +481,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
-                    syntax_errf(
+                    syntax_err(
                         "Sementic error: Undefined function '%s'. Function must be declared or defined before use.",
                         token_to_string(id));
                     free(nterm);
@@ -490,7 +490,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 nterm->type = symtable_get_function(st, id_name)->return_value_type;
                 // generate("=", id, NULL, nterm->value);
             } else {
-                syntax_errf("expected identifier before '(' token not '%s'.", token_to_string(id));
+                syntax_err("expected identifier before '(' token not '%s'.", token_to_string(id));
                 free(nterm);
                 return NULL;
             }
@@ -504,7 +504,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
 
                 // identifier is not defined
                 if (st == NULL || !symtable_get_function(st, id_name)) {
-                    syntax_errf(
+                    syntax_err(
                         "Sementic error: Undefined function '%s'. Function must be declared or defined before use.",
                         token_to_string(id));
                     free(nterm);
@@ -514,7 +514,7 @@ NTerm* apply_rule(Rule rule, PushdownItem* operands) {
                 // generate("=", id, NULL, nterm->value);
 
             } else {
-                syntax_errf("expected identifier before '(' token not '%s'.", token_to_string(id));
+                syntax_err("expected identifier before '(' token not '%s'.", token_to_string(id));
                 free(nterm);
                 return NULL;
             }

@@ -11,24 +11,6 @@
 #include "symtable.h"
 #include "symstack.h"
 
-/// Enable RED color printing.
-#define COL_RED "\033[31m"
-
-/// Enable default color printing.
-#define COL_DEF "\033[0m"
-
-/// Print error message for syntax error and set ::Error_Syntax.
-#define syntax_err(msg) do { \
-        fprintf(stderr, "line:%lu:%lu " COL_RED "error" COL_DEF ": " msg "\n", g_parser.token.line, g_parser.token.position_in_line); \
-        set_error(Error_Syntax); \
-    } while (false)
-
-/// Print error message for syntax error in a specific format and set ::Error_Syntax.
-#define syntax_errf(msg, ...) do { \
-        fprintf(stderr, "line:%lu:%lu " COL_RED "error" COL_DEF ": " msg "\n", g_parser.token.line, g_parser.token.position_in_line, __VA_ARGS__); \
-        set_error(Error_Syntax); \
-    } while (false)
-
 /// Represents a parser state.
 typedef struct {
     Token token;      ///< Current non-whitespace token.
