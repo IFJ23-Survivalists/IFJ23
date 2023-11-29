@@ -71,6 +71,7 @@ typedef struct NTerm {
     DataValue value; /**< resulted value after applying a reduction rule */
     DataType type;   /**< resulted type after applying a reduction rule */
     char name;       /**< E or L */
+    bool is_const;   /**< `true` only if const reduced to nonterminal, otherwise `false`*/
 } NTerm;
 
 // Forward declaration
