@@ -34,7 +34,10 @@ void pushdown_init(Pushdown* pushdown) {
 }
 
 void pushdown_destroy(Pushdown* pushdown) {
-    free(pushdown->data);
+    for (size_t i = 0; i < pushdown->size; i++) {
+        free(&(pushdown->data[i]));
+    }
+
     pushdown->data = ((void*)0);
     pushdown->size = pushdown->capacity = 0;
 }
