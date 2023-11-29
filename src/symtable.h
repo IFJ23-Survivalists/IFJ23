@@ -1,6 +1,7 @@
 /**
  * @file symtable.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 03/10/2023
  * @brief Header file for a symbol table module used for managing variables and functions.
  *
@@ -18,21 +19,27 @@
 
 /**
  * @struct FunctionParameter
- * @brief Represents the parameters of a function.
+ * @brief Represennts a single function parameter
  */
 typedef struct {
-    int argc;        /**< Number of function arguments. */
-    DataType *argv;  /**< Array of argument data types. */
+    DataType type;          ///< Datatype of parameter
+    /**
+     * @brief Identifies if the parameter has outside name or not.
+     * @warning When true, then the value of ::FunctionParameter::out_name is undefined
+     */
+    bool is_named;
+    String iname;        ///< Name of the parameter when calling the function
+    String oname;        ///< Name of the parameter when inside the function
 } FunctionParameter;
 
 /**
  * @struct FunctionSymbol
  * @brief Represents a function symbol in the symbol table.
  */
-
 typedef struct {
-    FunctionParameter parameters; /**< Parameters of the function. */
-    DataType return_value_type;       /**< Return value data type. */
+    int param_count;           /**< Number of items in ::FunctionSymbol::parameters. */
+    FunctionParameter* params; /**< Parameters of the function. */
+    DataType return_value_type;    /**< Return value data type. */
 } FunctionSymbol;
 
 /**
@@ -103,21 +110,36 @@ void function_parameter_init(FunctionParameter *par);
 void function_parameter_free(FunctionParameter *par);
 
 /**
- * @brief Add a parameter with a specified data type to a FunctionParameter struct.
- *
- * This function adds a parameter with the specified data type to a FunctionParameter struct.
- *
- * @param[in,out] par The FunctionParameter struct to which the parameter is added.
- * @param[in] type The data type of the parameter.
- */
-void function_parameter_push(FunctionParameter *par, DataType type);
-
-/**
  * @brief Initialize the function symbol.
  * @param[in,out] sym Function symbol to initialize.
  * @warning Using FunctionSymbol without initializing could cause some memory to not be free'd during `symtable_free()`, because there could be uninitialized values.
  */
 void function_symbol_init(FunctionSymbol *sym);
+
+/**
+ * @brief Free all memory resources used by ::FuncitonSymbol
+ * @param[in,out] sym Function symbol to free resources of.
+ */
+void function_symbol_free(FunctionSymbol *sym);
+
+/**
+ * @brief Insert function parameter to parameters in function symbol.
+ * @param[in,out] sym FunctionSymbol to insert the parameter into.
+ * @param[in] param Initialized parameter to insert.
+ * @note Parameter parm is NOT deeply copied and will take ownership of this parameter.
+ * @return True if insertion was successful, False otherwise.
+ */
+bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param);
+
+/**
+ * @brief Construct FunctionParameter and insert it into parameter array.
+ * @param[in,out] sym FunctionSymbol to insert the new FunctionParameter in.
+ * @param[in] type ::DataType of parameter.
+ * @param[in] oname Name of the parameter in function calls or NULL for unnamed parameter.
+ * @param[in] iname Name of the parameter inside function definition.
+ * @return True if insertion was successful, False otherwise.
+ */
+bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const char* oname, const char* iname);
 
 /**
  * @brief Initialize the variable symbol.

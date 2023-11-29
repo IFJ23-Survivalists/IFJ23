@@ -13,40 +13,66 @@
 
 void function_parameter_init(FunctionParameter *par) {
     if (par) {
-        par->argc = 0;
-        par->argv = NULL;
+        par->type = (DataType)0;
+        par->is_named = false;
+        string_init(&par->oname);
+        string_init(&par->iname);
     }
 }
 
 void function_parameter_free(FunctionParameter *par) {
-    if (par && par->argc) {
-        free(par->argv);
-        par->argv = NULL;
-        par->argc = 0;
+    if (par) {
+        string_free(&par->iname);
+        string_free(&par->oname);
     }
-}
-
-void function_parameter_push(FunctionParameter *par, DataType type) {
-    if (!par) {
-        return;
-    }
-
-    DataType *reallocated = realloc(par->argv, sizeof(DataType) * (par->argc + 1));
-
-    if (!reallocated) {
-        set_error(Error_Internal);
-        eprint("function_parameter_push: Out Of Memory\n");
-        return;
-    }
-
-    reallocated[par->argc++] = type;
-    par->argv = reallocated;
 }
 
 void function_symbol_init(FunctionSymbol *sym) {
-    sym->parameters.argv = NULL;
-    sym->parameters.argc = 0;
+    sym->params = NULL;
+    sym->param_count = 0;
     sym->return_value_type = (DataType)0;
+}
+
+void function_symbol_free(FunctionSymbol *sym) {
+    for (int i = 0; i < sym->param_count; i++)
+        function_parameter_free(sym->params + i);
+    free(sym->params);
+    sym->params = NULL;
+    sym->param_count = 0;
+}
+
+bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param) {
+    MASSERT(sym, "Function symbol cannot be NULL.");
+    if (param.iname.length == 0) {
+        SET_INT_ERROR(IntError_InvalidArgument, "function_symbol_insert_param: iname cannot be of length 0.");
+        return false;
+    }
+
+    // Resize the parameter array to fit the new parameter.
+    sym->params = realloc(sym->params, (sym->param_count + 1) * sizeof(FunctionParameter));
+    if (!sym->params) {
+        SET_INT_ERROR(IntError_Memory, "function_symbol_insert_param: Realloc failed.");
+        return false;
+    }
+
+    // Insert the new parameter at the end.
+    sym->params[sym->param_count++] = param;
+    return true;
+}
+
+bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const char* oname, const char* iname) {
+    MASSERT(sym && iname, "Function symbol and iname cannot be NULL.");
+
+    // Create new FunctionParameter
+    FunctionParameter p;
+    function_parameter_init(&p);
+    p.type = type;
+    string_concat_c_str(&p.iname, iname);
+    if (oname)
+        string_concat_c_str(&p.oname, oname);
+    p.is_named = oname != NULL;
+
+    return function_symbol_insert_param(sym, p);
 }
 
 void variable_symbol_init(VariableSymbol *var) {
@@ -70,7 +96,7 @@ void node_free(Node **node) {
     node_free(&aux->right);
 
     if (aux->type == NodeType_Function)
-        function_parameter_free(&aux->value.function.parameters);
+        function_symbol_free(&aux->value.function);
 
     string_free(&aux->key);
 
