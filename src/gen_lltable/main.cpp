@@ -39,14 +39,18 @@ int main(int argc, char* argv[]) {
     g.add_rule(NTerm_StatementSeparator, "t", Token_BracketRight);
     g.add_rule(NTerm_StatementSeparator, "t", Token_EOF);
     g.add_rule(NTerm_StatementList, NULL);
+
     g.add_rule(NTerm_Statement, "tanaanan", Token_While, '(', NTerm_Expr, ')', '{', NTerm_StatementList, '}', NTerm_StatementList);
-    g.add_rule(NTerm_Statement, "ttanattanan", Token_Func, Token_Identifier, '(', NTerm_Params, ')', Token_ArrowRight, Token_DataType, '{', NTerm_StatementList, '}', NTerm_StatementList);
+    g.add_rule(NTerm_Statement, "ttanananan", Token_Func, Token_Identifier, '(', NTerm_Params, ')', NTerm_FuncReturnType, '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Statement, "tn", Token_Return, NTerm_ReturnExpr);
     g.add_rule(NTerm_Statement, "tn", Token_If, NTerm_IfStatement);
     g.add_rule(NTerm_Statement, "ttntn", Token_Let, Token_Identifier, NTerm_AssignType, Token_Equal, NTerm_Expr);
     g.add_rule(NTerm_Statement, "ttnn", Token_Var, Token_Identifier, NTerm_AssignType, NTerm_AssignExpr);
     g.add_rule(NTerm_Statement, "ttn", Token_Identifier, Token_Equal, NTerm_Expr);
     g.add_rule(NTerm_Statement, "n", NTerm_Expr);
+
+    g.add_rule(NTerm_FuncReturnType, "tt", Token_ArrowRight, Token_DataType);
+    g.add_rule(NTerm_FuncReturnType, NULL);
     g.add_rule(NTerm_IfStatement, "nanan", NTerm_IfCondition, '{', NTerm_StatementList, '}', NTerm_Else);
     g.add_rule(NTerm_Params, "ttttn", Token_Identifier, Token_Identifier, Token_DoubleColon, Token_DataType, NTerm_Params_n);
     g.add_rule(NTerm_Params, NULL);
@@ -54,12 +58,12 @@ int main(int argc, char* argv[]) {
     g.add_rule(NTerm_Params_n, NULL);
     g.add_rule(NTerm_ReturnExpr, "n", NTerm_Expr);
     g.add_rule(NTerm_ReturnExpr, NULL);
-    g.add_rule(NTerm_IfCondition, "n", NTerm_Expr);
+    g.add_rule(NTerm_IfCondition, "ana", '(', NTerm_Expr, ')');
     g.add_rule(NTerm_IfCondition, "tn", Token_Let, NTerm_Expr);
 
     g.add_rule(NTerm_Else, "tn", Token_Else, NTerm_ElseIf);
-    g.add_rule(NTerm_Else, NULL);
-    g.add_rule(NTerm_ElseIf, "anan", '{', NTerm_StatementList, '}', NTerm_StatementList);
+    g.add_rule(NTerm_Else, "n", NTerm_StatementList);
+    g.add_rule(NTerm_ElseIf, "anan", '{', NTerm_StatementList, '}', NTerm_Else);
     g.add_rule(NTerm_ElseIf, "tn", Token_If, NTerm_IfStatement);
 
     g.add_rule(NTerm_AssignType, "tt", Token_DoubleColon, Token_DataType);

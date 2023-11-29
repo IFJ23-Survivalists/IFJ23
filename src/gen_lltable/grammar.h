@@ -20,6 +20,7 @@ static const char* NTERM_NAMES[] = {
     "<statementList>",
     "<statementSeparator>",
     "<statement>",
+    "<funcReturnType>",
     "<ifStatement>",
     "<params>",
     "<params_n>",

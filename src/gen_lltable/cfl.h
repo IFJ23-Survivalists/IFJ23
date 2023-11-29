@@ -18,6 +18,7 @@ typedef enum {
     NTerm_StatementList = 0,
     NTerm_StatementSeparator,
     NTerm_Statement,
+    NTerm_FuncReturnType,
     NTerm_IfStatement,
     NTerm_Params,
     NTerm_Params_n,
