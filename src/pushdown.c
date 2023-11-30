@@ -19,7 +19,6 @@ void pushdown_destroy(Pushdown* pushdown) {
         pushdown->first = to_delete->next;
         free(to_delete);
     }
-    free(pushdown);
 }
 
 void pushdown_insert_last(Pushdown* pushdown, PushdownItem* value) {
