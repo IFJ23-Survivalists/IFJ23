@@ -214,10 +214,8 @@ void parse(Token token, Token* prev_token) {
 
     switch (comp_res) {
         case Left:
-            if (!reduce())
-                break;
-
-            parse(token, prev_token);
+            if (reduce())
+                parse(token, prev_token);
             break;
 
         case Right: {
@@ -316,11 +314,19 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 Symtable* st = symstack_search(id_name);
 
                 // identifier is not defined
-                if (st == NULL || !symtable_get_variable(st, id_name)->is_defined) {
-                    undef_fun_err("Indentifier '%s' is undefined", token_to_string(id));
+                if (st == NULL) {
+                    undef_var_err("Indentifier '%s' is undefined", token_to_string(id));
                     free(nterm);
                     return NULL;
                 }
+
+                VariableSymbol* vs = symtable_get_variable(st, id_name);
+                if (vs == NULL || !vs->is_defined) {
+                    undef_var_err("Indentifier '%s' is undefined", token_to_string(id));
+                    free(nterm);
+                    return NULL;
+                }
+
                 nterm->type = symtable_get_variable(st, id_name)->type;
                 // generate("=", id, NULL, nterm->value);
             }
