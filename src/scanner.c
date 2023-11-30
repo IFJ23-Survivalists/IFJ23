@@ -801,7 +801,6 @@ static State step_string_start(char ch) {
     }
 
     scanner_step_back(ch);
-    string_init(&g_scanner.string);
     return State_LineString;
 }
 
