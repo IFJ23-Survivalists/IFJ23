@@ -26,7 +26,7 @@ bool rule_params_n();
 bool rule_returnExpr();
 bool rule_ifCondition();
 bool rule_else();
-bool rule_assignType();
+bool rule_assignType(DataType* attr_dt);
 bool rule_assignExpr();
 bool rule_elseIf();
 
@@ -85,27 +85,76 @@ bool rule_ifStatement() {
     }
 }
 
+bool assign_types_compatible(DataType left, DataType right) {
+    if (left == right)
+        return true;
+    if (left >= DataType_MaybeInt && left <= DataType_MaybeBool) {
+        // "Maybe types" and their counterparts are compatible.
+        return (left - DataType_MaybeInt) == right || right == DataType_Nil;
+    }
+    return false;
+}
+
 bool handle_let_statement() {
+    TokenAttribute attr = g_parser.token.attribute;
     CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `let` keyword. Expected identifier.", TOK_STR);
-    CALL_RULE(rule_assignType);
+    const char* id_name = attr.data.value.string.data;
+
+    // Check if the variable already is in the top symbol table
+    NodeType* symtype = symtable_get_symbol_type(symstack_top(), id_name);
+    if (symtype) {      // Symbol found
+        undef_var_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.", id_name);
+        return false;
+    }
+    VariableSymbol var;
+    variable_symbol_init(&var);
+    var.allow_modification = false;
+    var.is_defined = true;      // Let statement are always definitions. If not there is a syntax error.
+
+    CALL_RULEp(rule_assignType, &var.type);
     CHECK_TOKEN(Token_Equal, "Unexpected token `%s` in assign statement. Expected `=`.", TOK_STR);
     Data expr_data;
-    return expr_parser_begin(&expr_data);
+    CALL_RULEp(expr_parser_begin, &expr_data);
+
+    // Deduce the type if needed
+    if (var.type == DataType_Nil) {
+        var.type = expr_data.type;
+    }
+
+    // Check if both left and right assign operators have the same type.
+    if (!assign_types_compatible(var.type, expr_data.type)) {
+        semantic_err("Type mismatch. Cannot assign variable of type " COL_Y("%s") " to type "
+                    COL_Y("%s") ".", datatype_to_string(expr_data.type), datatype_to_string(var.type));
+        return false;
+    }
+    // TODO: Assign of `nil` to `Maybe` types.
+
+    // Create variable in the top-most symbol table.
+    if (!symtable_insert_variable(symstack_top(), id_name, var)) {
+        SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
+        return false;
+    }
+
+    return true;
 }
 
 bool handle_var_statement() {
     CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `var` keyword. Expected identifier.", TOK_STR);
-    CALL_RULE(rule_assignType);
+    DataType dt;
+    CALL_RULEp(rule_assignType, &dt);
     CALL_RULE(rule_assignExpr);
     return true;
 }
 
 bool handle_func_statement() {
+    // NOTE: Handled by collect phase.
     CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.", TOK_STR);
     CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
     CALL_RULE(rule_params);
     CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
     CALL_RULE(rule_funcReturnType);
+
+    // TODO
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the `DataType` token. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of function definition. Expected `}`.", TOK_STR);
@@ -268,19 +317,23 @@ bool rule_elseIf() {
     }
 }
 
-bool rule_assignType() {
+bool rule_assignType(DataType* attr_dt) {
     switch (g_parser.token.type) {
         case Token_EOF:
         case Token_BracketRight:
         case Token_Equal:
+            *attr_dt = DataType_Nil;  // nil means we have to deduce it.
             return true;
         case Token_DoubleColon:
             parser_next_token();
+            *attr_dt = g_parser.token.attribute.data_type;
             CHECK_TOKEN(Token_DataType, "Unexpected token `%s` in type specification. Expected `DataType`.", TOK_STR);
             return true;
         default:
-            if (HAS_EOL)
+            if (HAS_EOL) {
+                *attr_dt = DataType_Nil;
                 return true;
+            }
             syntax_err("Unexpected token `%s`. Expected one of `EOF`, `EOL`, `}`, `:`, `=`.", TOK_STR);
             return false;
     }
