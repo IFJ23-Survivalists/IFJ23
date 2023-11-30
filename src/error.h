@@ -102,9 +102,10 @@ void print_error(const struct Token* tok, Error err_type, const char* err_string
 
 #define lex_err(...) print_error(&g_parser.token, Error_Lexical, "Lexical", __VA_ARGS__)
 #define syntax_err(...) print_error(&g_parser.token, Error_Syntax, "Syntax", __VA_ARGS__)
-#define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, "Undefined function", __VA_ARGS__)
+/// Error for undefined or redefined functins or variables.
+#define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, "Syntax", __VA_ARGS__)
 #define fun_type_err(...) print_error(&g_parser.token, Error_TypeMismatched, "Type mismatch", __VA_ARGS__)
-#define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, "Undefined variable", __VA_ARGS__)
+#define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, "Semantic", __VA_ARGS__)
 #define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, "Return value missmatch", __VA_ARGS__)
 #define expr_type_err(...) print_error(&g_parser.token, Error_Operation, "Type mismatch", __VA_ARGS__)
 #define unknown_type_err(...) print_error(&g_parser.token, Error_UnknownType, "Unknown type", __VA_ARGS__)

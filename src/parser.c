@@ -19,9 +19,9 @@ void parser_init() {
 }
 
 bool parser_begin() {
-    if (rec_parser_begin(ParserMode_Collect)) {
+    if (rec_parser_collect()) {
         scanner_reset_to_beginning();
-        return rec_parser_begin(ParserMode_Parse);
+        return rec_parser_begin();
     }
     return false;
 }
@@ -39,8 +39,9 @@ Token* parser_next_token() {
 }
 
 bool parser_tok_is_fun_id() {
-    MASSERT(false, "Not yet implemented.");
-    return g_parser.token.type == Token_Identifier
-        && *symtable_get_symbol_type(symstack_top(), g_parser.token.attribute.data.value.string.data) == NodeType_Function;
+    NodeType* ntype = symtable_get_symbol_type(symstack_top(), g_parser.token.attribute.data.value.string.data);
+    if (!ntype)
+        return false;
+    return g_parser.token.type == Token_Identifier && *ntype == NodeType_Function;
 }
 

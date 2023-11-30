@@ -37,9 +37,9 @@ typedef struct {
  * @brief Represents a function symbol in the symbol table.
  */
 typedef struct {
-    int param_count;           /**< Number of items in ::FunctionSymbol::parameters. */
-    FunctionParameter* params; /**< Parameters of the function. */
-    DataType return_value_type;    /**< Return value data type. */
+    int param_count;               /**< Number of items in ::FunctionSymbol::parameters. */
+    FunctionParameter* params;     /**< Parameters of the function. */
+    DataType return_value_type;    /**< Value the function returns or ::DataType_nil when it doesn't return anything. */
 } FunctionSymbol;
 
 /**
@@ -121,6 +121,23 @@ void function_symbol_init(FunctionSymbol *sym);
  * @param[in,out] sym Function symbol to free resources of.
  */
 void function_symbol_free(FunctionSymbol *sym);
+
+/**
+ * @brief Check if FunctionSymbol already contains given parameter.
+ * @param[in] sym Function symbol to search in.
+ * @param[in] oname Name of the parameter when calling the function.
+ * @param[in] iname Name of the parameter inside the function.
+ * @return 0 when the parameter in NOT present. Otherwise 1 if `oname` exist or 2 if iname `exists`.
+ */
+int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char* iname);
+
+/**
+ * @brief Get function parameter by outside name.
+ * @param[in] sym FunctinoSymbol to look for the parameter in.
+ * @param[in] oname Name of the parameter when calling the function.
+ * @return Pointer to function parameter on NULL when not found.
+ */
+FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const char* oname);
 
 /**
  * @brief Insert function parameter to parameters in function symbol.

@@ -10,23 +10,8 @@
 #include "expr_parser.h"
 #include "error.h"
 #include "scanner.h"
-#include "parser.h"
 #include "to_string.h"
 
-// Check if g_parser.token.type is `tok` and if not, set syntax_err with given msg format.
-#define CHECK_TOKEN(tok, ...) \
-    if (g_parser.token.type != tok) { \
-        syntax_err(__VA_ARGS__); \
-        return false; \
-    } \
-    parser_next_token()
-
-// Call given rule function and return false if the rule fails.
-#define CALL_RULE(rule) if (!rule()) return false
-// Call given rule function with parameters and return false if the rule fails.
-#define CALL_RULEp(rule, ...) if (!rule(__VA_ARGS__)) return false
-// Shorthand for getting the string representation of token.
-#define TOK_STR token_to_string(&g_parser.token)
 // Shorthand for checking if there was newline before the current token.
 #define HAS_EOL (g_parser.token_ws.type == Token_Whitespace && g_parser.token_ws.attribute.has_eol)
 
@@ -45,11 +30,8 @@ bool rule_assignType();
 bool rule_assignExpr();
 bool rule_elseIf();
 
-ParserMode g_mode;
-
 // Entry point to recursive parsing.
-bool rec_parser_begin(ParserMode mode) {
-    g_mode = mode;
+bool rec_parser_begin() {
     parser_next_token();
     return rule_statementList();
 }
@@ -134,7 +116,7 @@ bool handle_func_statement() {
 bool handle_while_statement() {
     CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
     Data expr_data;
-    if (!expr_parser_begin(&expr_data)) return false;
+    CALL_RULEp(expr_parser_begin, &expr_data);
     CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
@@ -165,7 +147,11 @@ bool rule_statement() {
             return rule_returnExpr();
         case Token_Identifier: {
             // Check if this ID is a function or not. Based on that select the correct rule to use.
-            if (parser_tok_is_fun_id()) {
+            NodeType* id_type = symtable_get_symbol_type(symstack_top(), g_parser.token.attribute.data.value.string.data);
+            if (!id_type) {
+                undef_var_err("Symbol `" COL_Y("%s") "` is undefined.", g_parser.token.attribute.data.value.string.data);
+                return false;
+            } else if (*id_type == NodeType_Function) {
                 Data expr_data;
                 return expr_parser_begin(&expr_data);
             }

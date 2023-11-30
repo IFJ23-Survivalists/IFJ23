@@ -41,6 +41,30 @@ void function_symbol_free(FunctionSymbol *sym) {
     sym->param_count = 0;
 }
 
+int string_comp(const char* a, const char* b) {
+    if (a == NULL || b == NULL)
+        return -1;
+    return strcmp(a, b);
+}
+
+int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char* iname) {
+    for (int i = 0; i < sym->param_count; i++) {
+        if (string_comp(sym->params[i].oname.data, oname) == 0)
+            return 1;
+        if (string_comp(sym->params[i].iname.data, iname) == 0)
+            return 2;
+    }
+    return 0;
+}
+
+FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const char* oname) {
+    for (int i = 0; i < sym->param_count; i++) {
+        if (strcmp(sym->params[i].oname.data, oname) == 0)
+            return sym->params + i;
+    }
+    return NULL;
+}
+
 bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param) {
     MASSERT(sym, "Function symbol cannot be NULL.");
     if (param.iname.length == 0) {
