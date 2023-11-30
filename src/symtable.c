@@ -36,7 +36,8 @@ void function_symbol_init(FunctionSymbol *sym) {
 void function_symbol_free(FunctionSymbol *sym) {
     for (int i = 0; i < sym->param_count; i++)
         function_parameter_free(sym->params + i);
-    free(sym->params);
+    if (sym->params)
+        free(sym->params);
     sym->params = NULL;
     sym->param_count = 0;
 }

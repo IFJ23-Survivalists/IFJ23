@@ -35,16 +35,16 @@ bool col_handle_func_statement() {
     FunctionSymbol func;
     function_symbol_init(&func);
 
-    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
-    CALL_RULEp(col_rule_params, &func);
-    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
-    CALL_RULEp(col_rule_funcReturnType, &func);
-
     // Check if function already exists
     if (symtable_get_function(symstack_top(), func_name) != NULL) {
         undef_fun_err("Redefinition of function `" COL_Y("%s") "`.", func_name);
         return false;
     }
+
+    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
+    CALL_RULEp(col_rule_params, &func);
+    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
+    CALL_RULEp(col_rule_funcReturnType, &func);
 
     if (!symtable_insert_function(symstack_top(), func_name, func)) {
         SET_INT_ERROR(IntError_Runtime, "handle_func_statement: Could not insert function into symtable.");
@@ -83,7 +83,7 @@ bool col_rule_params(FunctionSymbol* func) {
             // Check if given parameter already exists.
             int has_param;
             if ((has_param = funciton_symbol_has_param(func, oname, iname)) != 0) {
-                print_error(&g_parser.token, Error_TypeMismatched, "Syntax",
+                print_error(&g_parser.token, Error_TypeMismatched, "Semantic",
                             "Conflicting names for parameter `%s%s" PRINT_RESET " %s%s" PRINT_RESET " : %s`.",
                             has_param == 1 ? PRINT_Y : PRINT_W, oname,
                             has_param == 2 ? PRINT_Y : PRINT_W, iname,
