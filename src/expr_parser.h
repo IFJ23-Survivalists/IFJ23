@@ -115,7 +115,7 @@ char precedence_to_char(PrecedenceCat cat);
  * @param[in] token Token to be processed.
  * @param[in] prev_token Previous token for deciding ambiguous tokens precedence category.
  */
-void parse(struct Pushdown* pushdown, Token token, Token* prev_token);
+void parse(Token token, Token* prev_token);
 
 /**
  * @brief Decide which rule should be used for a given string
@@ -127,10 +127,9 @@ Rule get_rule(char* rule);
 /**
  * @brief Remove all terminals and nonterminals from `pushdown` and replace them by non terminal created by applying any
  * rule.
- * @param[in, out] pushdown Initialized pushdown.
  * @return `true` if reduction was performed. otherwise `false`.
  */
-bool reduce(struct Pushdown* pushdown);
+bool reduce();
 
 /**
  * @brief Create non terminal by applying rule to `operands`.

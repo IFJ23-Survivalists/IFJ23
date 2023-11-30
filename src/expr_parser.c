@@ -9,6 +9,7 @@
 #include <string.h>
 #include "parser.h"
 #include "pushdown.h"
+#include "string_stack.h"
 #include "to_string.h"
 
 const char* RULES[] = {
@@ -33,23 +34,28 @@ const ComprarisonResult PRECEDENCE_TABLE[11][11] = {
     {Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* : */
     {Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};     /* $ */
 
+Stack g_stack;
+Pushdown g_pushdown;
+
 bool expr_parser_begin(Data* data) {
     NTerm* nterm = NULL;
-    Pushdown* pushdown = malloc(sizeof(Pushdown));
 
-    pushdown_init(pushdown);
-    parse(pushdown, g_parser.token, NULL);
-    PushdownItem* item = pushdown_last(pushdown);
+    stack_init(&g_stack);
+    pushdown_init(&g_pushdown);
+
+    parse(g_parser.token, NULL);
+    PushdownItem* item = pushdown_last(&g_pushdown);
 
     if (item != NULL)
         nterm = item->nterm;
 
     // check if pushdown is reduced to one nonterminal
-    if (pushdown->first == pushdown->last && nterm != NULL && nterm->name == 'E') {
+    if (g_pushdown.first == g_pushdown.last && nterm != NULL && nterm->name == 'E') {
         data->type = nterm->type;
         data->value = nterm->value;
         free(nterm);
-        pushdown_destroy(pushdown);
+        stack_free(&g_stack);
+        pushdown_destroy(&g_pushdown);
         return true;
     }
 
@@ -58,7 +64,8 @@ bool expr_parser_begin(Data* data) {
         syntax_err("Unexpected token: '%s'", token_to_string(&g_parser.token));
     }
 
-    pushdown_destroy(pushdown);
+    stack_free(&g_stack);
+    pushdown_destroy(&g_pushdown);
     return false;
 }
 
@@ -198,8 +205,8 @@ void print_pushdown(Pushdown* pushdown) {
     }
 }
 
-void parse(Pushdown* pushdown, Token token, Token* prev_token) {
-    PushdownItem* topmost_terminal = pushdown_search_terminal(pushdown);
+void parse(Token token, Token* prev_token) {
+    PushdownItem* topmost_terminal = pushdown_search_terminal(&g_pushdown);
     PrecedenceCat topmost_terminal_prec =
         topmost_terminal ? char_to_precedence(topmost_terminal->name) : PrecendeceCat_Expr_End;
     PrecedenceCat token_prec = getTokenPrecedenceCategory(token, prev_token);
@@ -207,10 +214,10 @@ void parse(Pushdown* pushdown, Token token, Token* prev_token) {
 
     switch (comp_res) {
         case Left:
-            if (!reduce(pushdown))
+            if (!reduce())
                 break;
 
-            parse(pushdown, token, prev_token);
+            parse(token, prev_token);
             break;
 
         case Right: {
@@ -218,30 +225,35 @@ void parse(Pushdown* pushdown, Token token, Token* prev_token) {
             PushdownItem* terminal = create_pushdown_item(&token, NULL);
             terminal->name = precedence_to_char(token_prec);
 
-            pushdown_insert_after(pushdown, topmost_terminal, rule_end_marker);
-            pushdown_insert_last(pushdown, terminal);
+            pushdown_insert_after(&g_pushdown, topmost_terminal, rule_end_marker);
+            pushdown_insert_last(&g_pushdown, terminal);
 
-            parse(pushdown, *parser_next_token(), &token);
+            parse(*parser_next_token(), &token);
         } break;
 
         case Equal: {
             PushdownItem* terminal = create_pushdown_item(&token, NULL);
             terminal->name = precedence_to_char(token_prec);
 
-            pushdown_insert_last(pushdown, terminal);
-            parse(pushdown, *parser_next_token(), &token);
+            // save function name in stack
+            if (prev_token->type == Token_Identifier && token.type == Token_ParenLeft) {
+                stack_push(&g_stack, prev_token->attribute.data.value.string);
+            }
+
+            pushdown_insert_last(&g_pushdown, terminal);
+            parse(*parser_next_token(), &token);
         } break;
 
         case Err:
-            while (reduce(pushdown))
+            while (reduce())
                 ;
             return;
     }
 }
 
-bool reduce(Pushdown* pushdown) {
+bool reduce() {
     PushdownItem* rule_operands[MAX_RULE_LENGTH];
-    PushdownItem* rule_end_marker = pushdown_search_name(pushdown, '|');
+    PushdownItem* rule_end_marker = pushdown_search_name(&g_pushdown, '|');
     int idx;
 
     // no rule end => no reduction possible
@@ -263,7 +275,7 @@ bool reduce(Pushdown* pushdown) {
     NTerm* nterm = apply_rule(ruleName, rule_operands);
 
     // remove the rule from pushdown
-    pushdown_remove_all_from_current(pushdown, rule_end_marker);
+    pushdown_remove_all_from_current(&g_pushdown, rule_end_marker);
 
     // check if rule was applyed
     if (nterm == NULL) {
@@ -274,8 +286,7 @@ bool reduce(Pushdown* pushdown) {
     // push a new non-terminal to the pushdown
     PushdownItem* nterm_item = create_pushdown_item(NULL, nterm);
     nterm_item->name = nterm->name;
-    pushdown_insert_last(pushdown, nterm_item);
-    // print_pushdown(pushdown);
+    pushdown_insert_last(&g_pushdown, nterm_item);
 
     free(rule);
     return true;
@@ -460,15 +471,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
             free(right);
         } break;
 
-        case Rule_ArgsEE: {
-            NTerm* left = operands[0]->nterm;
-            NTerm* right = operands[2]->nterm;
-            // generate(push, left, right, nterm.value);
-            nterm->name = 'L';
-            free(left);
-            free(right);
-        } break;
-
+        case Rule_ArgsEE:
         case Rule_ArgsLE: {
             NTerm* left = operands[0]->nterm;
             NTerm* right = operands[2]->nterm;
@@ -500,6 +503,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 return NULL;
             }
             free(operands[2]->nterm);
+            stack_pop(&g_stack);
         } break;
 
         case Rule_FnEmpty: {
@@ -522,6 +526,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 free(nterm);
                 return NULL;
             }
+            stack_pop(&g_stack);
         } break;
 
         case Rule_FnArgs: {
@@ -551,12 +556,40 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
             // generate(call, id, NULL, nterm->value);
 
             free(arg);
+            stack_pop(&g_stack);
         } break;
 
         case Rule_NamedArg: {
-            NTerm* arg = operands[2]->nterm;
+            // Token* arg_name = operands[0]->terminal;
+            NTerm* arg_value = operands[2]->nterm;
+
+            if (stack_empty(&g_stack)) {
+                syntax_err("Named argument can be used only inside a function");
+                free(arg_value);
+                free(nterm);
+                return NULL;
+            }
+
+            char* fn_name = stack_top(&g_stack)->name.data;
+            Symtable* sym = symstack_search(fn_name);
+
+            if (sym == NULL) {
+                undef_fun_err("Function '%s' is undefined", fn_name);
+                free(arg_value);
+                free(nterm);
+                return NULL;
+            }
+
+            FunctionSymbol* fs = symtable_get_function(sym, fn_name);
+            if (fs == NULL) {
+                undef_fun_err("'%s' is not a function", fn_name);
+                free(arg_value);
+                free(nterm);
+                return NULL;
+            }
+
             // generate("=", id, NULL, nterm->value);
-            free(arg);
+            free(arg_value);
         } break;
         case NoRule:
             return NULL;
