@@ -458,7 +458,7 @@ Token scanner_advance() {
     Token token = {0};
     bool got_token = false;
     bool getting_whitespaces = false;
-    Token whitespace_token;
+    Token whitespace_token = {0};
     whitespace_token.type = Token_Whitespace;
     whitespace_token.attribute.has_eol = false;
 
@@ -801,7 +801,6 @@ static State step_string_start(char ch) {
     }
 
     scanner_step_back(ch);
-    string_init(&g_scanner.string);
     return State_LineString;
 }
 
