@@ -21,7 +21,12 @@ void parser_init() {
 bool parser_begin() {
     if (rec_parser_collect()) {
         scanner_reset_to_beginning();
-        return rec_parser_begin();
+        if (!rec_parser_begin())
+            return false;
+
+        MASSERT(symstack_size() == 1, "Parsing succeeded but there are local symbol tables remaining on the stack.");
+
+        // TODO: Check if any variable is uninitialized or undefined in symtable.
     }
     return false;
 }
