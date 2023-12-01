@@ -139,6 +139,16 @@ typedef struct {
 void scanner_init(FILE *src);
 
 /**
+ * @brief Initialize a Scanner instance with a string.
+ *
+ * This function initializes the scanner with the provided string. It prepares the scanner
+ * to start analyzing the given string.
+ *
+ * @param[in] str string to be analyzed.
+ */
+void scanner_init_str(const char *str);
+
+/**
  * @brief Clean up resources associated with a Scanner instance.
  *
  * This function releases any resources allocated for the scanner, such as closing the source file.
