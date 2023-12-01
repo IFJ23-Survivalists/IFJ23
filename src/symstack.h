@@ -68,6 +68,16 @@ size_t symstack_size();
 Symtable* symstack_top();
 
 /**
+ * @brief Get the symbol table at the bottom of the stack.
+ *
+ * This will return the symbol table at the bottom of the stack. We need this,
+ * because at the bottom of the stack there is the GLOBAL symbol table, in which
+ * functions are to be defined.
+ * @return The symbol table at the bottom of NULL when the symstack is empty.
+ */
+Symtable* symstack_bottom();
+
+/**
  * @brief Create new Symbol table at the top of the stack.
  * @return Pointer to newly created initialized symbol table on success, otherwise NULL.
  * @pre Will set Error_Internal on error.

@@ -68,6 +68,14 @@ Symtable* symstack_top() {
     return &g_symstack->top->symtable;
 }
 
+Symtable* symstack_bottom() {
+    CHECK_SS(NULL);
+    SymStackNode* node;
+    for (node = g_symstack->top; node->next; node = node->next)
+        ;
+    return &node->symtable;
+}
+
 Symtable* symstack_push() {
     CHECK_SS(NULL);
     SymStackNode* node = malloc(sizeof(SymStackNode));
