@@ -26,7 +26,7 @@ bool rule_ifStatement();
 bool rule_params();
 bool rule_params_n();
 bool rule_returnExpr();
-bool rule_ifCondition();
+bool rule_ifCondition(bool is_let);
 bool rule_else();
 bool rule_assignType(DataType* attr_dt);
 bool rule_assignExpr(VariableSymbol* var, const char* id_name);
@@ -71,28 +71,18 @@ bool rule_statementSeparator() {
     return false;
 }
 
-bool rule_ifStatement() {
-    switch (g_parser.token.type) {
-        case Token_ParenLeft:
-        case Token_Let:
-            CALL_RULE(rule_ifCondition);
-            CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
-            CALL_RULE(rule_statementList);
-            CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
-            CALL_RULE(rule_else);
-            return true;
-        default:
-            syntax_err("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
-            return false;
-    }
+bool is_maybe_datatype(DataType dt) { return dt >= DataType_MaybeInt && dt <= DataType_MaybeBool; }
+DataType maybe_to_normal(DataType maybe_dt) {
+    MASSERT(is_maybe_datatype(maybe_dt), "");
+    return maybe_dt - DataType_MaybeInt;
 }
 
 bool assign_types_compatible(DataType left, DataType right) {
     if (left == right)
         return true;
-    if (left >= DataType_MaybeInt && left <= DataType_MaybeBool) {
+    if (is_maybe_datatype(left)) {
         // "Maybe types" and their counterparts are compatible.
-        return (left - DataType_MaybeInt) == right;
+        return maybe_to_normal(left) == right;
     }
 
     // TODO: Add check when the `right` is NIL, then we can only assign to Maybe types.
@@ -347,15 +337,54 @@ bool rule_returnExpr() {
     }
 }
 
-bool rule_ifCondition() {
-    if (g_parser.token.type == Token_Let) {
-        parser_next_token();
+bool rule_ifStatement() {
+    switch (g_parser.token.type) {
+        case Token_ParenLeft:
+            parser_next_token();
+            CALL_RULEp(rule_ifCondition, false);
+            break;
+        case Token_Let:
+            parser_next_token();
+            CALL_RULEp(rule_ifCondition, true);
+            break;
+        default:
+            syntax_err("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
+            return false;
     }
-    Data expr_data;
-    CALL_RULEp(expr_parser_begin, &expr_data);
+    CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
+    CALL_RULE(rule_statementList);
+    CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
+    CALL_RULE(rule_else);
+    return true;
+}
 
-    // if (expr_data.type == DataType_Bool)
+bool rule_ifCondition(bool is_let) {
+    if (is_let) {
+        const char* id_name = TOK_ID_STR;
+        CHECK_TOKEN(Token_Identifier, "Unexpected token `" COL_Y("%s") "` in if-let statement. Expected indentifier.");
 
+        // Check if identifier is non-modifiable variable --> otherwise error 7 (expr_type_err)
+        VariableSymbol* var = symstack_search_variable(id_name);
+        if (!var || !var->is_initialized) {
+            undef_var_err("Variable `" COL_Y("%s") "` is not %s.", id_name, var ? "initialized" : "defined");
+            return false;
+        } else if (var->allow_modification) {
+            expr_type_err("Cannot use non-constant variable `" COL_Y("%s") "` in a if-let statement.", id_name);
+            return false;
+        }
+
+        // TODO: Retype the variable as non-maybe type in the new frame.
+    } else {
+        Data expr_data;
+        CALL_RULEp(expr_parser_begin, &expr_data);
+
+        if (expr_data.type != DataType_Bool) {
+            expr_type_err("If-expression is of non-boolean type " COL_Y("%s") ".", datatype_to_string(expr_data.type));
+            return false;
+        }
+
+        CHECK_TOKEN(Token_ParenRight, "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.", TOK_STR);
+    }
     return true;
 }
 
