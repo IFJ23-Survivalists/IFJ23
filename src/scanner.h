@@ -21,7 +21,6 @@ typedef enum {
     DataType_Double,
     DataType_String,
     DataType_Bool,
-    DataType_Nil,       // FIXME: Remove this. We don't support nil as a datatype
     DataType_MaybeInt,
     DataType_MaybeDouble,
     DataType_MaybeString,
@@ -40,6 +39,7 @@ typedef union {
 } DataValue;
 
 typedef struct {
+    bool is_nil;
     DataType type;
     DataValue value;
 } Data;

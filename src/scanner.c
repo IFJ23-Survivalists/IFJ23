@@ -16,9 +16,9 @@
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
 TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
-char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", "nil", NULL};
-DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool, DataType_Nil};
-DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool, DataType_Nil};
+char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", NULL};
+DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool};
+DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool};
 
 typedef struct {
     Token *tokens;
@@ -274,7 +274,6 @@ void get_current_token(Token *token) {
             token->type = Token_Equal;
             break;
         case State_Identifier: {
-
             for (int i = 0; KEYWORD[i]; i++) {
                 if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
                     token->type = KEYWORD_TYPE[i];
@@ -294,6 +293,7 @@ void get_current_token(Token *token) {
                 token->type = Token_Data;
                 token->attribute.data.type = DataType_Bool;
                 token->attribute.data.value.is_true = true;
+                token->attribute.data.is_nil = false;
                 return;
             }
 
@@ -301,6 +301,13 @@ void get_current_token(Token *token) {
                 token->type = Token_Data;
                 token->attribute.data.type = DataType_Bool;
                 token->attribute.data.value.is_true = false;
+                token->attribute.data.is_nil = false;
+                return;
+            }
+
+            if (strcmp(g_scanner.string.data, "nil") == 0) {
+                token->type = Token_Data;
+                token->attribute.data.is_nil = true;
                 return;
             }
 
@@ -385,11 +392,13 @@ void get_current_token(Token *token) {
         case State_Number:
             token->attribute.data.type = DataType_Int;
             token->attribute.data.value.number = g_scanner.number;
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         case State_NumberDouble:
             token->attribute.data.type = DataType_Double;
             token->attribute.data.value.number_double = make_number_double(g_scanner.number, g_scanner.decimalpoint);
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         case State_NumberExponent: {
@@ -412,12 +421,14 @@ void get_current_token(Token *token) {
 
             token->attribute.data.type = DataType_Double;
             token->attribute.data.value.number_double = number;
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         }
         case State_StringEnd:
             token->attribute.data.type = DataType_String;
             token->attribute.data.value.string = string_take(&g_scanner.string);
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
 
