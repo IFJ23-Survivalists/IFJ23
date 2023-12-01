@@ -1,4 +1,4 @@
-/**
+/*
  * @file test/scanner.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 10/10/2023
@@ -256,4 +256,39 @@ int main() {
     }
 
     scanner_free();
+
+    suite("Test Scanner init str") {
+        set_error(Error_None);
+        scanner_init_str("let a: Bool? = \"Hello World!\"");
+        Token token = scanner_advance_non_whitespace();
+        test(token.type == Token_Let);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Identifier);
+        test(strcmp(token.attribute.data.value.string.data, "a") == 0);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DoubleColon);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DataType);
+        test(token.attribute.data_type == DataType_MaybeBool);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Equal);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Data);
+        test(token.attribute.data.type == DataType_String);
+        test(strcmp(token.attribute.data.value.string.data, "Hello World!") == 0);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_EOF);
+
+        scanner_reset_to_beginning();
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Let);
+
+        scanner_free();
+    }
 }
