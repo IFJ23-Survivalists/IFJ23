@@ -48,7 +48,7 @@ typedef struct {
  */
 typedef struct {
     DataType type;             /**< Data type of the variable. */
-    bool is_defined;           /**< Indicates if the variable is defined. */
+    bool is_initialized;       /**< Indicates if the variable is initialized. */
     bool allow_modification;   /**< Indicates if the variable can be modified. */
 } VariableSymbol;
 

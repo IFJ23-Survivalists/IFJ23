@@ -21,11 +21,15 @@ typedef enum {
     DataType_Double,
     DataType_String,
     DataType_Bool,
-    DataType_Nil,
+    DataType_Nil,       // FIXME: Remove this. We don't support nil as a datatype
     DataType_MaybeInt,
     DataType_MaybeDouble,
     DataType_MaybeString,
     DataType_MaybeBool,
+
+    /// Special datatype used during semantic analysis for marking undefined datatypes.
+    /// @note This DataType cannot be retured by lexer as a DataType.
+    DataType_Undefined,
 } DataType;
 
 typedef union {
