@@ -128,3 +128,14 @@ Symtable* symstack_search(const char* sym_name) {
     }
     return NULL;
 }
+
+VariableSymbol* symstack_search_variable(const char* var_name) {
+    CHECK_SS(NULL);
+    for (SymStackNode* node = g_symstack->top; node; node = node->next) {
+        VariableSymbol* sym;
+        if ((sym = symtable_get_variable(&node->symtable, var_name)) != NULL)
+            return sym;
+    }
+    return NULL;
+}
+

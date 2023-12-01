@@ -102,4 +102,13 @@ bool symstack_pop();
  */
 Symtable* symstack_search(const char* sym_name);
 
+/**
+ * @brief Search the stack for variable symbol.
+ *
+ * Search the stack from top to bottom and return the first VariableSymbol that has the same nane.
+ * @param[in] var_name Name of the variable to search for.
+ * @return Pointer to the VariableSymbol or NULL when not found.
+ */
+VariableSymbol* symstack_search_variable(const char* var_name);
+
 #endif  // _SYMSTACK_H_
