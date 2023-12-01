@@ -141,7 +141,8 @@ bool define_variable_check(const char* name) {
 
     NodeType* symtype = symtable_get_symbol_type(symstack_top(), name);
     if (symtype) {      // Symbol found
-        undef_var_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.", name);
+        undef_var_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.",
+                name, *symtype == NodeType_Variable ? "variable" : "function");
         return false;
     }
     return true;
@@ -214,8 +215,16 @@ bool handle_func_statement() {
 
 bool handle_while_statement() {
     CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
+
     Data expr_data;
     CALL_RULEp(expr_parser_begin, &expr_data);
+
+    // Check that expr_data.type is of boolean value.
+    if (expr_data.type != DataType_Bool) {
+        expr_type_err("While-expression is of non-boolean type `" COL_Y("%s") "`.", datatype_to_string(expr_data.type));
+        return false;
+    }
+
     CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
