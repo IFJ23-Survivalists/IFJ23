@@ -227,7 +227,11 @@ bool handle_while_statement() {
 
     CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
+
+    symstack_push();
     CALL_RULE(rule_statementList);
+    symstack_pop();
+
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of while statement. Expected `}`.", TOK_STR);
     CALL_RULE(rule_statementList);
     return true;
@@ -247,9 +251,8 @@ bool handle_id_statement() {
     CHECK_TOKEN(Token_Equal, "Unexpected token `%s`. Expected function call or assign expression.", TOK_STR);
 
     // Search symstack for variable with this name.
-    Symtable* st;
     VariableSymbol* var;
-    if (!((st = symstack_search(id_name)) && (var = symtable_get_variable(st, id_name)))) {
+    if ((var = symstack_search_variable(id_name)) == NULL) {
         undef_var_err("Symbol `" COL_Y("%s") "` is undefined.", id_name);
         return false;
     }
@@ -347,6 +350,10 @@ bool rule_returnExpr() {
 }
 
 bool rule_ifStatement() {
+    // Push new symtable here, because the potential if-let statement
+    // will need to create a new variable {new because we access only a
+    // variable defined using `let` statement, so we don't need reference}.
+    symstack_push();
     switch (g_parser.token.type) {
         case Token_ParenLeft:
             parser_next_token();
@@ -363,6 +370,7 @@ bool rule_ifStatement() {
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
+    symstack_pop();
     CALL_RULE(rule_else);
     return true;
 }
@@ -383,6 +391,15 @@ bool rule_ifCondition(bool is_let) {
         }
 
         // TODO: Retype the variable as non-maybe type in the new frame.
+        // TODO: Add code for checking the `nil` value of var. If it is `nil`,
+        //       then we need to jump after this if statement.
+        // Either way, we need to add non-maybe type to symtable, because we need to reference
+        // the correct variables in the if statement.
+        if (is_maybe_datatype(var->type)) {
+            VariableSymbol new_var = *var;
+            new_var.type = maybe_to_normal(var->type);
+            symtable_insert_variable(symstack_top(), id_name, new_var);
+        } // NOTE: If variable is already of normal type, then we don't need to duplicate it.
     } else {
         Data expr_data;
         CALL_RULEp(expr_parser_begin, &expr_data);
@@ -391,6 +408,8 @@ bool rule_ifCondition(bool is_let) {
             expr_type_err("If-expression is of non-boolean type " COL_Y("%s") ".", datatype_to_string(expr_data.type));
             return false;
         }
+
+        // TODO: Add code for checking the expression result and jumping if needed.
 
         CHECK_TOKEN(Token_ParenRight, "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.", TOK_STR);
     }
@@ -403,7 +422,7 @@ bool rule_else() {
         case Token_If:   case Token_Let:
         case Token_Var:  case Token_While:
         case Token_Func: case Token_Return:
-            return rule_statementList();
+            return rule_statementList();        // For the statemens right after '}' on the same line.
         case Token_Else:
             parser_next_token();
             return rule_elseIf();
@@ -419,7 +438,12 @@ bool rule_elseIf() {
     switch (g_parser.token.type) {
         case Token_BracketLeft:
             parser_next_token();
+
+            // Create local frame for else statement.
+            symstack_push();
             CALL_RULE(rule_statementList);
+            symstack_pop();
+
             CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of else clause. Expected `}`.", TOK_STR);
             return rule_else();
         case Token_If:
