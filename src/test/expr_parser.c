@@ -22,10 +22,10 @@ void insert_variables() {
     variable_symbol_init(&name);
     variable_symbol_init(&y);
 
-    a.is_defined = true;
-    b.is_defined = true;
-    name.is_defined = true;
-    y.is_defined = true;
+    a.is_initialized = true;
+    b.is_initialized = true;
+    name.is_initialized = true;
+    y.is_initialized = true;
 
     a.type = DataType_Int;
     b.type = DataType_Double;

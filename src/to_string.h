@@ -32,8 +32,9 @@
 /// String names for ::DataType enum.
 static const char* DATATYPE_NAMES[] = {
     "Int", "Double", "String", "Bool",
-    "nil",
-    "Int?", "Double?", "String?", "Bool?"
+    "nil",      // FIXME: Remove this when the nil datatype is removed
+    "Int?", "Double?", "String?", "Bool?",
+    "Undefined",
 };
 
 /**
@@ -86,16 +87,17 @@ static const char* token_to_string(const Token* tok) {
                 case DataType_MaybeInt:
                 case DataType_MaybeDouble:
                     return "Numeric constant";
-                case DataType_Nil:
-                    return "nil";
                 case DataType_String:
                 case DataType_MaybeString:
                     return "String literal";
                 case DataType_Bool:
                 case DataType_MaybeBool:
                     return "Boolean value";
+                case DataType_Undefined:
+                    return "Undefined value";
+                default:
+                    MASSERT(false, "token_to_string: Unknown type of attribute.data");
             }
-            return "Unknown";
         case Token_DataType:
             return datatype_to_string(tok->attribute.data_type);
         case Token_Operator:

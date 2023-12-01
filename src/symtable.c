@@ -102,7 +102,7 @@ bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const cha
 
 void variable_symbol_init(VariableSymbol *var) {
     var->type = (DataType)0;
-    var->is_defined = false;
+    var->is_initialized = false;
     var->allow_modification = false;
 }
 

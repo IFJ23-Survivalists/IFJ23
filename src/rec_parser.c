@@ -109,7 +109,7 @@ bool handle_let_statement() {
     VariableSymbol var;
     variable_symbol_init(&var);
     var.allow_modification = false;
-    var.is_defined = true;      // Let statement are always definitions. If not there is a syntax error.
+    var.is_initialized = true;      // Let statement are always definitions. If not there is a syntax error.
 
     CALL_RULEp(rule_assignType, &var.type);
     CHECK_TOKEN(Token_Equal, "Unexpected token `%s` in assign statement. Expected `=`.", TOK_STR);

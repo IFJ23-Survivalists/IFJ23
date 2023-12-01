@@ -44,14 +44,14 @@ int main() {
     suite("Test symtable_insert_variable") {
         VariableSymbol bar;
         bar.type = DataType_Int;
-        bar.is_defined = true;
+        bar.is_initialized = true;
         bar.allow_modification = false;
 
         test(symtable_insert_variable(&symtable, "bar", bar));
 
         VariableSymbol baz;
         baz.type = DataType_Double;
-        baz.is_defined = false;
+        baz.is_initialized = false;
         baz.allow_modification = true;
         test(!symtable_insert_variable(&symtable, "bar", baz));
         test(symtable_insert_variable(&symtable, "baz", baz));
@@ -90,14 +90,14 @@ int main() {
         VariableSymbol *var = symtable_get_variable(&symtable, "bar");
         test(var);
         test(var->type == DataType_Int);
-        test(var->is_defined == true);
+        test(var->is_initialized == true);
         test(var->allow_modification == false);
 
         VariableSymbol *var2 = symtable_get_variable(&symtable, "baz");
         test(var);
         test(var != var2);
         test(var2->type == DataType_Double);
-        test(var2->is_defined == false);
+        test(var2->is_initialized == false);
         test(var2->allow_modification == true);
     }
 

@@ -321,7 +321,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
                 }
 
                 VariableSymbol* vs = symtable_get_variable(st, id_name);
-                if (vs == NULL || !vs->is_defined) {
+                if (vs == NULL || !vs->is_initialized) {
                     undef_var_err("Indentifier '%s' is undefined", token_to_string(id));
                     free(nterm);
                     return NULL;

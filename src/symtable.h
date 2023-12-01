@@ -39,7 +39,7 @@ typedef struct {
 typedef struct {
     int param_count;               /**< Number of items in ::FunctionSymbol::parameters. */
     FunctionParameter* params;     /**< Parameters of the function. */
-    DataType return_value_type;    /**< Value the function returns or ::DataType_nil when it doesn't return anything. */
+    DataType return_value_type;    /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
 } FunctionSymbol;
 
 /**
@@ -48,7 +48,7 @@ typedef struct {
  */
 typedef struct {
     DataType type;             /**< Data type of the variable. */
-    bool is_defined;           /**< Indicates if the variable is defined. */
+    bool is_initialized;       /**< Indicates if the variable is initialized. */
     bool allow_modification;   /**< Indicates if the variable can be modified. */
 } VariableSymbol;
 
