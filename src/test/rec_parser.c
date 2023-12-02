@@ -38,7 +38,7 @@ int prg(const char* source_code) {
 int main() {
     atexit(summary);
 
-    suite("Test - Let statements - correct") {
+    suite("Test Parser syntax/semantics - Let statements - correct") {
         set_print_errors(true);
         test(prg("let a = 0") == 0);
 
@@ -59,7 +59,7 @@ int main() {
         test(prg("let a = 123\nlet b: Int? = a") == 0);
         test(prg("let a : Int? = 123\nlet b = a!\nlet c : Int = b") == 0);
     }
-    suite("Test - Let statements - errors") {
+    suite("Test Parser syntax/semantics - Let statements - invalid") {
         set_print_errors(false);
         test(prg("let a : Int = \"fuj fuj\"")== 7);
         test(prg("let a = 0\nlet a = 2") == 3);
@@ -83,7 +83,7 @@ int main() {
         test(prg("let = 12") == 2);
         test(prg("let 12") == 2);
     }
-    suite("Test - Var statements - correct") {
+    suite("Test Parser syntax/semantics - Var statements - correct") {
         set_print_errors(true);
 
         test(prg("var a = 0") == 0);
@@ -122,7 +122,7 @@ int main() {
         test(prg("var a = 123\nlet b: Int? = a") == 0);
         test(prg("var a : Int? = 123\nlet b = a!\nlet c : Int = b") == 0);
     }
-    suite("Test - Var statements - errors") {
+    suite("Test Parser syntax/semantics - Var statements - invalid") {
         set_print_errors(false);
         test(prg("var a : Int = \"fuj fuj\"")== 7);
         test(prg("var a = 0\nlet a = 2") == 3);
@@ -144,14 +144,33 @@ int main() {
         test(prg("var = 12") == 2);
         test(prg("var 12") == 2);
     }
-    suite("Test - Assign statements - correct") {}
-    suite("Test - Assign statements - errors") {}
-    suite("Test - While statements - correct") {}
-    suite("Test - While statements - errors") {}
-    suite("Test - Func statements - correct") {}
-    suite("Test - Func statements - errors") {}
-    suite("Test - Scope") {}
-    suite("Test - Use of uninitialized variables") {}
+    suite("Test Parser syntax/semantics - Assign statements - correct") {
+        set_print_errors(true);
+        test(prg("let a = 12\n var b = 31\n b = a + b\nvar c = a") == 0);
+        test(prg("var a: Int? = 41\n var b = a! + 6\n a = a ?? 6") == 0);
+        test(prg("var a = 12\nvar b : Int? = 13\na = a - (5 * b!)") == 0);
+        test(prg("var a\n var b\n a = 12\n b = 13\n let c : Int = a + b") == 0);
+        test(prg("var a\n var b\n a = 12\n b = 13\n let c : Int? = a + b") == 0);
+        test(prg("var a\n func foo() -> Int { return 0 } a = foo() + 1\nlet c : Int = a") == 0);
+    }
+    suite("Test Parser syntax/semantics - Assign statements - invalid") {
+        set_print_errors(false);
+        test(prg("var a : Int = 1\n var b : String = \"ahoj\"\n b = a + b") == 7);
+        test(prg("var a : Int? = nil\n a = 3.14") == 7);
+        test(prg("a = 123") == 5);
+        test(prg("var a \n a = a + b * 1") == 5);
+        test(prg("if (1 == 1) { var a = 14 } a = 15") == 5);
+        // test(prg("") == 0);
+        // test(prg("") == 0);
+    }
+    suite("Test Parser syntax/semantics - If/If-let statements - correct") {}
+    suite("Test Parser syntax/semantics - If/If-let statements - errors") {}
+    suite("Test Parser syntax/semantics - While statements - correct") {}
+    suite("Test Parser syntax/semantics - While statements - errors") {}
+    suite("Test Parser syntax/semantics - Func statements - correct") {}
+    suite("Test Parser syntax/semantics - Func statements - errors") {}
+    suite("Test Parser syntax/semantics - Scope") {}
+    suite("Test Parser syntax/semantics - Use of uninitialized variables") {}
     suite("Text - Example - factorial") {}
 
     return 0;

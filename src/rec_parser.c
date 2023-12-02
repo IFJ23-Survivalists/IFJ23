@@ -438,6 +438,7 @@ bool rule_else() {
         case Token_If:   case Token_Let:
         case Token_Var:  case Token_While:
         case Token_Func: case Token_Return:
+        case Token_Identifier:
             return rule_statementList();        // For the statemens right after '}' on the same line.
         case Token_Else:
             parser_next_token();
