@@ -14,7 +14,7 @@ int main() {
 
     Pushdown pushdown;
     Token token;
-    NTerm nonterm;
+    NTerm* nonterm = malloc(sizeof(NTerm));
 
     PushdownItem* rule_end_marker;
     PushdownItem* rule_end_marker2;
@@ -30,13 +30,13 @@ int main() {
     suite("Test create_pushdown_item") {
         rule_end_marker = create_pushdown_item(NULL, NULL);
         test(rule_end_marker->name == '|');
-        test(rule_end_marker->terminal == NULL);
+        test(rule_end_marker->term == NULL);
         test(rule_end_marker->nterm == NULL);
         term = create_pushdown_item(&token, NULL);
-        test(term->terminal != NULL);
+        test(term->term != NULL);
         test(term->nterm == NULL);
-        nterm = create_pushdown_item(NULL, &nonterm);
-        test(nterm->terminal == NULL);
+        nterm = create_pushdown_item(NULL, nonterm);
+        test(nterm->term == NULL);
         test(nterm->nterm != NULL);
         rule_end_marker2 = create_pushdown_item(NULL, NULL);
     }
@@ -92,7 +92,7 @@ int main() {
         term->name = '+';
         test(pushdown_search_name(&pushdown, '|') == rule_end_marker);
         test(pushdown_search_name(&pushdown, '+') == term);
-        nterm = create_pushdown_item(NULL, &nonterm);
+        nterm = create_pushdown_item(NULL, nonterm);
         nterm->name = 'E';
         pushdown_insert_last(&pushdown, nterm);
         test(pushdown_search_name(&pushdown, 'E') == nterm);
@@ -102,5 +102,5 @@ int main() {
         test(pushdown_search_terminal(&pushdown) == term);
     }
 
-    pushdown_destroy(&pushdown);
+    pushdown_free(&pushdown);
 }
