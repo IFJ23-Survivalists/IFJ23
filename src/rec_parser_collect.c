@@ -104,7 +104,7 @@ bool col_rule_params(FunctionSymbol* func) {
             // Check if given parameter already exists.
             int has_param;
             if ((has_param = funciton_symbol_has_param(func, oname, iname)) != 0) {
-                print_error(&g_parser.token, Error_TypeMismatched, "Semantic",
+                print_error(&g_parser.token, Error_Semantic, "Semantic",
                             "Conflicting names for parameter `%s%s" PRINT_RESET " %s%s" PRINT_RESET " : %s`.",
                             has_param == 1 ? PRINT_Y : PRINT_W, oname,
                             has_param == 2 ? PRINT_Y : PRINT_W, iname,
