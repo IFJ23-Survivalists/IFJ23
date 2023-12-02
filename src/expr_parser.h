@@ -72,8 +72,8 @@ typedef enum {
  * @brief Rules for expression parsing
  */
 typedef struct NTerm {
-    DataValue value;   /**< resulted value after applying a reduction rule */
-    DataType type;     /**< resulted type after applying a reduction rule */
+    DataValue value; /**< resulted value after applying a reduction rule */
+    DataType type;   /**< resulted type after applying a reduction rule */
     bool is_nil;
     char name;         /**< E or L */
     bool is_const;     /**< `true` only if const reduced to nonterminal, otherwise `false`*/
@@ -258,9 +258,10 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2);
  * (expression that was created by reducing an immediate value)
  * @param[in] dt `DataType` that `op` is converted to, if possible.
  * @param[in] op operand for type conversion (only possible for immediate values).
+ * @param[in] allow_nil If `true` it allows nil being right operand for nullable `dt`.
  * @return `true` if conversion was successful or `op` is of the same type as `dt`, otherwise returns `false`.
  */
-bool convert_to_datatype(DataType dt, NTerm* op);
+bool convert_to_datatype(DataType dt, NTerm* op, bool allow_nil);
 
 /**
  * @brief Checks if there is not too many arguments provided to a given function.

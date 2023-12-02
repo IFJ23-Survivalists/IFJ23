@@ -32,18 +32,18 @@ const Rule RULE_NAMES[] = {
 };
 
 const ComprarisonResult PRECEDENCE_TABLE[12][12] = {
-    {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},   /* +- */
-    {Left, Left, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},    /* * */
-    {Right, Right, Err, Left, Right, Right, Right, Left, Right, Left, Left, Left},   /* logic ==, <, >... */
-    {Right, Right, Right, Right, Right, Right, Right, Err, Right, Left, Err, Left},  /* ?? */
-    {Left, Left, Left, Left, Err, Right, Right, Left, Right, Left, Left, Left},      /* pre */
-    {Left, Left, Left, Left, Left, Err, Err, Left, Right, Left, Left, Left},         /* post */
-    {Right, Right, Right, Err, Right, Right, Right, Equal, Right, Right, Left, Err}, /* ( */
-    {Left, Left, Left, Left, Left, Left, Err, Left, Err, Left, Left, Left},          /* ) */
-    {Left, Left, Left, Left, Left, Left, Equal, Left, Err, Left, Equal, Left},       /* id */
-    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},  /* ,*/
-    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},  /* : */
-    {Right, Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};   /* $ */
+    {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},     /* +- */
+    {Left, Left, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},      /* * */
+    {Right, Right, Err, Left, Right, Right, Right, Left, Right, Left, Left, Left},     /* logic ==, <, >... */
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Left},   /* ?? */
+    {Left, Left, Left, Left, Err, Right, Right, Left, Right, Left, Left, Left},        /* pre */
+    {Left, Left, Left, Left, Left, Err, Err, Left, Right, Left, Left, Left},           /* post */
+    {Right, Right, Right, Right, Right, Right, Right, Equal, Right, Right, Left, Err}, /* ( */
+    {Left, Left, Left, Left, Left, Left, Err, Left, Err, Left, Left, Left},            /* ) */
+    {Left, Left, Left, Left, Left, Left, Equal, Left, Err, Left, Equal, Left},         /* id */
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* ,*/
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* : */
+    {Right, Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};     /* $ */
 
 Stack g_stack;
 Pushdown g_pushdown;
@@ -266,7 +266,7 @@ void parse(Token token, Token* prev_token) {
 
                     stack_push(&g_stack, fn_name, fn);
                 } else if (prev_token->type == Token_Data) {
-                    syntax_err("'%s' is not callable", datatype_to_string(prev_token->attribute.data_type));
+                    undef_fun_err("'%s' is not callable", datatype_to_string(prev_token->attribute.data_type));
                     return;
                 }
             }
@@ -429,6 +429,7 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
 NTerm* reduce_parenthesis(PushdownItem** operands, NTerm* nterm) {
     NTerm* expr = operands[1]->nterm;
     nterm->type = expr->type;
+    nterm->is_const = expr->is_const;
     FREE_ALL(expr);
     return nterm;
 }
@@ -436,7 +437,13 @@ NTerm* reduce_parenthesis(PushdownItem** operands, NTerm* nterm) {
 NTerm* reduce_prefix(PushdownItem** operands, NTerm* nterm) {
     NTerm* operand = operands[1]->nterm;
 
-    // -E
+    if (operand->type == DataType_Undefined) {
+        unknown_type_err("Cannot infer data type from nil");
+        FREE_ALL(operand, nterm);
+        return NULL;
+    }
+
+    // !E
     if (operands[0]->term->attribute.op == Operator_Negation) {
         if (operand->type != DataType_Bool) {
             expr_type_err("Expected 'Bool', found '%s'.", datatype_to_string(operand->type));
@@ -445,7 +452,7 @@ NTerm* reduce_prefix(PushdownItem** operands, NTerm* nterm) {
         }
     }
 
-    // !E
+    // -E
     else {
         if (operand->type != DataType_Int && operand->type != DataType_Double) {
             expr_type_err("Expected 'Int' or 'Double', found '%s'.", datatype_to_string(operand->type));
@@ -455,12 +462,19 @@ NTerm* reduce_prefix(PushdownItem** operands, NTerm* nterm) {
     }
 
     nterm->type = operand->type;
+    nterm->is_const = operand->is_const;
     FREE_ALL(operand);
     return nterm;
 }
 
 NTerm* reduce_postfix(PushdownItem** operands, NTerm* nterm) {
     NTerm* operand = operands[0]->nterm;
+
+    if (operand->type == DataType_Undefined) {
+        unknown_type_err("Cannot infer data type from nil");
+        FREE_ALL(operand, nterm);
+        return NULL;
+    }
 
     switch (operand->type) {
         case DataType_MaybeDouble:
@@ -493,8 +507,6 @@ NTerm* reduce_arithmetic(PushdownItem** operands, NTerm* nterm) {
         nterm->is_const = true;
 
     if (!convert_to_same_types(left, right)) {
-        expr_type_err("Invalid operands left '%s' and right '%s' operands for operation '%s'.",
-                      datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
         FREE_ALL(left, right, nterm);
         return NULL;
     }
@@ -526,12 +538,16 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
     NTerm* right = operands[2]->nterm;
     Operator op = operands[1]->term->attribute.op;
 
+    if (left->type == DataType_Undefined || right->type == DataType_Undefined) {
+        unknown_type_err("Cannot infer data type from nil");
+        FREE_ALL(left, right, nterm);
+        return NULL;
+    }
+
     if (left->is_const && right->is_const)
         nterm->is_const = true;
 
     if (!convert_to_same_types(left, right)) {
-        expr_type_err("Invalid operands left '%s' and right '%s' operands for relation '%s'.",
-                      datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
         FREE_ALL(left, right, nterm);
         return NULL;
     }
@@ -561,32 +577,38 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     NTerm* right = operands[2]->nterm;
     bool type_match = false;
 
+    if (left->type == DataType_Undefined || right->type == DataType_Undefined) {
+        unknown_type_err("Cannot infer data type from nil");
+        FREE_ALL(left, right, nterm);
+        return NULL;
+    }
+
     switch (left->type) {
         case DataType_Bool:
         case DataType_MaybeBool:
-            type_match = convert_to_datatype(DataType_Bool, right);
+            type_match = convert_to_datatype(DataType_Bool, right, false);
             nterm->type = DataType_Bool;
             break;
 
         case DataType_Int:
         case DataType_MaybeInt:
-            type_match = convert_to_datatype(DataType_Int, right);
+            type_match = convert_to_datatype(DataType_Int, right, false);
             nterm->type = DataType_Int;
             break;
 
         case DataType_Double:
         case DataType_MaybeDouble:
-            type_match = convert_to_datatype(DataType_Double, right);
+            type_match = convert_to_datatype(DataType_Double, right, false);
             nterm->type = DataType_Double;
             break;
 
         case DataType_String:
         case DataType_MaybeString:
-            type_match = convert_to_datatype(DataType_String, right);
+            type_match = convert_to_datatype(DataType_String, right, false);
             nterm->type = DataType_String;
             break;
-        default:
-            expr_type_err("Nil is not a valid type for operation ??");
+        case DataType_Undefined:
+            unknown_type_err("Cannot infer data type from nil");
             FREE_ALL(left, right, nterm);
             return NULL;
     }
@@ -688,6 +710,11 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2) {
     if (op1->type == op2->type)
         return true;
 
+    if (op1->type == DataType_Undefined || op2->type == DataType_Undefined) {
+        unknown_type_err("Cannot infer data type from nil");
+        return false;
+    }
+
     if (op1->is_const && op2->is_const) {
         if (op1->type == DataType_Double && op2->type == DataType_Int) {
             op2->type = DataType_Double;
@@ -719,10 +746,14 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2) {
             return true;
         }
     }
+
+    expr_type_err("Invalid operands left '%s' and right '%s'.", datatype_to_string(op1->type),
+                  datatype_to_string(op2->type));
+
     return false;
 }
 
-bool convert_to_datatype(DataType dt, NTerm* op) {
+bool convert_to_datatype(DataType dt, NTerm* op, bool allow_nil) {
     if (dt == op->type)
         return true;
 
@@ -740,13 +771,13 @@ bool convert_to_datatype(DataType dt, NTerm* op) {
 
     switch (dt) {
         case DataType_MaybeBool:
-            return op->type == DataType_Bool;
+            return (op->type == DataType_Bool || (allow_nil && op->type == DataType_Undefined));
         case DataType_MaybeString:
-            return op->type == DataType_String;
+            return (op->type == DataType_String || (allow_nil && op->type == DataType_Undefined));
         case DataType_MaybeInt:
-            return op->type == DataType_Int;
+            return (op->type == DataType_Int || (allow_nil && op->type == DataType_Undefined));
         case DataType_MaybeDouble:
-            return op->type == DataType_Double;
+            return (op->type == DataType_Double || (allow_nil && op->type == DataType_Undefined));
         default:
             false;
     }
@@ -778,7 +809,7 @@ bool process_unnamed_arg(StackNode* fn_node, NTerm* arg) {
         return false;
     }
 
-    if (!convert_to_datatype(param.type, arg)) {
+    if (!convert_to_datatype(param.type, arg, true)) {
         fun_type_err("Unexpected type '%s' for %d. argument of type '%s'", datatype_to_string(arg->type),
                      fn_node->processed_args + 1, datatype_to_string(param.type));
         return false;
@@ -807,7 +838,7 @@ bool process_named_arg(StackNode* fn_node, char* arg_name, NTerm* arg_value) {
         return false;
     }
 
-    if (!convert_to_datatype(param.type, arg_value)) {
+    if (!convert_to_datatype(param.type, arg_value, true)) {
         fun_type_err("Unexpected type '%s' for named argument '%s'", datatype_to_string(arg_value->type), arg_name);
         return false;
     }
