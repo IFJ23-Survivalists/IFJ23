@@ -1,14 +1,15 @@
 /**
- * @file string_stack.c
- * @author Le Duy Nguyen, xnguye27, VUT FIT
- * @date 25/09/2023
- * @brief A module for managing dynamically allocated strings in C.
+ * @file function_stack.c
+ * @author Matúš Moravčík, xmorav48, VUT FIT
+ * @date 30/11/2023
+ * @brief A module for handling nested function calls.
  */
 
-#include "string_stack.h"
+#include "function_stack.h"
 #include "error.h"
 #include "stdbool.h"
 #include "string.h"
+#include "symtable.h"
 
 void stack_init(Stack* stack) {
     stack->top = NULL;
@@ -30,9 +31,11 @@ void stack_pop(Stack* stack) {
     }
 }
 
-void stack_push(Stack* stack, String name) {
+void stack_push(Stack* stack, String name, FunctionSymbol* fn) {
     StackNode* node = malloc(sizeof(StackNode));
+    node->fn = fn;
     node->name = name;
+    node->processed_args = 0;
     node->next = stack->top;
     stack->top = node;
 }
