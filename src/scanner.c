@@ -16,9 +16,9 @@
 char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
 TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
-char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", "nil", NULL};
-DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool, DataType_Nil};
-DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool, DataType_Nil};
+char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", NULL};
+DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool};
+DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool};
 
 typedef struct {
     Token *tokens;
@@ -51,6 +51,7 @@ static void tokenlist_free(TokenList* list) {
     }
 
     free(list->tokens);
+    list->tokens = NULL;
 }
 
 static void tokenlist_push(TokenList* list, Token token) {
@@ -133,8 +134,17 @@ typedef enum {
 } State;
 
 typedef struct {
+    bool is_string;
+    int current_position;
+    union {
+        String string;
+        FILE *file;
+    };
+} Input;
+
+typedef struct {
     bool initialized;
-    FILE *src;
+    Input input;
     TokenList token_list;
     unsigned list_idx;
 
@@ -160,7 +170,9 @@ void scanner_init(FILE *src) {
         return;
     }
 
-    g_scanner.src = src;
+    g_scanner.input.is_string = false;
+    g_scanner.input.file = src;
+    g_scanner.input.current_position = 0;
     g_scanner.list_idx = 0;
     g_scanner.line = 1;
     g_scanner.position_in_line = 0;
@@ -175,9 +187,32 @@ void scanner_init(FILE *src) {
     g_scanner.initialized = true;
 }
 
+void scanner_init_str(const char *str) {
+    g_scanner.list_idx = 0;
+    g_scanner.line = 1;
+    g_scanner.position_in_line = 0;
+    g_scanner.current_state = State_Start;
+    g_scanner.input.is_string = true,
+    g_scanner.input.string = string_from_c_str(str);
+    g_scanner.input.current_position = 0;
+    string_init(&g_scanner.string);
+    tokenlist_init(&g_scanner.token_list);
+
+    if (got_error()) {
+        return;
+    }
+
+    g_scanner.initialized = true;
+}
+
 void scanner_free() {
     if (g_scanner.initialized) {
-        if (g_scanner.src) fclose(g_scanner.src);
+        if (g_scanner.input.is_string) {
+            string_free(&g_scanner.input.string);
+        } else {
+            if (g_scanner.input.file) fclose(g_scanner.input.file);
+        }
+
         string_free(&g_scanner.string);
         tokenlist_free(&g_scanner.token_list);
         g_scanner.initialized = false;
@@ -239,43 +274,41 @@ void get_current_token(Token *token) {
             token->type = Token_Equal;
             break;
         case State_Identifier: {
-            bool found = false;
-
             for (int i = 0; KEYWORD[i]; i++) {
                 if (strcmp(g_scanner.string.data, KEYWORD[i]) == 0) {
                     token->type = KEYWORD_TYPE[i];
-                    string_clear(&g_scanner.string);
-                    found = true;
-                    break;
+                    return;
                 }
             }
-
-            if (found) break;
 
             for (int i = 0; DATA_TYPE_IDENTIFIER[i]; i++) {
                 if (strcmp(g_scanner.string.data, DATA_TYPE_IDENTIFIER[i]) == 0) {
                     token->type = Token_DataType;
                     token->attribute.data_type = DATA_TYPE[i];
-                    string_clear(&g_scanner.string);
-                    found = true;
-                    break;
+                    return;
                 }
             }
-
-            if (found) break;
 
             if (strcmp(g_scanner.string.data, "true") == 0) {
                 token->type = Token_Data;
                 token->attribute.data.type = DataType_Bool;
                 token->attribute.data.value.is_true = true;
-                break;
+                token->attribute.data.is_nil = false;
+                return;
             }
 
             if (strcmp(g_scanner.string.data, "false") == 0) {
                 token->type = Token_Data;
                 token->attribute.data.type = DataType_Bool;
                 token->attribute.data.value.is_true = false;
-                break;
+                token->attribute.data.is_nil = false;
+                return;
+            }
+
+            if (strcmp(g_scanner.string.data, "nil") == 0) {
+                token->type = Token_Data;
+                token->attribute.data.is_nil = true;
+                return;
             }
 
             token->type = Token_Identifier;
@@ -359,11 +392,13 @@ void get_current_token(Token *token) {
         case State_Number:
             token->attribute.data.type = DataType_Int;
             token->attribute.data.value.number = g_scanner.number;
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         case State_NumberDouble:
             token->attribute.data.type = DataType_Double;
             token->attribute.data.value.number_double = make_number_double(g_scanner.number, g_scanner.decimalpoint);
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         case State_NumberExponent: {
@@ -386,12 +421,14 @@ void get_current_token(Token *token) {
 
             token->attribute.data.type = DataType_Double;
             token->attribute.data.value.number_double = number;
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
         }
         case State_StringEnd:
             token->attribute.data.type = DataType_String;
             token->attribute.data.value.string = string_take(&g_scanner.string);
+            token->attribute.data.is_nil = false;
             token->type = Token_Data;
             break;
 
@@ -411,15 +448,32 @@ void get_current_token(Token *token) {
 }
 
 void scanner_step_back(char ch) {
-    if (ch == '\n') {
-        g_scanner.line -= 1;
+    if (!g_scanner.input.current_position) {
+        return;
     }
 
-    ungetc(ch, g_scanner.src);
+    if (ch == '\n') {
+        g_scanner.line -= 1;
+    } else {
+        g_scanner.position_in_line -= 1;
+    }
+
+    g_scanner.input.current_position -= 1;
+    if (!g_scanner.input.is_string) {
+        ungetc(ch, g_scanner.input.file);
+    }
 }
 
 int scanner_next_char() {
-    int ch = fgetc(g_scanner.src);
+    int idx = g_scanner.input.current_position++;
+    int ch;
+
+    if (g_scanner.input.is_string) {
+        ch = g_scanner.input.string.data[idx];
+        if (!ch) ch = EOF;
+    } else {
+        ch = fgetc(g_scanner.input.file);
+    }
 
     if (ch == EOF) {
         return EOF;
@@ -441,6 +495,8 @@ void scanner_reset_to_beginning() {
     }
 
     g_scanner.list_idx = 0;
+    g_scanner.position_in_line = 0;
+    g_scanner.line = 0;
 }
 
 static void scanner_cleanup() {

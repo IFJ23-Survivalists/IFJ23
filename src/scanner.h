@@ -21,7 +21,6 @@ typedef enum {
     DataType_Double,
     DataType_String,
     DataType_Bool,
-    DataType_Nil,       // FIXME: Remove this. We don't support nil as a datatype
     DataType_MaybeInt,
     DataType_MaybeDouble,
     DataType_MaybeString,
@@ -40,6 +39,7 @@ typedef union {
 } DataValue;
 
 typedef struct {
+    bool is_nil;
     DataType type;
     DataValue value;
 } Data;
@@ -141,6 +141,16 @@ typedef struct Token {
  * @param[in] src Pointer to the source file to be analyzed.
  */
 void scanner_init(FILE *src);
+
+/**
+ * @brief Initialize a Scanner instance with a string.
+ *
+ * This function initializes the scanner with the provided string. It prepares the scanner
+ * to start analyzing the given string.
+ *
+ * @param[in] str string to be analyzed.
+ */
+void scanner_init_str(const char *str);
 
 /**
  * @brief Clean up resources associated with a Scanner instance.

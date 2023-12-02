@@ -1,4 +1,4 @@
-/**
+/*
  * @file test/scanner.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 10/10/2023
@@ -117,43 +117,50 @@ int main() {
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Int);
         test(token.attribute.data.value.number == 10);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Double);
         test(token.attribute.data.value.number_double == 39.1);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Double);
         test(token.attribute.data.value.number_double == 7.0e8);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Double);
         test(token.attribute.data.value.number_double == 8.0e-5);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Double);
         test(token.attribute.data.value.number_double == 3.14e2);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Bool);
         test(token.attribute.data.value.is_true);
+        test(!token.attribute.data.is_nil);
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_Data);
         test(token.attribute.data.type == DataType_Bool);
         test(!token.attribute.data.value.is_true);
+        test(!token.attribute.data.is_nil);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Data);
+        test(token.attribute.data.is_nil);
     }
 
     suite("Test Scanner data type") {
-        token = scanner_advance_non_whitespace();
-        test(token.type == Token_DataType);
-        test(token.attribute.data_type == DataType_Nil);
-
         token = scanner_advance_non_whitespace();
         test(token.type == Token_DataType);
         test(token.attribute.data_type == DataType_Int);
@@ -256,4 +263,39 @@ int main() {
     }
 
     scanner_free();
+
+    suite("Test Scanner init str") {
+        set_error(Error_None);
+        scanner_init_str("let a: Bool? = \"Hello World!\"");
+        Token token = scanner_advance_non_whitespace();
+        test(token.type == Token_Let);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Identifier);
+        test(strcmp(token.attribute.data.value.string.data, "a") == 0);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DoubleColon);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_DataType);
+        test(token.attribute.data_type == DataType_MaybeBool);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Equal);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Data);
+        test(token.attribute.data.type == DataType_String);
+        test(strcmp(token.attribute.data.value.string.data, "Hello World!") == 0);
+
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_EOF);
+
+        scanner_reset_to_beginning();
+        token = scanner_advance_non_whitespace();
+        test(token.type == Token_Let);
+
+        scanner_free();
+    }
 }

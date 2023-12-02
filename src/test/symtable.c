@@ -28,7 +28,7 @@ int main() {
     suite("Test symtable_insert_function") {
         FunctionSymbol foo;
         function_symbol_init(&foo);
-        foo.return_value_type = DataType_Nil;
+        foo.return_value_type = DataType_Undefined;
 
         test(symtable_insert_function(&symtable, "foo", foo));
 
@@ -66,7 +66,7 @@ int main() {
 
         FunctionSymbol *func = symtable_get_function(&symtable, "foo");
         test(func);
-        test(func->return_value_type == DataType_Nil);
+        test(func->return_value_type == DataType_Undefined);
 
         FunctionSymbol* func2 = symtable_get_function(&symtable, "foo2");
         test(func2);
