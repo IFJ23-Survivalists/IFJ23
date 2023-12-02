@@ -9,9 +9,7 @@
 #include "../parser.h"
 #include "../scanner.h"
 
-int prg(const char* source_code) {
-    scanner_init_str(source_code);
-    MASSERT(!got_error(), "");
+int prg_scanner_initialized() {
     scanner_reset_to_beginning();
     MASSERT(!got_error(), "");
     parser_init();
@@ -33,6 +31,19 @@ int prg(const char* source_code) {
     scanner_free();
     MASSERT(!got_error(), "");
     return res;
+}
+
+int prg(const char* source_code) {
+    scanner_init_str(source_code);
+    MASSERT(!got_error(), "");
+    return prg_scanner_initialized();
+}
+int prg_file(const char* file_path) {
+    FILE* f = fopen(file_path, "r");
+    MASSERT(f != NULL, "");
+    scanner_init(f);
+    MASSERT(!got_error(), "");
+    return prg_scanner_initialized();
 }
 
 int main() {
@@ -274,8 +285,26 @@ int main() {
         test(prg("let a : Int? = 12\n if let a { var b = a + 12 }") == 0);
         test(prg("let a = 12\n if (true) { let a = 2.2\n while (true) { let a = false\n var c : Bool = a } var c : Double = a } var c : Int = a") == 0);
     }
-    suite("Test Parser syntax/semantics - Use of uninitialized variables") {}
-    suite("Text Parser Example - factorial") {}
+    suite("Test Parser syntax/semantics - Uninitialized variables") {
+        set_print_errors(false);
+        test(prg("var a: Int\nif (a == 2) {}") == 5);
+        test(prg("var a: Int?\n let c = a! * 2") == 0);     // Maybe variables are implicitly initialized to nil on empty initalization.
+        test(prg("var a: Int\nwhile (a == 2) {}") == 5);
+        test(prg("var a\nwhile (a == 2) {}") == 5);
+        test(prg("var a: Int\n func foo() { var b = a * 2 }") == 5);
+        test(prg("var a: Int\n func foo(_ a : Int) { var b = a * 2 }") == 0);
+    }
+
+    set_print_errors(true);
+    suite("Test Parser Example - factorial iterative") {
+        test(prg_file("test/examples/factorial_iter.swift") == 0);
+    }
+    suite("Test Parser Example - factorial recursive") {
+        test(prg_file("test/examples/factorial_recursive.swift") == 0);
+    }
+    suite("Test Parser Example - built-in functions") {
+        test(prg_file("test/examples/builtin_functions.swift") == 0);
+    }
 
     return 0;
 }
