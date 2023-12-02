@@ -265,7 +265,15 @@ int main() {
         test(prg("func foo(from a : Int, to b : Int) -> String { return a + b}") == 4);
         test(prg("func foo(from a : Int, to b : Int) -> String { return nil}") == 4);
     }
-    suite("Test Parser syntax/semantics - Scope") {}
+    suite("Test Parser syntax/semantics - Scope") {
+        set_print_errors(true);
+        test(prg("var a = 0\nif (1 == 1) { var a = \"test\"\n var c : String = a }") == 0);
+        test(prg("var a = 0\nwhile (1 == 1) { var a = \"test\"\n var c : String = a }") == 0);
+        test(prg("let b : String? = \"adkj\"\nvar a = 0\nif let b { var a = \"test\"\n var c : String = a }") == 0);
+        test(prg("var a = 0\nfunc foo() { var a = \"test\"\n var c : String = a }") == 0);
+        test(prg("let a : Int? = 12\n if let a { var b = a + 12 }") == 0);
+        test(prg("let a = 12\n if (true) { let a = 2.2\n while (true) { let a = false\n var c : Bool = a } var c : Double = a } var c : Int = a") == 0);
+    }
     suite("Test Parser syntax/semantics - Use of uninitialized variables") {}
     suite("Text Parser Example - factorial") {}
 
