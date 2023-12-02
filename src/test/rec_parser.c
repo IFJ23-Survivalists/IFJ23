@@ -293,7 +293,7 @@ int main() {
         test(prg("var a: Int\n func foo(_ a : Int) { var b = a * 2 }") == 0);
     }
 
-    suite("Test Parser syntax/semantics - Implicit convesions") {
+    suite("Test Parser syntax/semantics - Implicit conversions") {
         set_print_errors(true);
         test(prg("var a : Int = 2.0") == 0);
         test(prg("var a : Double = 2") == 0);
