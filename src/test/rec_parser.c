@@ -216,11 +216,58 @@ int main() {
         test(prg("var c\nc = \"lul\"\nwhile(c){}") == 7);
         test(prg("while((let a = 0) == 0){\n\n\n\n\n}") == 2);
     }
-    suite("Test Parser syntax/semantics - Func statements - correct") {}
-    suite("Test Parser syntax/semantics - Func statements - errors") {}
+    suite("Test Parser syntax/semantics - Func statements - correct") {
+        set_print_errors(true);
+        test(prg("func foo() {}") == 0);
+        test(prg("func foo() {\n}") == 0);
+        test(prg("func foo() -> Int { return 1 }") == 0);
+        test(prg("func foo() -> Int { return 1\n}") == 0);
+        test(prg("func foo() -> Int? { return 1}") == 0);
+        test(prg("func foo() -> Int? { return 1\n}") == 0);
+        test(prg("func foo() -> Int? { return nil}") == 0);
+        test(prg("func foo() -> Int? { return nil\n}") == 0);
+        test(prg("func foo() { return }") == 0);
+        test(prg("func foo() { return\n}") == 0);
+        test(prg("func foo(from x : Int, to y : String) {}") == 0);
+        test(prg("func foo(from x : Int, to y : String) -> String { return \"ahoj\" }") == 0);
+        test(prg("func foo(from x : Int, to y : String) -> String { return \"ahoj\"\n\n}") == 0);
+        test(prg("func foo(from x : Int, to y : String) -> String { return y }") == 0);
+        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? " ") + y }") == 0);
+        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? " ") + y\n}") == 0);
+        test(prg("var a = foo(123)\nfunc foo(_ param: Int) -> Int { return param * param}") == 0);
+        test(prg("var a : Int = foo(123) + 12\nfunc foo(_ param: Int) -> Int { return param * param}") == 0);
+        test(prg("func foo(_ param: Int) -> Int { return param * param} var a : Int = foo(13)") == 0);
+        test(prg("func foo(_ param: Int) -> Int { return param * param}\nvar a : Int = foo(12)") == 0);
+        test(prg("func foo(_ param: Int) -> Int { return param * param}\nvar a = foo(-12)\n var b : Int = a") == 0);
+        test(prg("foo()\n func foo() {}") == 0);
+        test(prg("func foo() {} foo()") == 0);
+        test(prg("func foo() {}\n foo()") == 0);
+        test(prg("func foo(\n) {}\n foo()") == 0);
+        test(prg("func foo() { var a = bar()\n var b : Int = a } func bar() -> Int { return -1 }") == 0);
+        test(prg("func foo() { var a = bar()\n var b : Int = a }\nfunc bar() -> Int { return -1 }") == 0);
+        test(prg("func bar() -> Int { return -1 } func foo() { var a = bar()\n var b : Int = a }") == 0);
+        test(prg("func bar() -> Int { return -1 }\nfunc foo() { var a = bar()\n var b : Int = a }") == 0);
+        test(prg("func bar() -> Int { return -1 }\n foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") == 0);
+        test(prg("func bar() -> Int { return -1 } foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") == 0);
+    }
+    suite("Test Parser syntax/semantics - Func statements - errors") {
+        set_print_errors(false);
+        test(prg("func bar(from a : Int, to b : Int) { return 1 }") == 6);
+        test(prg("func bar(from a : Int, to b : Int) { return nil }") == 6);
+        test(prg("func bar(from a : Int, to b : Int) -> Int { }") == 6);
+        test(prg("return 1 + 2 \n func bar(from a : Int, to b : Int) -> Int { return 1 }") == 6);
+        test(prg("func bar(from a : Int, to b : Int) -> Int { return 1 }\n return 1+ 1") == 6);
+        test(prg("func bar(from a : Int, to b : Int) -> Int { return \"lsdkfhh\" }") == 4);
+        test(prg("func bar(from a : Int, to b : Int) -> Int? { return \"lsdkfhh\" }") == 4);
+        test(prg("func bar(from a : Int, from b : Int) {}") == 9);
+        test(prg("func bar(from a : Int, to a : Int) {}") == 9);
+        test(prg("func bar(from a : Int, from a : Int) {}") == 9);
+        test(prg("func foo(from a : Int, to b : Int) -> String { return a + b}") == 4);
+        test(prg("func foo(from a : Int, to b : Int) -> String { return nil}") == 4);
+    }
     suite("Test Parser syntax/semantics - Scope") {}
     suite("Test Parser syntax/semantics - Use of uninitialized variables") {}
-    suite("Text - Example - factorial") {}
+    suite("Text Parser Example - factorial") {}
 
     return 0;
 }
