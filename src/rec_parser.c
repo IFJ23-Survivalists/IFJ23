@@ -138,13 +138,13 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
 bool define_variable_check(const char* name) {
     // Check if there is already a function with the same name.
     if (symtable_get_function(symstack_bottom(), name) != NULL) {
-        undef_var_err("Cannot define variable `" COL_Y("%s") "`. There is already a function with the same name.", name);
+        undef_fun_err("Cannot define variable `" COL_Y("%s") "`. There is already a function with the same name.", name);
         return false;
     }
 
     NodeType* symtype = symtable_get_symbol_type(symstack_top(), name);
     if (symtype) {      // Symbol found
-        undef_var_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.",
+        undef_fun_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.",
                 name, *symtype == NodeType_Variable ? "variable" : "function");
         return false;
     }
