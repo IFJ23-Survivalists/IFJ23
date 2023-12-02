@@ -37,6 +37,12 @@ bool rec_parser_collect() {
             parser_next_token();
             if (!col_handle_func_statement())
                 return false;
+
+            // Additionally check that there is a '{' as a start of function definition.
+            // We do this, so that during second phase we can just skip to this token,
+            // knowing there it is there and we don't iterate to EOF on wrong syntax.
+            CHECK_TOKEN(Token_BracketLeft, "Unexpected token `" COL_Y("%s") "` after function declaration. Expected `" COL_C("{") "`.",
+                    token_to_string(&g_parser.token));
         }
     } while (g_parser.token.type != Token_EOF);
     return true;

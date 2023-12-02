@@ -3,9 +3,6 @@
  * @brief Recursive parser logic.
  * @author Jakub Kloub, xkloub03, VUT FIT
  */
-#include <stdarg.h>
-#include <string.h>
-
 #include "rec_parser.h"
 #include "expr_parser.h"
 #include "error.h"
@@ -16,16 +13,13 @@
 // Shorthand for checking if there was newline before the current token.
 #define HAS_EOL (g_parser.token_ws.type == Token_Whitespace && g_parser.token_ws.attribute.has_eol)
 #define TOK_ID_STR g_parser.token.attribute.data.value.string.data
-#define IS_NIL(data) (data.type == DataType_Undefined && data.is_nil)
+#define IS_NIL(data) ((data).type == DataType_Undefined && (data).is_nil)
 
 /* Forward declarations for rule functions, so that they can call each other without issues */
 bool rule_statementList();
 bool rule_statementSeparator();
 bool rule_statement();
-bool rule_funcReturnType();
 bool rule_ifStatement();
-bool rule_params();
-bool rule_params_n();
 bool rule_returnExpr();
 bool rule_ifCondition(bool is_let);
 bool rule_else();
@@ -33,8 +27,15 @@ bool rule_assignType(DataType* attr_dt);
 bool rule_assignExpr(VariableSymbol* var, const char* id_name);
 bool rule_elseIf();
 
+// Stores, which function we are currently processing, so that we can do semantic checks,
+// like:
+//     - Checking for function declaration inside declarations
+//     - Finding the function to use for return statement checks.
+char* g_current_func;
+
 // Entry point to recursive parsing.
 bool rec_parser_begin() {
+    g_current_func = NULL;
     parser_next_token();
     return rule_statementList();
 }
@@ -78,12 +79,14 @@ DataType maybe_to_normal(DataType maybe_dt) {
     return maybe_dt - DataType_MaybeInt;
 }
 
-bool assign_types_compatible(DataType left, DataType right) {
-    if (left == right)
+bool assign_types_compatible(DataType left, const Data* right) {
+    if (IS_NIL(*right))
+        return is_maybe_datatype(left);
+    if (left == right->type)
         return true;
     if (is_maybe_datatype(left)) {
         // "Maybe types" and their counterparts are compatible.
-        return maybe_to_normal(left) == right;
+        return maybe_to_normal(left) == right->type;
     }
 
     return false;
@@ -110,22 +113,16 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     // When the Datatype is undefined, we assign the expr's datatype to it.
     if (var->type == DataType_Undefined) {
         // Check for when the <expr> is nil and var type is to be deduced. --> Error 8
-        if (expr_data.is_nil) {
+        if (IS_NIL(expr_data)) {
             unknown_type_err("Could not deduce type of variable `" COL_Y("%s") "` from `" COL_C("nil") "`.", id_name);
             return false;
         }
         var->type = expr_data.type;
     }
-    // Nil can be assigned only to Maybe types.
-    else if (!is_maybe_datatype(var->type) && IS_NIL(expr_data)) {
-        expr_type_err("Cannot assign `" COL_C("nil") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
-                id_name, datatype_to_string(var->type));
-        return false;
-    }
     // Otherwise check the datatype compatibility.
-    else if (!assign_types_compatible(var->type, expr_data.type)) {
+    else if (!assign_types_compatible(var->type, &expr_data)) {
         expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
-                     datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
+                     IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
         return false;
     }
 
@@ -204,16 +201,41 @@ bool handle_var_statement() {
 }
 
 bool handle_func_statement() {
-    // NOTE: Handled by collect phase.
-    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.", TOK_STR);
-    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
-    CALL_RULE(rule_params);
-    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
-    CALL_RULE(rule_funcReturnType);
+    // Skip until bracket left.
+    char* func_id = TOK_ID_STR;
+    while (g_parser.token.type != Token_BracketLeft)
+        parser_next_token();
+    parser_next_token();
 
-    // TODO
-    CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the `DataType` token. Expected `{`.", TOK_STR);
-    CALL_RULE(rule_statementList);
+    // Push symtable for this function.
+    symstack_push();
+
+    // Push arguments to symstack
+    FunctionSymbol* func = symtable_get_function(symstack_bottom(), func_id);
+    MASSERT(func != NULL, "In seconds phase all function declarations should be valid.");
+    for (int i = 0; i < func->param_count; i++) {
+        VariableSymbol var;
+        var.type = func->params[i].type;
+        var.is_initialized = true;
+        var.allow_modification = true;
+        symtable_insert_variable(symstack_top(), func->params[i].iname.data, var);
+    }
+
+
+    // TODO: Code generation, we need to create a label and generate code to some buffer.
+
+    g_current_func = func_id;
+    CALL_RULE(rule_statementList);      // Process all statements inside this function
+
+    // Check for missing return statement.
+    if (g_current_func != NULL && func->return_value_type != DataType_Undefined) {
+        return_err("Missing return statement in function `" COL_Y("%s") "`.", func_id);
+        g_current_func = NULL;      // Maybe for future error recovery.
+        return false;
+    }
+
+    symstack_pop();
+
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of function definition. Expected `}`.", TOK_STR);
     CALL_RULE(rule_statementList);
     return true;
@@ -295,62 +317,50 @@ bool rule_statement() {
     }
 }
 
-bool rule_funcReturnType() {
-    switch (g_parser.token.type) {
-        case Token_EOF:
-        case Token_BracketLeft:
-            return true;
-        case Token_ArrowRight:
-            parser_next_token();
-            CHECK_TOKEN(Token_DataType, "Unexpected token `%s` after `->`. Expected `DataType`.", TOK_STR);
-            return true;
-        default:
-            syntax_err("Unexpected token `%s` after ')'. Expected `->` or `{`.", TOK_STR);
-            return false;
-    }
-}
-
-bool rule_params() {
-    switch (g_parser.token.type) {
-        case Token_EOF:
-        case Token_ParenRight:
-            return true;
-        case Token_Identifier:
-            parser_next_token();
-            CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the parameter name. Expected identifier.", TOK_STR);
-            CHECK_TOKEN(Token_DoubleColon, "Unexpected token `%s` after inner parameter name. Expected `,` or `)`.", TOK_STR);
-            CHECK_TOKEN(Token_DataType, "Unexpected token `%s`. Expected `DataType`.", TOK_STR);
-            CALL_RULE(rule_params_n);
-            return true;
-        default:
-            break;
-    }
-    syntax_err("Unexpected token `%s` in function parameters.", TOK_STR);
-    return false;
-}
-
-bool rule_params_n() {
-    switch (g_parser.token.type) {
-        case Token_EOF:
-        case Token_ParenRight:
-            return true;
-        case Token_Comma:
-            parser_next_token();
-            return rule_params();
-        default:
-            syntax_err("Unexpected token `%s`.", TOK_STR);
-            return false;
-    }
-}
-
 bool rule_returnExpr() {
+    // Check, if we are inside a function.
+    if (g_current_func == NULL) {
+        return_err("Invalid " COL_Y("return") " statement outside function definition.");
+        return false;
+    }
+    FunctionSymbol* func = symtable_get_function(symstack_bottom(), g_current_func);
+    MASSERT(func != NULL, "In second phase, g_current_func must always be in symtable.");
+
     switch (g_parser.token.type) {
         case Token_EOF:
-        case Token_BracketRight:
+        case Token_BracketRight: {
+            // Return has no <expr>, so check if function returns nothing.
+            if (func->return_value_type != DataType_Undefined) {
+                return_err("Missing value of type `" COL_C("%s") "` after the `" COL_Y("return") "` keyword.",
+                           datatype_to_string(func->return_value_type));
+                return false;
+            }
+            g_current_func = NULL;
             return true;
+        }
         default: {
+            if (func->return_value_type == DataType_Undefined) {
+                // FIXME: We COULD check if there is token of type that is not part of an expression.
+                return_err("Invalid expression after the `" COL_Y("return") "` statement. Function `" BOLD("%s") "` doesn't return anything. Expected `}`.",
+                            g_current_func);
+                return false;
+            }
             Data expr_data;
-            return expr_parser_begin(&expr_data);
+            CALL_RULEp(expr_parser_begin, &expr_data);
+            MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil, "We don't support expr result with DataType_Undefined and is_nil == false.");
+
+            // Check if expr's datatype matched the funcion's datatype.
+            if (!assign_types_compatible(func->return_value_type, &expr_data)) {
+                fun_type_err("Cannot return value of type `" COL_Y("%s") "` from function `" BOLD("%s") "() -> " COL_Y("%s") "`.",
+                        IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), g_current_func, datatype_to_string(func->return_value_type));
+                return false;
+            }
+
+            // TODO: Code generation.
+
+            // Set current func to NULL, so that we can check in `handle_func_statement()`, if the function has a return statement.
+            g_current_func = NULL;
+            return true;
         }
     }
 }

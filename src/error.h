@@ -106,7 +106,7 @@ void print_error(const struct Token* tok, Error err_type, const char* err_string
 #define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, "Syntax", __VA_ARGS__)
 #define fun_type_err(...) print_error(&g_parser.token, Error_TypeMismatched, "Type mismatch", __VA_ARGS__)
 #define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, "Semantic", __VA_ARGS__)
-#define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, "Return value missmatch", __VA_ARGS__)
+#define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, "Semantic", __VA_ARGS__)
 #define expr_type_err(...) print_error(&g_parser.token, Error_Operation, "Type mismatch", __VA_ARGS__)
 #define unknown_type_err(...) print_error(&g_parser.token, Error_UnknownType, "Semantic", __VA_ARGS__)
 #define semantic_err(...) print_error(&g_parser.token, Error_Semantic, "Semantic", __VA_ARGS__)
