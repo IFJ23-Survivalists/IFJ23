@@ -168,6 +168,7 @@ int main() {
     suite("Test Parser syntax/semantics - If/If-let statements - correct") {
         set_print_errors(true);
         test(prg("if ( 1== 0) { let c = 0 }") == 0);
+        test(prg("if (2 == 2) {}") == 0);
         test(prg("if\n\n (\n 1\n== 0\n)\n { let c = 0 }") == 0);
         test(prg("let a : Int = 0\nif(a == 1) { let c = 0\nvar d = 2}") == 0);
         test(prg("var a\na= true\n if (a) { let c = 0 }") == 0);
@@ -180,6 +181,7 @@ int main() {
     }
     suite("Test Parser syntax/semantics - If/If-let statements - errors") {
         set_print_errors(false);
+        test(prg("if(){}") == 2);
         test(prg("if 1 == 0 { let c = 0 }") == 2);
         test(prg("if (1 + 0) { let c = 0 }") == 7);
         test(prg("let a= \"aalkdjf\"\n if a { let c = 0 }") == 2);
@@ -190,8 +192,30 @@ int main() {
         test(prg("if let a { let c = 0 }") == 5);
         test(prg("var a\nif let a { let c = 0 }") == 5);
     }
-    suite("Test Parser syntax/semantics - While statements - correct") {}
-    suite("Test Parser syntax/semantics - While statements - errors") {}
+    suite("Test Parser syntax/semantics - While statements - correct") {
+        set_print_errors(true);
+        test(prg("while(true){}") == 0);
+        test(prg("while(1 == 1){}") == 0);
+        test(prg("while (12 == 12) { let c = 0\nvar d= 0\n if (c == d) { let h = 0 }}") == 0);
+        test(prg("while ((12 + 15) == 10) { let a = 0 }") == 0);
+        test(prg("let a: Bool = false\nwhile (a) { let a = 0 }") == 0);
+        test(prg("let a: Bool? = nil\nwhile (a??true) { let a = 0 }") == 0);
+        test(prg("let a: Bool? = nil\nwhile (a!) { let a = 0 }") == 0);
+        test(prg("var a\na = 1 == 1\nwhile(a) { let c = 0 }") == 0);
+        test(prg("var a\na = 1 == 1\nwhile(a) { let c = 0}") == 0);
+    }
+    suite("Test Parser syntax/semantics - While statements - errors") {
+        set_print_errors(false);
+        test(prg("while(){}") == 2);
+        test(prg("while {}") == 2);
+        test(prg("while () let a = 0") == 2);
+        test(prg("while(1+1){}") == 7);
+        test(prg("let a = 12\nwhile(a){}") == 7);
+        test(prg("let a : Int? = 12\nwhile(a!){}") == 7);
+        test(prg("var c\nc = \"lul\"\nwhile(c + 1){}") == 7);
+        test(prg("var c\nc = \"lul\"\nwhile(c){}") == 7);
+        test(prg("while((let a = 0) == 0){\n\n\n\n\n}") == 2);
+    }
     suite("Test Parser syntax/semantics - Func statements - correct") {}
     suite("Test Parser syntax/semantics - Func statements - errors") {}
     suite("Test Parser syntax/semantics - Scope") {}
