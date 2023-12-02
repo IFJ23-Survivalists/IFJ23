@@ -64,6 +64,7 @@ bool expr_parser_begin(Data* data) {
     if (g_pushdown.first == g_pushdown.last && nterm != NULL && nterm->name == 'E') {
         data->type = nterm->type;
         data->value = nterm->value;
+        data->is_nil = nterm->is_nil;
         stack_free(&g_stack);
         pushdown_free(&g_pushdown);
         return true;
@@ -416,10 +417,7 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
     else {
         if (id->attribute.data.is_nil) {
             nterm->type = DataType_Undefined;
-
-            // DataValue val;
-            // val.is_nil = true;
-            // nterm->value = val;
+            nterm->is_nil = true;
         } else
             nterm->type = id->attribute.data.type;
 
