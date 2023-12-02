@@ -243,8 +243,8 @@ int main() {
         test(prg("func foo(from x : Int, to y : String) -> String { return \"ahoj\" }") == 0);
         test(prg("func foo(from x : Int, to y : String) -> String { return \"ahoj\"\n\n}") == 0);
         test(prg("func foo(from x : Int, to y : String) -> String { return y }") == 0);
-        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? " ") + y }") == 0);
-        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? " ") + y\n}") == 0);
+        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? \" \") + y }") == 0);
+        test(prg("func foo(from x : String?, to y : String) -> String { return (x ?? \" \") + y\n}") == 0);
         test(prg("var a = foo(123)\nfunc foo(_ param: Int) -> Int { return param * param}") == 0);
         test(prg("var a : Int = foo(123) + 12\nfunc foo(_ param: Int) -> Int { return param * param}") == 0);
         test(prg("func foo(_ param: Int) -> Int { return param * param} var a : Int = foo(13)") == 0);
@@ -295,7 +295,14 @@ int main() {
         test(prg("var a: Int\n func foo(_ a : Int) { var b = a * 2 }") == 0);
     }
 
-    set_print_errors(true);
+    suite("Test Parser syntax/semantics - Implicit convesions") {
+        set_print_errors(true);
+        test(prg("var a : Int = 2.0") == 0);
+        test(prg("var a : Double = 2") == 0);
+        test(prg("var a\n a = 1 \n let b: Double = a") == 0);
+        test(prg("var a\n a = 1.0 \n let b: Int = a") == 0);
+    }
+
     suite("Test Parser Example - factorial iterative") {
         test(prg_file("test/examples/factorial_iter.swift") == 0);
     }
