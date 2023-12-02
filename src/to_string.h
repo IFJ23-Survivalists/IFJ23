@@ -94,6 +94,8 @@ static const char* token_to_string(const Token* tok) {
                 case DataType_MaybeBool:
                     return "Boolean value";
                 case DataType_Undefined:
+                    if (tok->attribute.data.is_nil)
+                        return "nil";
                     return "Undefined value";
                 default:
                     MASSERT(false, "token_to_string: Unknown type of attribute.data");

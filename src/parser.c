@@ -40,6 +40,7 @@ Token* parser_next_token() {
     g_parser.token = g_parser.token_ws.type == Token_Whitespace
                    ? scanner_advance()
                    : g_parser.token_ws;
+    MASSERT(g_parser.token.type != Token_DataType || g_parser.token.attribute.data_type != DataType_Undefined, "Scanner cannot return DataType_Undefined");
     return &g_parser.token;
 }
 

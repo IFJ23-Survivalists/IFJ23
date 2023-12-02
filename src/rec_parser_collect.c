@@ -94,11 +94,6 @@ bool col_rule_params(FunctionSymbol* func) {
             CHECK_TOKEN(Token_DataType, "Unexpected token `%s`. Expected `DataType`.", TOK_STR);
 
             DataType param_type = attr.data_type;
-            if (param_type == DataType_Nil) {
-                fun_type_err("Parameter cannot have " COL_C("nil") " as a datatype: `%s %s : " COL_R("%s") "`",
-                             oname, iname, datatype_to_string(param_type));
-                return false;
-            }
 
             // Check if given parameter already exists.
             int has_param;
@@ -144,17 +139,12 @@ bool col_rule_funcReturnType(FunctionSymbol* func) {
             syntax_err("Unexpected end of file.");
             return true;
         case Token_BracketLeft:
-            func->return_value_type = DataType_Nil;     // Function doesn't return anything.
+            func->return_value_type = DataType_Undefined;     // Function doesn't return anything.
             return true;
         case Token_ArrowRight:
             parser_next_token();
             TokenAttribute attr = g_parser.token.attribute;
             CHECK_TOKEN(Token_DataType, "Unexpected token `%s` after `->`. Expected `DataType`.", TOK_STR);
-
-            if (attr.data_type == DataType_Nil) {
-                fun_type_err("Function cannot return " COL_C("nil") ".");
-                return false;
-            }
 
             func->return_value_type = attr.data_type;
             return true;

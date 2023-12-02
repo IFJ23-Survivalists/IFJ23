@@ -16,6 +16,7 @@
 // Shorthand for checking if there was newline before the current token.
 #define HAS_EOL (g_parser.token_ws.type == Token_Whitespace && g_parser.token_ws.attribute.has_eol)
 #define TOK_ID_STR g_parser.token.attribute.data.value.string.data
+#define IS_NIL(data) (data.type == DataType_Undefined && data.is_nil)
 
 /* Forward declarations for rule functions, so that they can call each other without issues */
 bool rule_statementList();
@@ -85,8 +86,6 @@ bool assign_types_compatible(DataType left, DataType right) {
         return maybe_to_normal(left) == right;
     }
 
-    // TODO: Add check when the `right` is NIL, then we can only assign to Maybe types.
-
     return false;
 }
 
@@ -106,20 +105,27 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     // Call <expr> evaluation.
     Data expr_data;
     CALL_RULEp(expr_parser_begin, &expr_data);
-    MASSERT(expr_data.type != DataType_Nil, "expr_parser_begin() returned DataType_Nil! DataType_Nil is obsolete and will be removed soon.");
-    // FIXME: Add && expr_data.value.is_nil != true.
-    MASSERT(expr_data.type != DataType_Undefined, "When expr result is of type Undefined and isn't `nil`, there should be error 8 in expr parsing.");
-
-    // TODO: Add check for when the <expr> is nil and var type is to be deduced. --> Error 8
+    MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil, "When expr result is of type Undefined and isn't `nil`, there should be error 8 in expr parsing.");
 
     // When the Datatype is undefined, we assign the expr's datatype to it.
     if (var->type == DataType_Undefined) {
+        // Check for when the <expr> is nil and var type is to be deduced. --> Error 8
+        if (expr_data.is_nil) {
+            unknown_type_err("Could not deduce type of variable `" COL_Y("%s") "` from `" COL_C("nil") "`.", id_name);
+            return false;
+        }
         var->type = expr_data.type;
+    }
+    // Nil can be assigned only to Maybe types.
+    else if (!is_maybe_datatype(var->type) && IS_NIL(expr_data)) {
+        expr_type_err("Cannot assign `" COL_C("nil") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
+                id_name, datatype_to_string(var->type));
+        return false;
     }
     // Otherwise check the datatype compatibility.
     else if (!assign_types_compatible(var->type, expr_data.type)) {
-        expr_type_err("Type mismatch. Cannot assign variable of type " COL_Y("%s") " to type " COL_Y("%s") ".",
-                     datatype_to_string(expr_data.type), datatype_to_string(var->type));
+        expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
+                     datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
         return false;
     }
 
