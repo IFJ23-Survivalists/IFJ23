@@ -500,18 +500,24 @@ bool rule_assignExpr(VariableSymbol* var, const char* id_name) {
     switch (g_parser.token.type) {
         case Token_EOF:
         case Token_BracketRight:    // When there is no assign in the `var` statement.
-            var->is_initialized = false;
-            return true;
+            break;
         case Token_Equal:
             parser_next_token();
             return assign_expr(var, id_name);
         default:
-            if (HAS_EOL) {
-                var->is_initialized = false;
-                return true;
-            }
+            if (HAS_EOL)
+                break;
             syntax_err("Unexpected token `%s`. Expected one of `EOL`, `EOF`, `}`, `=`.", TOK_STR);
             return false;
     }
+
+    // When we are there, it means that the variable doesn't have ` = <expr>` statement.
+    // In this case we initialize this variable to `nil` if it is of `maybe type`. Otherwise
+    // it is uninitialized.
+    if ((var->is_initialized = is_maybe_datatype(var->type))) {
+        // TODO: Initialize the variable to `nil`.
+    }
+
+    return true;
 }
 
