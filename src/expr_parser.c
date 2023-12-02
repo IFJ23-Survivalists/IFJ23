@@ -15,7 +15,7 @@
 
 #define FREE_ALL(...)                                       \
     do {                                                    \
-        int i = 0;                                          \
+        size_t i = 0;                                       \
         void* pta[] = {__VA_ARGS__};                        \
         for (i = 0; i < sizeof(pta) / sizeof(void*); i++) { \
             free(pta[i]);                                   \
@@ -611,8 +611,6 @@ NTerm* reduce_args(PushdownItem** operands, NTerm* nterm) {
     }
 
     StackNode* node = stack_top(&g_stack);
-    char* fn_name = node->name.data;
-    FunctionSymbol* fs = node->fn;
 
     if (left->name == 'E' && !left->is_named_arg) {
         if (!process_unnamed_arg(node, left)) {
