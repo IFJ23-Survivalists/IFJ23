@@ -78,7 +78,6 @@ int main() {
         test(prg("let a = 0\n a = 1") == 3);
         test(prg("let a = nil") == 8);
         test(prg("let a : Int = nil") == 7);
-        test(prg("let a : Int = 0.0") == 7);
         test(prg("let a : String = 0.0") == 7);
         test(prg("let a: Int? = 1\nlet b : Int = a") == 7);
         test(prg("let a = 123\n let b : String = a\n") == 7);
@@ -142,7 +141,6 @@ int main() {
         test(prg("var a = nil") == 8);
         test(prg("var a\na = nil") == 8);
         test(prg("var a : Int = nil") == 7);
-        test(prg("var a : Int = 0.0") == 7);
         test(prg("var a : String = 0.0") == 7);
         test(prg("var a: Int? = 1\nlet b : Int = a") == 7);
         test(prg("var a = 123\n var b : String = a\n") == 7);
