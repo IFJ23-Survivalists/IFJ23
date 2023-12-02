@@ -18,7 +18,31 @@ void parser_init() {
     symstack_push();
 }
 
+bool add_builtin_functions() {
+    // TODO: func readString() -> String?
+    // TODO: func readInt() -> Int?
+    // TODO: func readDouble() -> Double?
+    // TODO: func readBool() -> Bool?
+
+    // TODO: func write(term1, term2, ..., termn)           :) enjoy
+
+    // TODO: func Int2Double(_ term : Int) -> Double
+    // TODO: func Int2Bool(_ term : Int) -> Bool
+    // TODO: func Double2Int(_ term : Double) -> Int
+    // NOTE: There will be no Double2Int() function.
+    // TODO: func Bool2Int(_ term : Bool) -> Int
+
+    // TODO: func length(_ s : String) -> Int
+    // TODO: func substring(of s : String, startingAt i : Int, endingBefore j : Int) -> String?
+    // TODO: func ord(_ c : String) -> Int
+    // TODO: func chr(_ i : Int) -> String
+    return true;
+}
+
 bool parser_begin() {
+    if (!add_builtin_functions())
+        return false;
+
     if (rec_parser_collect()) {
         scanner_reset_to_beginning();
         if (!rec_parser_begin())
