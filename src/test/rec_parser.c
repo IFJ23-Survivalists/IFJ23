@@ -71,6 +71,17 @@ int main() {
         test(prg("let a : String = 0.0") == 7);
         test(prg("let a: Int? = 1\nlet b : Int = a") == 7);
         test(prg("let a = 123\n let b : String = a\n") == 7);
+        test(prg("let = 12") == 2);
+        test(prg("let a") == 2);
+        test(prg("let a : Int") == 2);
+        test(prg("let a : Int?") == 2);
+        test(prg("let := 12") == 2);
+        test(prg("let : Int 12") == 2);
+        test(prg("let a : Int 12") == 2);
+        test(prg("let Int : Int = 12") == 2);
+        test(prg("let Int = 12") == 2);
+        test(prg("let = 12") == 2);
+        test(prg("let 12") == 2);
     }
     suite("Test - Var statements - correct") {
         set_print_errors(true);
@@ -111,7 +122,28 @@ int main() {
         test(prg("var a = 123\nlet b: Int? = a") == 0);
         test(prg("var a : Int? = 123\nlet b = a!\nlet c : Int = b") == 0);
     }
-    suite("Test - Var statements - errors") {}
+    suite("Test - Var statements - errors") {
+        set_print_errors(false);
+        test(prg("var a : Int = \"fuj fuj\"")== 7);
+        test(prg("var a = 0\nlet a = 2") == 3);
+        test(prg("var a = 0\nlet a = \":)\"") == 3);
+        test(prg("var a = 0\n a = nil") == 7);
+        test(prg("var a = nil") == 8);
+        test(prg("var a\na = nil") == 8);
+        test(prg("var a : Int = nil") == 7);
+        test(prg("var a : Int = 0.0") == 7);
+        test(prg("var a : String = 0.0") == 7);
+        test(prg("var a: Int? = 1\nlet b : Int = a") == 7);
+        test(prg("var a = 123\n var b : String = a\n") == 7);
+        test(prg("var = 12") == 2);
+        test(prg("var := 12") == 2);
+        test(prg("var : Int 12") == 2);
+        test(prg("var a : Int 12") == 2);
+        test(prg("var Int : Int = 12") == 2);
+        test(prg("var Int = 12") == 2);
+        test(prg("var = 12") == 2);
+        test(prg("var 12") == 2);
+    }
     suite("Test - Assign statements - correct") {}
     suite("Test - Assign statements - errors") {}
     suite("Test - While statements - correct") {}
@@ -119,6 +151,7 @@ int main() {
     suite("Test - Func statements - correct") {}
     suite("Test - Func statements - errors") {}
     suite("Test - Scope") {}
+    suite("Test - Use of uninitialized variables") {}
     suite("Text - Example - factorial") {}
 
     return 0;
