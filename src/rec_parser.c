@@ -93,6 +93,29 @@ bool assign_types_compatible(DataType left, const Data* right) {
 }
 
 /**
+ * @brief Try to implicit conversion of rhs's type to given variable's.
+ *
+ * This function handles the case when we assign for example double to int. In this case
+ * the types aren't compatible by default, however we support implicit conversion between them.
+ * If that is the case, we generete needed IFJcode23 instructions for that.
+ * @param var Variable of which's type to try to match
+ * @param rhs Variable to convert
+ * @fixme I will proably need to add more parameters to handle the variable names and such.
+ * @return True if the conversion was done, false if not.
+ */
+bool assign_try_implicit_convesion(VariableSymbol* var, Data* rhs) {
+    if (var->type == DataType_Int && rhs->type == DataType_Double) {
+        // TODO: Generate implicit conversion of double to int.
+        return true;
+    }
+    if (var->type == DataType_Double && rhs->type == DataType_Int) {
+        // TODO: Generate implicit conversion of int to double.
+        return true;
+    }
+    return false;
+}
+
+/**
  * @brief Handle any "= <expr>" assignments.
  * @param var Variable to assign to.
  * @param id_name Name of the variable to assign to. We need this during code generation.
@@ -121,9 +144,11 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     }
     // Otherwise check the datatype compatibility.
     else if (!assign_types_compatible(var->type, &expr_data)) {
-        expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
-                     IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
-        return false;
+        if (!assign_try_implicit_convesion(var, &expr_data)) {
+            expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
+                         IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
+            return false;
+        }
     }
 
     // Mark value as initialized. Assign call always initialized the variable if successful.
