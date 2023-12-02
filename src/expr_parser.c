@@ -34,7 +34,7 @@ const Rule RULE_NAMES[] = {
 const ComprarisonResult PRECEDENCE_TABLE[12][12] = {
     {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},   /* +- */
     {Left, Left, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},    /* * */
-    {Right, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},  /* logic ==, <, >... */
+    {Right, Right, Err, Left, Right, Right, Right, Left, Right, Left, Left, Left},   /* logic ==, <, >... */
     {Right, Right, Right, Right, Right, Right, Right, Err, Right, Left, Err, Left},  /* ?? */
     {Left, Left, Left, Left, Err, Right, Right, Left, Right, Left, Left, Left},      /* pre */
     {Left, Left, Left, Left, Left, Err, Err, Left, Right, Left, Left, Left},         /* post */
@@ -275,6 +275,7 @@ void parse(Token token, Token* prev_token) {
         } break;
 
         case Err:
+            // reduce pushdown until it is possible
             while (reduce())
                 ;
             return;
@@ -415,11 +416,13 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
     else {
         if (id->attribute.data.is_nil) {
             nterm->type = DataType_Undefined;
+
             // DataValue val;
             // val.is_nil = true;
             // nterm->value = val;
-        }
-        nterm->type = id->attribute.data.type;
+        } else
+            nterm->type = id->attribute.data.type;
+
         nterm->is_const = true;
     }
     return nterm;
@@ -475,7 +478,7 @@ NTerm* reduce_postfix(PushdownItem** operands, NTerm* nterm) {
             nterm->type = DataType_String;
             break;
         default:
-            semantic_err("Cannot force unwrap value of non-optional type '%s'.", datatype_to_string(operand->type));
+            expr_type_err("Cannot force unwrap value of non-optional type '%s'.", datatype_to_string(operand->type));
             FREE_ALL(operand, nterm);
             return NULL;
     }
@@ -539,6 +542,7 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
         case DataType_Bool:
         case DataType_Int:
         case DataType_Double:
+        case DataType_String:
             // generate(op, left, right, nterm.value);
             nterm->type = DataType_Bool;
             break;
@@ -560,29 +564,25 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     bool type_match = false;
 
     switch (left->type) {
-        // ignore right side
         case DataType_Bool:
-        case DataType_Int:
-        case DataType_String:
-        case DataType_Double:
-            nterm->type = left->type;
-            return nterm;
-
         case DataType_MaybeBool:
             type_match = convert_to_datatype(DataType_Bool, right);
             nterm->type = DataType_Bool;
             break;
 
+        case DataType_Int:
         case DataType_MaybeInt:
             type_match = convert_to_datatype(DataType_Int, right);
             nterm->type = DataType_Int;
             break;
 
+        case DataType_Double:
         case DataType_MaybeDouble:
             type_match = convert_to_datatype(DataType_Double, right);
             nterm->type = DataType_Double;
             break;
 
+        case DataType_String:
         case DataType_MaybeString:
             type_match = convert_to_datatype(DataType_String, right);
             nterm->type = DataType_String;
@@ -595,13 +595,13 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
 
     if (!type_match) {
         expr_type_err("Unexpected right operand type '%s' when left operand is of type '%s' for operation ??",
-                      datatype_to_string(left->type), datatype_to_string(right->type));
+                      datatype_to_string(right->type), datatype_to_string(left->type));
         FREE_ALL(left, right, nterm);
         return NULL;
     }
 
     FREE_ALL(left, right);
-    return NULL;
+    return nterm;
 }
 
 NTerm* reduce_args(PushdownItem** operands, NTerm* nterm) {
@@ -738,6 +738,17 @@ bool convert_to_datatype(DataType dt, NTerm* op) {
             // generate(double2int, op, , op);
             return true;
         }
+    }
+
+    switch (dt) {
+        case DataType_MaybeBool:
+            return op->type == DataType_Bool;
+        case DataType_MaybeString:
+            return op->type == DataType_String;
+        case DataType_MaybeInt:
+            return op->type == DataType_Int;
+        case DataType_MaybeDouble:
+            return op->type == DataType_Double;
     }
 
     return false;

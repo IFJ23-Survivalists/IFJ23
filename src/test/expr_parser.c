@@ -11,6 +11,25 @@
 #include "../scanner.h"
 #include "test.h"
 
+#define TEST_VALID_EXPRESSION(str, dt)               \
+    do {                                             \
+        scanner_init_str(str);                       \
+        parser_next_token();                         \
+        test(expr_parser_begin(&expr_data) == true); \
+        test(expr_data.type == dt);                  \
+        scanner_free();                              \
+    } while (0)
+
+#define TEST_INVALID_EXPRESSION(str, return_code)     \
+    do {                                              \
+        scanner_init_str(str);                        \
+        parser_next_token();                          \
+        test(expr_parser_begin(&expr_data) == false); \
+        test(got_error() == return_code);             \
+        scanner_free();                               \
+        set_error(Error_None);                        \
+    } while (0)
+
 void insert_variables() {
     VariableSymbol a;
     VariableSymbol b;
@@ -57,7 +76,7 @@ void insert_functions() {
     function_symbol_emplace_param(&fn, DataType_Int, "x", "x");
     function_symbol_emplace_param(&fn, DataType_Double, "y", "y");
 
-    function_symbol_emplace_param(&many, DataType_Int, NULL, "int");
+    function_symbol_emplace_param(&many, DataType_Int, "int", "x");
     function_symbol_emplace_param(&many, DataType_Double, NULL, "d");
     function_symbol_emplace_param(&many, DataType_MaybeInt, NULL, "mint");
     function_symbol_emplace_param(&many, DataType_MaybeDouble, NULL, "md");
@@ -74,53 +93,61 @@ void insert_functions() {
 int main() {
     atexit(summary);
 
-    FILE* valid_syn_fp = fopen("test/expr_parser_files/valid_syntax.swift", "r+");
-    FILE* valid_sem_fp = fopen("test/expr_parser_files/valid_semantic.swift", "r+");
-
-    // for semantic tests
-    DataType expected_value_types[] = {
-        DataType_Double, DataType_String, DataType_Bool,   DataType_Int,         DataType_String,
-        DataType_Double, DataType_Bool,   DataType_Double, DataType_MaybeDouble,
-    };
-
-    if (!valid_sem_fp || !valid_syn_fp) {
-        eprint("Unable to read file\n");
-        return 99;
-    }
-
-    scanner_init(valid_syn_fp);
     parser_init();
-
     insert_variables();
     insert_functions();
 
-    Token* starting_token = parser_next_token();
+    Data expr_data;
 
-    suite("Test syntactically valid expressions") {
-        while ((*starting_token).type != Token_EOF) {
-            Data expr_data;
-            test(expr_parser_begin(&expr_data) == true);
-            starting_token = parser_next_token();
-        }
-    }
-    scanner_free();
-
-    scanner_init(valid_sem_fp);
-
-    starting_token = parser_next_token();
-    suite("Test semanticly valid expressions") {
-        int idx = 0;
-        while ((*starting_token).type != Token_EOF) {
-            Data expr_data;
-            expr_parser_begin(&expr_data);
-            test(expr_data.type == expected_value_types[idx++]);
-            starting_token = parser_next_token();
-        }
+    suite("Test valid arithmetic expressions") {
+        TEST_VALID_EXPRESSION("nil", DataType_Undefined);
+        TEST_VALID_EXPRESSION("1", DataType_Int);
+        TEST_VALID_EXPRESSION("\"adsf\"", DataType_String);
+        TEST_VALID_EXPRESSION("1 + 2 * 3", DataType_Int);
+        TEST_VALID_EXPRESSION("1.2 + 2", DataType_Double);
+        TEST_VALID_EXPRESSION("\"fsd\" + \"45\"", DataType_String);
+        TEST_VALID_EXPRESSION("a * 1.4", DataType_Int);
+        TEST_VALID_EXPRESSION("b / 1.4", DataType_Double);
+        TEST_VALID_EXPRESSION("b - 1", DataType_Double);
+        TEST_VALID_EXPRESSION("y! - (-a)", DataType_Int);
+        TEST_VALID_EXPRESSION("((((((1) +1) -1) +1) -1) *0.1)", DataType_Int);
     }
 
-    scanner_free();
+    suite("Test valid logic expressions") {
+        TEST_VALID_EXPRESSION("1 < 0", DataType_Bool);
+        TEST_VALID_EXPRESSION("\"adsf\" == \"fdsaf\"", DataType_Bool);
+        TEST_VALID_EXPRESSION("!true", DataType_Bool);
+        TEST_VALID_EXPRESSION("true == true", DataType_Bool);
+        TEST_VALID_EXPRESSION("1 == 1 == 1", DataType_Bool);  // end when encounter second '=='
+        TEST_VALID_EXPRESSION("1 > 1.0 ", DataType_Bool);
+        TEST_VALID_EXPRESSION("1.7 < b ", DataType_Bool);
+        TEST_VALID_EXPRESSION("(y!) != (-a) *2", DataType_Bool);
+    }
+
+    suite("Test valid function expressions") {
+        TEST_VALID_EXPRESSION("fn(x: 1, y: 1.1)", DataType_MaybeDouble);
+        TEST_VALID_EXPRESSION("1 + fn(x: a + 2 / 3, y: b)! * 2", DataType_Double);
+        TEST_VALID_EXPRESSION("1 + many(int: a, b, y, 5.5) * 2", DataType_Double);
+        TEST_VALID_EXPRESSION("x() != x() * 2", DataType_Bool);
+        TEST_VALID_EXPRESSION("str(name, name) + \"String\"", DataType_String);
+    }
+
+    suite("Test valid nil coalescing") {
+        TEST_VALID_EXPRESSION("y ?? 0", DataType_Int);
+        TEST_VALID_EXPRESSION("fn(x:1, y:2.1) ?? 4.5 ?? 0.5", DataType_Double);
+        TEST_VALID_EXPRESSION("y ?? 1+ 2 + a - (-6)", DataType_Int);
+    }
+
+    suite("Test invalid arithmetic expressions") {
+        TEST_INVALID_EXPRESSION("+1", Error_Syntax);
+        TEST_INVALID_EXPRESSION("(-1+1", Error_Syntax);
+        TEST_INVALID_EXPRESSION(" 1+, a", Error_Syntax);
+        TEST_INVALID_EXPRESSION(" (1, a)", Error_Syntax);
+        TEST_INVALID_EXPRESSION(" 1!", Error_Operation);
+        TEST_INVALID_EXPRESSION("a + b", Error_Operation);
+        // TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
+    }
 
     parser_free();
-    scanner_free();
     return 0;
 }
