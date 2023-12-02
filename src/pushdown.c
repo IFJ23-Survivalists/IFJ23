@@ -13,10 +13,12 @@ void pushdown_init(Pushdown* pushdown) {
     pushdown->last = NULL;
 }
 
-void pushdown_destroy(Pushdown* pushdown) {
+void pushdown_free(Pushdown* pushdown) {
     while (pushdown->first != NULL) {
         PushdownItem* to_delete = pushdown->first;
         pushdown->first = to_delete->next;
+        if (to_delete->nterm != NULL)
+            free(to_delete->nterm);
         free(to_delete);
     }
 }
@@ -90,7 +92,7 @@ PushdownItem* pushdown_search_name(Pushdown* pushdown, char name) {
 
 PushdownItem* pushdown_search_terminal(struct Pushdown* pushdown) {
     PushdownItem* item = pushdown_last(pushdown);
-    while (item != NULL && item->terminal == NULL)
+    while (item != NULL && item->term == NULL)
         item = item->prev;
 
     return item;
@@ -120,7 +122,7 @@ void pushdown_remove_all_from_current(Pushdown* pushdown, PushdownItem* item) {
 PushdownItem* create_pushdown_item(Token* term, struct NTerm* nterm) {
     PushdownItem* item = malloc(sizeof(PushdownItem));
     item->nterm = nterm;
-    item->terminal = term;
+    item->term = term;
     item->name = '|';  // default name: end of rule
     item->next = NULL;
     item->prev = NULL;
