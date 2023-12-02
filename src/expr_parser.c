@@ -587,6 +587,10 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
             type_match = convert_to_datatype(DataType_String, right);
             nterm->type = DataType_String;
             break;
+        default:
+            expr_type_err("Nil is not a valid type for operation ??");
+            FREE_ALL(left, right, nterm);
+            return NULL;
     }
 
     if (!type_match) {
