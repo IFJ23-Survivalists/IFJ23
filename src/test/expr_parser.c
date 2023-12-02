@@ -30,32 +30,14 @@
         set_error(Error_None);                        \
     } while (0)
 
-void insert_variables() {
-    VariableSymbol a;
-    VariableSymbol b;
-    VariableSymbol name;
-    VariableSymbol y;
-
-    variable_symbol_init(&a);
-    variable_symbol_init(&b);
-    variable_symbol_init(&name);
-    variable_symbol_init(&y);
-
-    a.is_initialized = true;
-    b.is_initialized = true;
-    name.is_initialized = true;
-    y.is_initialized = true;
-
-    a.type = DataType_Int;
-    b.type = DataType_Double;
-    name.type = DataType_String;
-    y.type = DataType_MaybeInt;
-
-    symtable_insert_variable(symstack_top(), "a", a);
-    symtable_insert_variable(symstack_top(), "b", b);
-    symtable_insert_variable(symstack_top(), "name", name);
-    symtable_insert_variable(symstack_top(), "y", y);
-}
+#define INSERT_VARIABLE(name, dt)                              \
+    do {                                                       \
+        VariableSymbol name;                                   \
+        variable_symbol_init(&name);                           \
+        name.is_initialized = true;                            \
+        name.type = dt;                                        \
+        symtable_insert_variable(symstack_top(), #name, name); \
+    } while (0)
 
 void insert_functions() {
     FunctionSymbol fn;
@@ -94,8 +76,15 @@ int main() {
     atexit(summary);
 
     parser_init();
-    insert_variables();
+
     insert_functions();
+
+    INSERT_VARIABLE(a, DataType_Int);
+    INSERT_VARIABLE(b, DataType_Double);
+    INSERT_VARIABLE(name, DataType_String);
+    INSERT_VARIABLE(y, DataType_MaybeInt);
+    INSERT_VARIABLE(bl, DataType_MaybeBool);
+    INSERT_VARIABLE(s, DataType_MaybeString);
 
     Data expr_data;
 
@@ -110,7 +99,7 @@ int main() {
         TEST_VALID_EXPRESSION("b / 1.4", DataType_Double);
         TEST_VALID_EXPRESSION("b - 1", DataType_Double);
         TEST_VALID_EXPRESSION("y! - (-a)", DataType_Int);
-        TEST_VALID_EXPRESSION("((((((1) +1) -1) +1) -1) *0.1)", DataType_Int);
+        TEST_VALID_EXPRESSION("((((((1) +1) -1) +1) -1) *0.1)", DataType_Double);
     }
 
     suite("Test valid logic expressions") {
@@ -121,6 +110,7 @@ int main() {
         TEST_VALID_EXPRESSION("1 == 1 == 1", DataType_Bool);  // end when encounter second '=='
         TEST_VALID_EXPRESSION("1 > 1.0 ", DataType_Bool);
         TEST_VALID_EXPRESSION("1.7 < b ", DataType_Bool);
+        TEST_VALID_EXPRESSION("!bl!", DataType_Bool);
         TEST_VALID_EXPRESSION("(y!) != (-a) *2", DataType_Bool);
     }
 
@@ -134,20 +124,69 @@ int main() {
 
     suite("Test valid nil coalescing") {
         TEST_VALID_EXPRESSION("y ?? 0", DataType_Int);
+        TEST_VALID_EXPRESSION("(y ?? 0)", DataType_Int);
+        TEST_VALID_EXPRESSION("many(int: a, b, y ?? 12, nil)", DataType_Double);
         TEST_VALID_EXPRESSION("fn(x:1, y:2.1) ?? 4.5 ?? 0.5", DataType_Double);
         TEST_VALID_EXPRESSION("y ?? 1+ 2 + a - (-6)", DataType_Int);
+        TEST_VALID_EXPRESSION("(s ?? \" \") + s!", DataType_String);
     }
 
+    suite("Test valid nested expression") {
+        TEST_VALID_EXPRESSION("2 * fn(x: 8 - 2 * (-14.1) / a, y: fn(x:y!, y:4.5) ?? b)!", DataType_Double);
+        TEST_VALID_EXPRESSION(
+            "((3.14 * (5.0 + 2.7)) / (2.0 - (-3.5))) + (fn(x: 8, y: (2 * (-14.1))) ?? fn(x: 3, y: 4.5)!)",
+            DataType_Double);
+        TEST_VALID_EXPRESSION("\"fds\" + str(\"asdf\", \"dsf\") != \"fd\"", DataType_Bool);
+    }
+
+    set_print_errors(false);
+
     suite("Test invalid arithmetic expressions") {
-        set_print_errors(false);
         TEST_INVALID_EXPRESSION("+1", Error_Syntax);
         TEST_INVALID_EXPRESSION("(-1+1", Error_Syntax);
         TEST_INVALID_EXPRESSION(" 1+, a", Error_Syntax);
         TEST_INVALID_EXPRESSION(" (1, a)", Error_Syntax);
         TEST_INVALID_EXPRESSION(" 1!", Error_Operation);
         TEST_INVALID_EXPRESSION("a + b", Error_Operation);
-        // TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
-        set_print_errors(true);
+        TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("nil ?? 45", Error_UnknownType);
+    }
+
+    suite("Test invalid logic expressions") {
+        TEST_INVALID_EXPRESSION("1 <> 2", Error_Syntax);
+        TEST_INVALID_EXPRESSION("(1 < !2)", Error_Operation);
+        TEST_INVALID_EXPRESSION("(a != b)", Error_Operation);
+        TEST_INVALID_EXPRESSION("(true != 45)", Error_Operation);
+        TEST_INVALID_EXPRESSION("(nil != b)", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("!nil", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("!nil!", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("y ?? !!false", Error_Syntax);
+    }
+
+    suite("Test invalid nil coaliscing expressions") {
+        TEST_INVALID_EXPRESSION("1 ?? nil", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("nil ?? 4", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("y ?? a ?? true", Error_Operation);
+        TEST_INVALID_EXPRESSION("y ?? b", Error_Operation);
+        TEST_INVALID_EXPRESSION("(bl ?? 4.4) ?? 4", Error_Operation);
+    }
+
+    suite("Test invalid function expressions") {
+        TEST_INVALID_EXPRESSION("fn(1, 1.5)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("fn(x: 1)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("fn(x: 1, y: 14, z: 14)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("x(nil)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("many(int: 1, 1.5, nil, x: nil)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("str(1, 1.5)", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("str(\"1\")", Error_TypeMismatched);
+    }
+
+    suite("Test undefined functions and variables") {
+        TEST_INVALID_EXPRESSION("u", Error_UndefinedVariable);
+        TEST_INVALID_EXPRESSION("a - if", Error_Syntax);
+        TEST_INVALID_EXPRESSION("a()", Error_UndefinedFunction);
+        TEST_INVALID_EXPRESSION("45()", Error_UndefinedFunction);
+        TEST_INVALID_EXPRESSION("strv()", Error_UndefinedFunction);
     }
 
     parser_free();
