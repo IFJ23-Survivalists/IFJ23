@@ -32,7 +32,6 @@
 /// String names for ::DataType enum.
 static const char* DATATYPE_NAMES[] = {
     "Int", "Double", "String", "Bool",
-    "nil",      // FIXME: Remove this when the nil datatype is removed
     "Int?", "Double?", "String?", "Bool?",
     "Undefined",
 };
