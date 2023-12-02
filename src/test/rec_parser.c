@@ -160,8 +160,10 @@ int main() {
         test(prg("a = 123") == 5);
         test(prg("var a \n a = a + b * 1") == 5);
         test(prg("if (1 == 1) { var a = 14 } a = 15") == 5);
-        // test(prg("") == 0);
-        // test(prg("") == 0);
+        test(prg("var a \n a = \nlet c = 2") == 2);
+        test(prg("var a \n a = \nvar c = 2") == 2);
+        test(prg("if (1 == 1) { var a \n a = }") == 2);
+        test(prg("if (1 == 1) { var a \n a = \n}") == 2);
     }
     suite("Test Parser syntax/semantics - If/If-let statements - correct") {}
     suite("Test Parser syntax/semantics - If/If-let statements - errors") {}
