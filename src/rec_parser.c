@@ -131,7 +131,11 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     // Call <expr> evaluation.
     Data expr_data;
     CALL_RULEp(expr_parser_begin, &expr_data);
-    MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil, "When expr result is of type Undefined and isn't `nil`, there should be error 8 in expr parsing.");
+
+    if (expr_data.type == DataType_Undefined && !expr_data.is_nil) {
+        unknown_type_err("Cannot assign value of type `" COL_Y("Undefined") "` to variable `" BOLD("%s") "`.", id_name);
+        return false;
+    }
 
     // When the Datatype is undefined, we assign the expr's datatype to it.
     if (var->type == DataType_Undefined) {
