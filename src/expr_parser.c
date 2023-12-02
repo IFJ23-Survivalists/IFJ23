@@ -749,6 +749,8 @@ bool convert_to_datatype(DataType dt, NTerm* op) {
             return op->type == DataType_Int;
         case DataType_MaybeDouble:
             return op->type == DataType_Double;
+        default:
+            false;
     }
 
     return false;
