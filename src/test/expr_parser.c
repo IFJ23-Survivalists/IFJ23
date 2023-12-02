@@ -139,6 +139,7 @@ int main() {
     }
 
     suite("Test invalid arithmetic expressions") {
+        set_print_errors(false);
         TEST_INVALID_EXPRESSION("+1", Error_Syntax);
         TEST_INVALID_EXPRESSION("(-1+1", Error_Syntax);
         TEST_INVALID_EXPRESSION(" 1+, a", Error_Syntax);
@@ -146,6 +147,7 @@ int main() {
         TEST_INVALID_EXPRESSION(" 1!", Error_Operation);
         TEST_INVALID_EXPRESSION("a + b", Error_Operation);
         // TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
+        set_print_errors(true);
     }
 
     parser_free();
