@@ -12,6 +12,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include "color.h"
 
 #ifdef NDEBUG
@@ -87,6 +88,9 @@ Error got_error();
 
 /// @brief Print the `error` message to `stderr`
 void print_error_msg();
+
+/// Enable or disable error printing.
+void set_print_errors(bool b);
 
 // Forward declaration.
 struct Token;
