@@ -47,6 +47,7 @@ void code_buf_free(CodeBuf *buf) {
     free(buf->buf);
 
     buf->buf = NULL;
+    buf->capacity = 0;
     buf->size = 0;
 }
 
@@ -70,7 +71,24 @@ void code_buf_push(CodeBuf *buf, String instruction_str) {
     g_code_buf->buf[g_code_buf->size++] = generated_inst;
 }
 
-void string_insert_constant(String *str, Data data) {
+void string_push_encoded(String *str, const char *s) {
+    for (int i = 0; s[i]; i++) {
+        char ch = s[i];
+        if (ch == 35 || ch == 92 || ch <= 32) {
+            char conv[6] = "\\";
+            snprintf(conv + 1, 5, "%03d", ch);
+            string_concat_c_str(str, conv);
+        } else {
+            string_push(str, ch);
+        }
+
+        if (got_error()) {
+            return;
+        }
+    }
+}
+
+void string_push_literal(String *str, Data data) {
     if (data.is_nil) {
         string_concat_c_str(str, "nil@nil");
         return;
@@ -103,27 +121,14 @@ void string_insert_constant(String *str, Data data) {
         }
 
         case DataType_String: {
-            string_reserve(str, str->length + data.value.string.length);
+            string_reserve(str, str->length + data.value.string.length + strlen("string@") + 1);
 
-             if (got_error()) {
-                return;
-             }
-
-            for (int i = 0; data.value.string.data[i]; i++) {
-                char ch = data.value.string.data[i];
-                if (ch == 35 || ch == 92 || ch <= 32) {
-                    char conv[6] = "\\";
-                    snprintf(conv + 1, 5, "%03d", ch);
-                    string_concat_c_str(str, conv);
-
-                } else {
-                    string_push(str, ch);
-                }
-
-                if (got_error()) {
-                    return;
-                }
+            if (got_error()) {
+               return;
             }
+
+            string_concat_c_str(str, "string@");
+            string_push_encoded(str, data.value.string.data);
 
             break;
         }
@@ -163,9 +168,9 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
     #define push_var(var) \
         do { \
             switch (var.frame) { \
-                case Frame_Global: push_str("GF@"); break; \
-                case Frame_Local: push_str("LF@"); break; \
-                case Frame_Temporary: push_str("TF@"); break; \
+                case Frame_Global: push_str(" GF@"); break; \
+                case Frame_Local: push_str(" LF@"); break; \
+                case Frame_Temporary: push_str(" TF@"); break; \
             } \
             push_str(var.name); \
         } while(0)
@@ -178,12 +183,20 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
                     break; \
                 case SymbolType_Constant: \
                     push_str(" "); \
-                    string_insert_constant(&instruction_str, symb.constant); \
+                    string_push_literal(&instruction_str, symb.constant); \
                     break; \
             } \
         } while(0)
 
-    #define push_label(label) push_str(" "); push_str(label)
+    #define push_label(label) \
+        if (!strlen(label)) { \
+            set_error(Error_Internal); \
+            eprint("code_generation: label cannot be empty\n"); \
+            return; \
+        } \
+        push_str(" "); \
+        string_push_encoded(&instruction_str, label); \
+        if (got_error()) return
 
     #define push_to_buf() \
         do { \
@@ -238,23 +251,23 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
     #define push_instruction_var_type(inst) \
         do { \
             push_str(inst); \
-            push_label(op1->label); \
+            push_var(op1->variable); \
             switch (op2->data_type) { \
                 case DataType_MaybeInt: \
                 case DataType_Int: \
-                    push_str(" Int"); \
+                    push_str(" int"); \
                     break;\
                 case DataType_MaybeDouble: \
                 case DataType_Double: \
-                    push_str(" Double"); \
+                    push_str(" float"); \
                     break; \
                 case DataType_MaybeString: \
                 case DataType_String: \
-                    push_str(" String"); \
+                    push_str(" string"); \
                     break; \
                 case DataType_MaybeBool: \
                 case DataType_Bool: \
-                    push_str(" Bool"); \
+                    push_str(" bool"); \
                     break; \
                 case DataType_Undefined: \
                     push_str(" nil"); \
@@ -289,11 +302,11 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
         case Instruction_Mul: push_instruction_var_symb_symb("MUL"); break;
         case Instruction_Div: push_instruction_var_symb_symb("DIV"); break;
         case Instruction_Idiv: push_instruction_var_symb_symb("IDIV"); break;
-        case Instruction_Adds: push_instruction("ADD"); break;
-        case Instruction_Subs: push_instruction("SUB"); break;
-        case Instruction_Muls: push_instruction("MUL"); break;
-        case Instruction_Divs: push_instruction("DIV"); break;
-        case Instruction_Idivs: push_instruction("IDIV"); break;
+        case Instruction_Adds: push_instruction("ADDS"); break;
+        case Instruction_Subs: push_instruction("SUBS"); break;
+        case Instruction_Muls: push_instruction("MULS"); break;
+        case Instruction_Divs: push_instruction("DIVS"); break;
+        case Instruction_Idivs: push_instruction("IDIVS"); break;
         case Instruction_Lt: push_instruction_var_symb_symb("LT"); break;
         case Instruction_Gt: push_instruction_var_symb_symb("GT"); break;
         case Instruction_Eq: push_instruction_var_symb_symb("EQ"); break;
@@ -307,13 +320,13 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
         case Instruction_Ors: push_instruction("ORS"); break;
         case Instruction_Nots: push_instruction("NOTS"); break;
         case Instruction_Int2Float: push_instruction_var_symb("INT2FLOAT"); break;
-        case Instruction_FLoat2Int: push_instruction_var_symb("FLOAT2INT"); break;
+        case Instruction_Float2Int: push_instruction_var_symb("FLOAT2INT"); break;
         case Instruction_Int2Char: push_instruction_var_symb("INT2CHAR"); break;
         case Instruction_Stri2Int: push_instruction_var_symb("STRI2INT"); break;
-        case Instruction_Int2Floats: push_instruction("INT2FLOATs"); break;
-        case Instruction_FLoat2Ints: push_instruction("FLOAT2INTs"); break;
-        case Instruction_Int2Chars: push_instruction("INT2CHARs"); break;
-        case Instruction_Stri2Ints: push_instruction("STRI2INTs"); break;
+        case Instruction_Int2Floats: push_instruction("INT2FLOATS"); break;
+        case Instruction_Float2Ints: push_instruction("FLOAT2INTS"); break;
+        case Instruction_Int2Chars: push_instruction("INT2CHARS"); break;
+        case Instruction_Stri2Ints: push_instruction("STRI2INTS"); break;
         case Instruction_Read: push_instruction_var_type("READ"); break;
         case Instruction_Write: push_instruction_symb("WRITE"); break;
         case Instruction_Concat: push_instruction_var_symb_symb("CONCAT"); break;
