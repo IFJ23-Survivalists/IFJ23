@@ -1,3 +1,10 @@
+/**
+ * @file codegen.c
+ * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @date 03/12/2023
+ * @brief Implementation for the codegen.h
+ */
+
 #include "codegen.h"
 #include <string.h>
 #include <stdio.h>

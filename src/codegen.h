@@ -1,3 +1,10 @@
+/**
+ * @file codegen.h
+ * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @date 03/12/2023
+ * @brief Header file for code generation API
+ */
+
 #ifndef H_CODEGEN
 #define H_CODEGEN
 
