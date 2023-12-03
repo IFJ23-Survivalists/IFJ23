@@ -188,9 +188,16 @@ bool handle_let_statement() {
         return false;
     VariableSymbol var;
     variable_symbol_init(&var);
+    parser_variable_code_info(&var, id_name);
 
     CALL_RULEp(rule_assignType, &var.type);
     CHECK_TOKEN(Token_Equal, "Unexpected token `%s` after `let` assign statement. Expected `=`.", TOK_STR);
+
+    // Define the variable in IFJcode23
+    Operand ifj_var;
+    ifj_var.variable.name = var.code_name.data;
+    ifj_var.variable.frame = var.code_frame;
+    code_generation(Instruction_DefVar, &ifj_var, NULL, NULL);
 
     // Assign value to this variable.
     var.allow_modification = true;
@@ -216,6 +223,13 @@ bool handle_var_statement() {
     VariableSymbol var;
     var.allow_modification = true;
     var.is_initialized = false;
+    parser_variable_code_info(&var, id_name);
+
+    // Define the variable in IFJcode23
+    Operand ifj_op;
+    ifj_op.variable.name = var.code_name.data;
+    ifj_op.variable.frame = var.code_frame;
+    code_generation(Instruction_DefVar, &ifj_op, NULL, NULL);
 
     CALL_RULEp(rule_assignType, &var.type);
     CALL_RULEp(rule_assignExpr, &var, id_name);
@@ -249,6 +263,8 @@ bool handle_func_statement() {
         var.allow_modification = true;
         symtable_insert_variable(symstack_top(), func->params[i].iname.data, var);
     }
+    parser_parameter_code_infos(func);
+    parser_scope_function(func);
 
 
     // TODO: Code generation, we need to create a label and generate code to some buffer.
@@ -263,6 +279,7 @@ bool handle_func_statement() {
         return false;
     }
 
+    parser_scope_global();
     symstack_pop();
 
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of function definition. Expected `}`.", TOK_STR);

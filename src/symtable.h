@@ -14,6 +14,7 @@
 
 #include "string.h"
 #include "scanner.h"
+#include "codegen.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -30,6 +31,7 @@ typedef struct {
     bool is_named;
     String iname;        ///< Name of the parameter when calling the function
     String oname;        ///< Name of the parameter when inside the function
+    String code_name;    ///< Name of the parameter when it is inserted into temporary frame during function calls.
 } FunctionParameter;
 
 /**
@@ -40,6 +42,8 @@ typedef struct {
     int param_count;               /**< Number of items in ::FunctionSymbol::parameters. */
     FunctionParameter* params;     /**< Parameters of the function. */
     DataType return_value_type;    /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
+    CodeBuf code;      /**< < Generated code for this function. */
+    String code_name;   /**< IFJcode23 label */
 } FunctionSymbol;
 
 /**
@@ -50,6 +54,17 @@ typedef struct {
     DataType type;             /**< Data type of the variable. */
     bool is_initialized;       /**< Indicates if the variable is initialized. */
     bool allow_modification;   /**< Indicates if the variable can be modified. */
+    /**
+     * @brief Name of the variable in IFJcode23
+     *
+     * Name of the variable in IFJcode23 under which in can be fully referenced.
+     * @note This name already includes information about which frame the variable is defined in.
+     * @note This variable is to be created by `::parser_assign_code_name()` funciton call.
+     * @note This variable if free'd during symtable destruction.
+     */
+    String code_name;
+    /// Frame of the variable in IFJCode23
+    Frame code_frame;
 } VariableSymbol;
 
 /**
@@ -164,6 +179,12 @@ bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const cha
  * @note This will set all attributes to false and datatype to 0.
  */
 void variable_symbol_init(VariableSymbol *var);
+
+/**
+ * @brief Free all resources used by VariableSymbol.
+ * @param[in,out] var VariableSymbol to free resources of.
+ */
+void variable_symbol_free(VariableSymbol *var);
 
 /**
  * @brief Initialize a symbol table.

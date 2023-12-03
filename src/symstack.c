@@ -139,3 +139,14 @@ VariableSymbol* symstack_search_variable(const char* var_name) {
     return NULL;
 }
 
+int symstack_index(Symtable* st) {
+    CHECK_SS(0);
+    int index = 0;
+    for (SymStackNode* node = g_symstack->top; node; node = node->next) {
+        if (&node->symtable == st)
+            return index;
+        index++;
+    }
+    MASSERT((size_t)index != g_symstack->size, "symstack_index: Passed symtable, which is not on the stack.");
+    return index;
+}

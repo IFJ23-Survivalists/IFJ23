@@ -89,7 +89,8 @@ void string_push_encoded(String *str, const char *s) {
 }
 
 void string_push_literal(String *str, Data data) {
-    if (data.is_nil) {
+    MASSERT(data.type != DataType_Undefined || data.is_nil, "Unsupported type of data");
+    if (data.type == DataType_Undefined && data.is_nil) {
         string_concat_c_str(str, "nil@nil");
         return;
     }

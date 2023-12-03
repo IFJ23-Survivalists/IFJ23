@@ -111,4 +111,13 @@ Symtable* symstack_search(const char* sym_name);
  */
 VariableSymbol* symstack_search_variable(const char* var_name);
 
+/**
+ * @brief Get the index of symtable on the stack.
+ *
+ * This function returns index of the given symtable from the bottom.
+ * @param st Symtable to get the index of.
+ * @return Index of the symtable.
+ */
+int symstack_index(Symtable* st);
+
 #endif  // _SYMSTACK_H_

@@ -4,6 +4,7 @@ TEAM=xkloub03
 CC=gcc
 DEFINES=-DPRINT_INT_ERR
 CFLAGS=-Wall -Wextra -O2 -MMD -Werror -Wpedantic -g $(DEFINES)
+LDFLAGS=-lm
 
 ZIP_FILE=$(TEAM).zip
 TEST_DIR=test

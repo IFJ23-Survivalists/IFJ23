@@ -1,6 +1,7 @@
 /**
  * @file symtable.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 03/10/2023
  * @brief Implementation for symtable.h
  */
@@ -17,6 +18,7 @@ void function_parameter_init(FunctionParameter *par) {
         par->is_named = false;
         string_init(&par->oname);
         string_init(&par->iname);
+        string_init(&par->code_name);
     }
 }
 
@@ -24,6 +26,7 @@ void function_parameter_free(FunctionParameter *par) {
     if (par) {
         string_free(&par->iname);
         string_free(&par->oname);
+        string_free(&par->code_name);
     }
 }
 
@@ -31,6 +34,7 @@ void function_symbol_init(FunctionSymbol *sym) {
     sym->params = NULL;
     sym->param_count = 0;
     sym->return_value_type = (DataType)0;
+    code_buf_init(&sym->code);
 }
 
 void function_symbol_free(FunctionSymbol *sym) {
@@ -40,6 +44,7 @@ void function_symbol_free(FunctionSymbol *sym) {
         free(sym->params);
     sym->params = NULL;
     sym->param_count = 0;
+    code_buf_free(&sym->code);
 }
 
 int string_comp(const char* a, const char* b) {
@@ -104,6 +109,11 @@ void variable_symbol_init(VariableSymbol *var) {
     var->type = (DataType)0;
     var->is_initialized = false;
     var->allow_modification = false;
+    string_init(&var->code_name);
+}
+
+void variable_symbol_free(VariableSymbol *var) {
+    string_free(&var->code_name);
 }
 
 void symtable_init(Symtable *symtable) {
@@ -122,6 +132,8 @@ void node_free(Node **node) {
 
     if (aux->type == NodeType_Function)
         function_symbol_free(&aux->value.function);
+    else
+        variable_symbol_free(&aux->value.variable);
 
     string_free(&aux->key);
 
