@@ -114,6 +114,7 @@ bool parser_tok_is_fun_id() {
     return g_parser.token.type == Token_Identifier && *ntype == NodeType_Function;
 }
 
+// Insert `name%index` into string `str`
 void create_var_name(String* str, const char* name, int index) {
     string_clear(str);
     int index_chars = index != 0 ? (int)((ceil(log10(index))+1)) : 1;
@@ -121,7 +122,8 @@ void create_var_name(String* str, const char* name, int index) {
     string_reserve(str, name_len + index_chars + 2);    // + 2 <--- % a \0
     string_concat_c_str(str, name);
     sprintf(str->data + name_len, "%%%i", index);
-    str->length = name_len + index_chars;
+    str->length = name_len + index_chars + 1;
+    str->data[str->length] = '\0';
     MASSERT(str->length <= str->capacity, "Wrong int to string conversion.");
 }
 
@@ -149,5 +151,6 @@ void parser_function_code_info(FunctionSymbol* func, const char* name) {
     func->code_name.length = len;
     MASSERT(func->code_name.length < func->code_name.capacity, "");
     sprintf(func->code_name.data, "func%%%s", name);
+    func->code_name.data[len] = '\0';
 }
 

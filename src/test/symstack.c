@@ -12,11 +12,6 @@
 int main() {
     atexit(summary);
 
-    FunctionSymbol fs;
-    function_symbol_init(&fs);
-    VariableSymbol vs;
-    variable_symbol_init(&vs);
-
     suite("Test symstack_init") {
         test(symstack_init());
         test(got_error() == Error_None);
@@ -95,15 +90,28 @@ int main() {
     }
 
     suite("Test symstack_search") {
+        test(true);
+        FunctionSymbol fs;
+        function_symbol_init(&fs);
+        VariableSymbol vs;
+        variable_symbol_init(&vs);
+
         Symtable* s0 = symstack_push();
         symtable_insert_function(s0, "fun0", fs);
         symtable_insert_variable(s0, "var0", vs);
+
+        string_init(&fs.code_name);
+        code_buf_init(&fs.code);
         Symtable* s1 = symstack_push();
         symtable_insert_function(s1, "fun1", fs);
         symtable_insert_variable(s1, "var1", vs);
+
+        string_init(&fs.code_name);
+        code_buf_init(&fs.code);
         Symtable* s2 = symstack_push();
         symtable_insert_function(s2, "fun2", fs);
         symtable_insert_variable(s2, "var1", vs);
+
         Symtable* s3 = symstack_push();
         symtable_insert_variable(s3, "var3", vs);
         symtable_insert_variable(s3, "var0", vs);

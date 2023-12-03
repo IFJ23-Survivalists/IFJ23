@@ -35,6 +35,7 @@ void function_symbol_init(FunctionSymbol *sym) {
     sym->param_count = 0;
     sym->return_value_type = (DataType)0;
     code_buf_init(&sym->code);
+    string_init(&sym->code_name);
 }
 
 void function_symbol_free(FunctionSymbol *sym) {
@@ -45,6 +46,7 @@ void function_symbol_free(FunctionSymbol *sym) {
     sym->params = NULL;
     sym->param_count = 0;
     code_buf_free(&sym->code);
+    string_free(&sym->code_name);
 }
 
 int string_comp(const char* a, const char* b) {

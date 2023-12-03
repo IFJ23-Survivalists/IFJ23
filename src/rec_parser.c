@@ -263,7 +263,6 @@ bool handle_func_statement() {
         var.allow_modification = true;
         symtable_insert_variable(symstack_top(), func->params[i].iname.data, var);
     }
-    parser_parameter_code_infos(func);
     parser_scope_function(func);
 
 

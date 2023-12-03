@@ -72,6 +72,8 @@ bool col_handle_func_statement() {
         return false;
     });
 
+    parser_parameter_code_infos(&func);
+
     if (!symtable_insert_function(symstack_top(), func_name, func)) {
         SET_INT_ERROR(IntError_Runtime, "handle_func_statement: Could not insert function into symtable.");
         return false;
