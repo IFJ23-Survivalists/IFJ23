@@ -98,7 +98,9 @@ static const char* token_to_string(const Token* tok) {
                     return "Undefined value";
                 default:
                     MASSERT(false, "token_to_string: Unknown type of attribute.data");
+                    break;
             }
+            break;
         case Token_DataType:
             return datatype_to_string(tok->attribute.data_type);
         case Token_Operator:
