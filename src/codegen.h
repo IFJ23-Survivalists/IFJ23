@@ -109,14 +109,14 @@ typedef enum {
     /// Conversion
     /// Params: var, symb1
     Instruction_Int2Float,
-    Instruction_FLoat2Int,
+    Instruction_Float2Int,
     Instruction_Int2Char,
     Instruction_Stri2Int,
 
     /// Stack versions
     /// Params: None
     Instruction_Int2Floats,
-    Instruction_FLoat2Ints,
+    Instruction_Float2Ints,
     Instruction_Int2Chars,
     Instruction_Stri2Ints,
 
