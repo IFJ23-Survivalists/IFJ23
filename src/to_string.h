@@ -73,43 +73,19 @@ static const char* TOKENTYPE_NAMES[] = {
  */
 inline static const char* tokentype_to_string(TokenType tt) { return TOKENTYPE_NAMES[tt]; }
 
-static const char* token_to_string(const Token* tok) {
-    switch (tok->type) {
-        case Token_Whitespace:
-            if (tok->attribute.has_eol)
-                return "EOL";
-            return TOKENTYPE_NAMES[tok->type];
-        case Token_Data:
-            switch (tok->attribute.data.type) {
-                case DataType_Int:
-                case DataType_Double:
-                case DataType_MaybeInt:
-                case DataType_MaybeDouble:
-                    return "Numeric constant";
-                case DataType_String:
-                case DataType_MaybeString:
-                    return "String literal";
-                case DataType_Bool:
-                case DataType_MaybeBool:
-                    return "Boolean value";
-                case DataType_Undefined:
-                    if (tok->attribute.data.is_nil)
-                        return "nil";
-                    return "Undefined value";
-                default:
-                    MASSERT(false, "token_to_string: Unknown type of attribute.data");
-                    break;
-            }
-            break;
-        case Token_DataType:
-            return datatype_to_string(tok->attribute.data_type);
-        case Token_Operator:
-            return operator_to_string(tok->attribute.op);
-        case Token_Identifier:
-            return tok->attribute.data.value.string.data;
-        default:
-            return tokentype_to_string(tok->type);
-    }
-}
+/**
+ * @brief Get token string representation.
+ *
+ * @param[in] tok Token to get as a string.
+ * @return Static string pointer.
+ */
+const char* token_to_string(const Token* tok);
+
+/**
+ * @brief Convert in to string.
+ * @param[in] num Number to convert.
+ * @return String with number as string. This string needs to be free'd using string_free().
+ */
+String unsigned_to_string(unsigned num);
 
 #endif // _TO_STRING_H_
