@@ -161,7 +161,10 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
 
     #define push_str(s) \
         string_concat_c_str(&instruction_str, s); \
-        if (got_error()) return
+        if (got_error()) { \
+            string_free(&instruction_str); \
+            return; \
+        }
 
     #define push_var(var) \
         switch (var.frame) { \
@@ -186,6 +189,7 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
         if (!strlen(label)) { \
             set_error(Error_Internal); \
             eprint("code_generation: label cannot be empty\n"); \
+            string_free(&instruction_str); \
             return; \
         } \
         push_str(" "); \
