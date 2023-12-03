@@ -160,33 +160,27 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
     }
 
     #define push_str(s) \
-        do { \
-            string_concat_c_str(&instruction_str, s); \
-            if (got_error()) return; \
-        } while(0)
+        string_concat_c_str(&instruction_str, s); \
+        if (got_error()) return
 
     #define push_var(var) \
-        do { \
-            switch (var.frame) { \
-                case Frame_Global: push_str(" GF@"); break; \
-                case Frame_Local: push_str(" LF@"); break; \
-                case Frame_Temporary: push_str(" TF@"); break; \
-            } \
-            push_str(var.name); \
-        } while(0)
+        switch (var.frame) { \
+            case Frame_Global: push_str(" GF@"); break; \
+            case Frame_Local: push_str(" LF@"); break; \
+            case Frame_Temporary: push_str(" TF@"); break; \
+        } \
+        push_str(var.name)
 
     #define push_symb(symb) \
-        do { \
-            switch (symb.type) { \
-                case SymbolType_Variable: \
-                    push_var(symb.variable); \
-                    break; \
-                case SymbolType_Constant: \
-                    push_str(" "); \
-                    string_push_literal(&instruction_str, symb.constant); \
-                    break; \
-            } \
-        } while(0)
+        switch (symb.type) { \
+            case SymbolType_Variable: \
+                push_var(symb.variable); \
+                break; \
+            case SymbolType_Constant: \
+                push_str(" "); \
+                string_push_literal(&instruction_str, symb.constant); \
+                break; \
+        }
 
     #define push_label(label) \
         if (!strlen(label)) { \
@@ -199,91 +193,73 @@ void code_generation(Instruction inst, Operand *op1, Operand *op2, Operand *op3)
         if (got_error()) return
 
     #define push_to_buf() \
-        do { \
-            code_buf_push(g_code_buf, instruction_str); \
-            if (got_error()) return; \
-        } while(0)
+        code_buf_push(g_code_buf, instruction_str); \
+        if (got_error()) return
 
     #define push_instruction(inst) \
-        do { \
-            push_str(inst); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_to_buf()
 
     #define push_instruction_var(inst) \
-        do { \
-            push_str(inst); \
-            push_var(op1->variable); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_var(op1->variable); \
+        push_to_buf()
 
     #define push_instruction_var_symb(inst) \
-        do { \
-            push_str(inst); \
-            push_var(op1->variable); \
-            push_symb(op2->symbol); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_var(op1->variable); \
+        push_symb(op2->symbol); \
+        push_to_buf()
 
     #define push_instruction_label(inst) \
-        do { \
-            push_str(inst); \
-            push_label(op1->label); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_label(op1->label); \
+        push_to_buf()
 
     #define push_instruction_symb(inst) \
-        do { \
-            push_str(inst); \
-            push_symb(op1->symbol); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_symb(op1->symbol); \
+        push_to_buf()
 
     #define push_instruction_var_symb_symb(inst) \
-        do { \
-            push_str(inst); \
-            push_var(op1->variable); \
-            push_symb(op2->symbol); \
-            push_symb(op3->symbol); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_var(op1->variable); \
+        push_symb(op2->symbol); \
+        push_symb(op3->symbol); \
+        push_to_buf()
 
     #define push_instruction_var_type(inst) \
-        do { \
-            push_str(inst); \
-            push_var(op1->variable); \
-            switch (op2->data_type) { \
-                case DataType_MaybeInt: \
-                case DataType_Int: \
-                    push_str(" int"); \
-                    break;\
-                case DataType_MaybeDouble: \
-                case DataType_Double: \
-                    push_str(" float"); \
-                    break; \
-                case DataType_MaybeString: \
-                case DataType_String: \
-                    push_str(" string"); \
-                    break; \
-                case DataType_MaybeBool: \
-                case DataType_Bool: \
-                    push_str(" bool"); \
-                    break; \
-                case DataType_Undefined: \
-                    push_str(" nil"); \
-                    break; \
-            } \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_var(op1->variable); \
+        switch (op2->data_type) { \
+            case DataType_MaybeInt: \
+            case DataType_Int: \
+                push_str(" int"); \
+                break;\
+            case DataType_MaybeDouble: \
+            case DataType_Double: \
+                push_str(" float"); \
+                break; \
+            case DataType_MaybeString: \
+            case DataType_String: \
+                push_str(" string"); \
+                break; \
+            case DataType_MaybeBool: \
+            case DataType_Bool: \
+                push_str(" bool"); \
+                break; \
+            case DataType_Undefined: \
+                push_str(" nil"); \
+                break; \
+        } \
+        push_to_buf()
 
     #define push_instruction_label_symb_symb(inst) \
-        do { \
-            push_str(inst); \
-            push_label(op1->label); \
-            push_symb(op2->symbol); \
-            push_symb(op3->symbol); \
-            push_to_buf(); \
-        } while(0)
+        push_str(inst); \
+        push_label(op1->label); \
+        push_symb(op2->symbol); \
+        push_symb(op3->symbol); \
+        push_to_buf()
 
     switch (inst) {
         case Instruction_Start: push_instruction(".IFJcode23"); break;
