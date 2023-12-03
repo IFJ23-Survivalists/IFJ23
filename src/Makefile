@@ -23,7 +23,7 @@ build: $(PROJ)
 
 # Compile each test file to its executable
 $(TEST_EXECUTABLES): %: $(TEST_OBJS) $(TEST_DIR)/%.c
-	$(CC) $(CFLAGS) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@
 
 # Run all tests
 test: $(TEST_EXECUTABLES)
