@@ -52,7 +52,7 @@ bool add_builtin_functions() {
     return true;
 }
 
-bool parser_begin() {
+bool parser_begin(bool output_code) {
     code_buf_set(g_parser.currect_code);
 
     if (!add_builtin_functions())
@@ -69,11 +69,11 @@ bool parser_begin() {
     // TODO: Check if any variable is uninitialized or undefined in symtable.
 
     // Output code for global statements
-    printf(".IFJcode23\n");
-    code_buf_print(&g_parser.global_code);
-
-    // TODO: Output code for statements inside functions.
-
+    if (output_code) {
+        printf(".IFJcode23\n");
+        code_buf_print(&g_parser.global_code);
+        // TODO: Output code for statements inside functions.
+    }
 
     return true;
 }

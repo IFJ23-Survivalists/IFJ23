@@ -15,7 +15,7 @@ int prg_scanner_initialized() {
     parser_init();
     MASSERT(!got_error(), "");
 
-    parser_begin();
+    parser_begin(false);
     int res = (int)got_error();
     if (res != 0) {
         if (got_int_error()) {

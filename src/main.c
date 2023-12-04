@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     }
 
     // Parse the source file.
-    parser_begin();
+    parser_begin(true);
     if (got_error()) {
         if (got_int_error())
             print_int_error_msg();

@@ -46,8 +46,13 @@ extern Parser g_parser;
 /// Initialize the token parser.
 void parser_init();
 
-/// Parse the source file passed to `scanner_init()`.
-bool parser_begin();
+/**
+ * @brief Parse the source file passed to `scanner_init()`.
+ * @param output_code If set to TRUE, then IFJcode23 will be outputed to stdout.
+ * @return TRUE on parsing success, FALSE otherwise.
+ * @pre Error states are set on errors.
+ */
+bool parser_begin(bool output_code);
 
 /// Free all resources allocated with parser.
 void parser_free();
