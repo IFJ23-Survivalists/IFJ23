@@ -13,6 +13,7 @@
 #include <stdarg.h>
 
 #include "scanner.h"
+#include "codegen.h"
 
 /**
  * @brief Typical `fprintf` that is extended to support some of our enums.
@@ -87,5 +88,16 @@ const char* token_to_string(const Token* tok);
  * @return String with number as string. This string needs to be free'd using string_free().
  */
 String unsigned_to_string(unsigned num);
+
+
+/// String names for ::Frame enum.
+static const char* FRAME_NAMES[] = { "GF", "LF", "TF" };
+
+/**
+ * @brief Convert frame to string
+ * @param op Frame to convert
+ * @return Constant string representing frame as string.
+ */
+inline static const char* frame_to_string(Frame op) { return FRAME_NAMES[op]; }
 
 #endif // _TO_STRING_H_
