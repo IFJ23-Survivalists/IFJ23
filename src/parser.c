@@ -68,7 +68,8 @@ bool parser_begin() {
 
     // TODO: Check if any variable is uninitialized or undefined in symtable.
 
-    // TODO: Output code for global statements
+    // Output code for global statements
+    printf(".IFJcode23\n");
     code_buf_print(&g_parser.global_code);
 
     // TODO: Output code for statements inside functions.

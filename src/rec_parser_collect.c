@@ -9,22 +9,6 @@
 #include "to_string.h"
 #include <string.h>
 
-// Check if g_parser.token.type is `tok` and if not, set syntax_err with given msg format.
-#define bCHECK_TOKEN(tok, ...) \
-    if (g_parser.token.type != tok) { \
-        syntax_err(__VA_ARGS__); \
-        _err = 1;   \
-        break; \
-    } \
-    parser_next_token()
-
-// Call given rule function with parameters and return false if the rule fails.
-#define bCALL_RULEp(rule, ...) if (!rule(__VA_ARGS__)) { _err = 1; break;}
-
-#define TRY_FINAL(try, final) do { int _err = 0; do try while(0); if (_err) final } while(0)
-
-#define ERR_BREAK { _err = 1; break; }
-
 bool col_rule_funcReturnType(FunctionSymbol* func);
 bool col_rule_params(FunctionSymbol* func);
 bool col_rule_params_n(FunctionSymbol* func);
@@ -62,15 +46,15 @@ bool col_handle_func_statement() {
         return false;
     }
 
-    TRY_FINAL({
+    TRY_BEGIN {
         bCHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the function name. Expected `(`.", TOK_STR);
         bCALL_RULEp(col_rule_params, &func);
         bCHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
         bCALL_RULEp(col_rule_funcReturnType, &func);
-    }, {
+    } TRY_FINAL {
         function_symbol_free(&func);
         return false;
-    });
+    } TRY_END;
 
     parser_parameter_code_infos(&func);
 

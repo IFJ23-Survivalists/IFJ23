@@ -36,8 +36,16 @@ char* g_current_func;
 // Entry point to recursive parsing.
 bool rec_parser_begin() {
     g_current_func = NULL;
+
+    code_generation_raw("DEFVAR GF@ret");
+    code_generation_raw("MOVE GF@ret int@0");
+
     parser_next_token();
-    return rule_statementList();
+    CALL_RULEp(rule_statementList);
+
+    code_generation_raw("LABEL exit");
+    code_generation_raw("EXIT GF@ret");
+    return true;
 }
 
 bool rule_statementList() {
@@ -101,24 +109,24 @@ bool assign_types_compatible(DataType left, const Data* right) {
  * @param var Variable of which's type to try to match
  * @param rhs Variable to convert
  * @fixme I will proably need to add more parameters to handle the variable names and such.
- * @return True if the conversion was done, false if not.
+ * @return 0 if no conersion can be done. 1 if Float2Int and 2 if Int2Float
  */
-bool assign_try_implicit_convesion(VariableSymbol* var, Data* rhs) {
+int assign_try_implicit_convesion(VariableSymbol* var, Data* rhs) {
     if (var->type == DataType_Int && rhs->type == DataType_Double) {
-        // TODO: Generate implicit conversion of double to int.
-        return true;
+        // Generate implicit conversion of double to int.
+        return 1;
     }
     if (var->type == DataType_Double && rhs->type == DataType_Int) {
-        // TODO: Generate implicit conversion of int to double.
-        return true;
+        // Generate implicit conversion of int to double.
+        return 2;
     }
-    return false;
+    return 0;
 }
 
 /**
  * @brief Handle any "= <expr>" assignments.
  * @param var Variable to assign to.
- * @param id_name Name of the variable to assign to. We need this during code generation.
+ * @param id_name Name of the variable to assign to. We need this only for error messages.
  * @note We expect g_parser.token to contain the token AFTER the '='.
  * @note We expect the var->allow_modification to be TRUE to be able to assign. Otherwise error is raised.
  */
@@ -137,6 +145,8 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
         return false;
     }
 
+    int impl_conv = 0;
+
     // When the Datatype is undefined, we assign the expr's datatype to it.
     if (var->type == DataType_Undefined) {
         // Check for when the <expr> is nil and var type is to be deduced. --> Error 8
@@ -148,7 +158,7 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     }
     // Otherwise check the datatype compatibility.
     else if (!assign_types_compatible(var->type, &expr_data)) {
-        if (!assign_try_implicit_convesion(var, &expr_data)) {
+        if ((impl_conv = assign_try_implicit_convesion(var, &expr_data)) == 0) {
             expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
                          IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
             return false;
@@ -158,7 +168,20 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     // Mark value as initialized. Assign call always initialized the variable if successful.
     var->is_initialized = true;
 
-    // TODO: Code generation for Maybe and non-Maybe types.
+    // TODO: MAYBE? Idk why I put this here.. Code generation for Maybe and non-Maybe types.
+
+    // Code generation of MOVE or implicit conversion MOVE.
+    Operand op1, op2;
+    op1.variable.name = var->code_name.data;
+    op1.variable.frame = var->code_frame;
+    op2.symbol.type = SymbolType_Variable;
+    op2.symbol.variable.name = "res";
+    op2.symbol.variable.frame = Frame_Temporary;
+    if (impl_conv != 0) {
+        code_generation(impl_conv == 1 ? Instruction_Float2Int : Instruction_Int2Float, &op1, &op2, NULL);
+    } else {
+        code_generation(Instruction_Move, &op1, &op2, NULL);
+    }
 
     return true;
 }
@@ -180,6 +203,7 @@ bool define_variable_check(const char* name) {
     return true;
 }
 
+
 bool handle_let_statement() {
     const char* id_name = TOK_ID_STR;
     CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `let` keyword. Expected identifier.", TOK_STR);
@@ -190,26 +214,31 @@ bool handle_let_statement() {
     variable_symbol_init(&var);
     parser_variable_code_info(&var, id_name);
 
-    CALL_RULEp(rule_assignType, &var.type);
-    CHECK_TOKEN(Token_Equal, "Unexpected token `%s` after `let` assign statement. Expected `=`.", TOK_STR);
+    TRY_BEGIN {
+        bCALL_RULEp(rule_assignType, &var.type);
+        bCHECK_TOKEN(Token_Equal, "Unexpected token `%s` after `let` assign statement. Expected `=`.", TOK_STR);
 
-    // Define the variable in IFJcode23
-    Operand ifj_var;
-    ifj_var.variable.name = var.code_name.data;
-    ifj_var.variable.frame = var.code_frame;
-    code_generation(Instruction_DefVar, &ifj_var, NULL, NULL);
+        // Define the variable in IFJcode23
+        Operand ifj_var;
+        ifj_var.variable.name = var.code_name.data;
+        ifj_var.variable.frame = var.code_frame;
+        code_generation(Instruction_DefVar, &ifj_var, NULL, NULL);
 
-    // Assign value to this variable.
-    var.allow_modification = true;
-    if (!assign_expr(&var, id_name))
+        // Assign value to this variable.
+        var.allow_modification = true;
+        if (!assign_expr(&var, id_name))
+            BREAK_FINAL;
+        var.allow_modification = false;
+
+        // Create variable in the top-most symbol table.
+        if (!symtable_insert_variable(symstack_top(), id_name, var)) {
+            SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
+            BREAK_FINAL;
+        }
+    } TRY_FINAL {
+        variable_symbol_free(&var);
         return false;
-    var.allow_modification = false;
-
-    // Create variable in the top-most symbol table.
-    if (!symtable_insert_variable(symstack_top(), id_name, var)) {
-        SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
-        return false;
-    }
+    } TRY_END;
 
     return true;
 }
@@ -221,24 +250,30 @@ bool handle_var_statement() {
     if (!define_variable_check(id_name))
         return false;
     VariableSymbol var;
+    variable_symbol_init(&var);
     var.allow_modification = true;
     var.is_initialized = false;
     parser_variable_code_info(&var, id_name);
 
-    // Define the variable in IFJcode23
-    Operand ifj_op;
-    ifj_op.variable.name = var.code_name.data;
-    ifj_op.variable.frame = var.code_frame;
-    code_generation(Instruction_DefVar, &ifj_op, NULL, NULL);
+    TRY_BEGIN {
+        // Define the variable in IFJcode23
+        Operand ifj_op;
+        ifj_op.variable.name = var.code_name.data;
+        ifj_op.variable.frame = var.code_frame;
+        code_generation(Instruction_DefVar, &ifj_op, NULL, NULL);
 
-    CALL_RULEp(rule_assignType, &var.type);
-    CALL_RULEp(rule_assignExpr, &var, id_name);
+        bCALL_RULEp(rule_assignType, &var.type);
+        bCALL_RULEp(rule_assignExpr, &var, id_name);
 
-    // Insert variable into the symboltable.
-    if (!symtable_insert_variable(symstack_top(), id_name, var)) {
-        SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
+        // Insert variable into the symboltable.
+        if (!symtable_insert_variable(symstack_top(), id_name, var)) {
+            SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
+            BREAK_FINAL;
+        }
+    } TRY_FINAL {
+        variable_symbol_free(&var);
         return false;
-    }
+    } TRY_END;
 
     return true;
 }
@@ -258,6 +293,7 @@ bool handle_func_statement() {
     MASSERT(func != NULL, "In seconds phase all function declarations should be valid.");
     for (int i = 0; i < func->param_count; i++) {
         VariableSymbol var;
+        variable_symbol_init(&var);
         var.type = func->params[i].type;
         var.is_initialized = true;
         var.allow_modification = true;
@@ -457,7 +493,11 @@ bool rule_ifCondition(bool is_let) {
         // Either way, we need to add non-maybe type to symtable, because we need to reference
         // the correct variables in the if statement.
         if (is_maybe_datatype(var->type)) {
-            VariableSymbol new_var = *var;
+            VariableSymbol new_var;
+            variable_symbol_init(&new_var);
+            new_var.is_initialized = var->is_initialized;
+            new_var.allow_modification = var->allow_modification;
+            // TODO : Generate code name info
             new_var.type = maybe_to_normal(var->type);
             symtable_insert_variable(symstack_top(), id_name, new_var);
         } // NOTE: If variable is already of normal type, then we don't need to duplicate it.
@@ -560,7 +600,14 @@ bool rule_assignExpr(VariableSymbol* var, const char* id_name) {
     // In this case we initialize this variable to `nil` if it is of `maybe type`. Otherwise
     // it is uninitialized.
     if ((var->is_initialized = is_maybe_datatype(var->type))) {
-        // TODO: Initialize the variable to `nil`.
+        // Initialize the variable to `nil`.
+        Operand op1, op2;
+        op1.variable.name = var->code_name.data;
+        op1.variable.frame = var->code_frame;
+        op2.symbol.type = SymbolType_Constant;
+        op2.symbol.constant.type = DataType_Undefined;
+        op2.symbol.constant.is_nil = true;
+        code_generation(Instruction_Move, &op1, &op2, NULL);
     }
 
     return true;
