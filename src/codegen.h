@@ -267,6 +267,13 @@ void code_buf_set(CodeBuf *buf);
 void code_buf_print(CodeBuf *buf);
 
 /**
+ * @brief Print all instructions in the active `CodeBuf` to a `String` and return it.
+ * @param buf The `CodeBuf` to be printed.
+ * @return instructions `String`
+ */
+String code_buf_print_to_string(CodeBuf *buf);
+
+/**
  * @brief Generate code for an instruction with specified operands and insert it into the active `CodeBuf`.
  * @param instruction The instruction to generate code for.
  * @param operand1 The first operand.

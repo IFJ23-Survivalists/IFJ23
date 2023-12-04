@@ -6,6 +6,7 @@
  */
 
 #include "codegen.h"
+#include "string.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -35,6 +36,31 @@ void code_buf_print(CodeBuf *buf) {
     for (size_t i = 0; i < buf->size; i++) {
         printf("%s\n", buf->buf[i].code.data);
     }
+}
+
+String code_buf_print_to_string(CodeBuf *buf) {
+    String res;
+    string_init(&res);
+
+    if (!buf->size) {
+        return res;
+    }
+
+    // 6 is the average length of an instruction
+    string_reserve(&res, buf->size * 6);
+
+    if (got_error()) {
+        return res;
+    }
+
+    size_t i = 0;
+
+    do {
+        string_concat_c_str(&res, buf->buf[i].code.data);
+        string_push(&res, '\n');
+    } while (++i < buf->size || got_error());
+
+    return res;
 }
 
 void code_buf_free(CodeBuf *buf) {
