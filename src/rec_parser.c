@@ -33,9 +33,17 @@ bool rule_elseIf();
 //     - Finding the function to use for return statement checks.
 char* g_current_func;
 
+/**
+ * @brief Stores a current while index.
+ *
+ * This variable is used for uniquelly indentifying while statements in IFJcode23
+ */
+int g_while_index;
+
 // Entry point to recursive parsing.
 bool rec_parser_begin() {
     g_current_func = NULL;
+    g_while_index = 0;
 
     code_generation_raw("DEFVAR GF@ret");
     code_generation_raw("MOVE GF@ret int@0");
@@ -325,6 +333,9 @@ bool handle_func_statement() {
 bool handle_while_statement() {
     CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
 
+    g_while_index++;    // Increment while counter to get unique while id.
+    code_generation_raw("LABEL while%i_begin", g_while_index);
+
     Data expr_data;
     CALL_RULEp(expr_parser_begin, &expr_data);
 
@@ -334,12 +345,20 @@ bool handle_while_statement() {
         return false;
     }
 
+    // Generate code for checking the while result and jumping if necessary.
+    code_generation_raw("JUMPIFNEQ while%i_end TF@res bool@true", g_while_index);
+
     CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
 
     symstack_push();
     CALL_RULE(rule_statementList);
     symstack_pop();
+
+    // Jump to beginning of the while to check the condition.
+    code_generation_raw("JUMP while%i_begin", g_while_index);
+    // Label for code after this while statement.
+    code_generation_raw("LABEL while%i_end", g_while_index);
 
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of while statement. Expected `}`.", TOK_STR);
     CALL_RULE(rule_statementList);
