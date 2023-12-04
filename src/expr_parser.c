@@ -765,7 +765,7 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     char* if_label = get_unique_id();
     char* else_label = get_unique_id();
 
-    code_generation_raw("JUMPIFEQS %s %s@%s nil@nil", if_label, frame_to_string(left->frame), left->code_name);
+    code_generation_raw("JUMPIFEQ %s %s@%s nil@nil", if_label, frame_to_string(left->frame), left->code_name);
     code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(right->frame), right->code_name);
     code_generation_raw("JUMP %s", else_label);
     code_generation_raw("LABEL %s", if_label);
