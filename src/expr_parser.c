@@ -7,11 +7,14 @@
  */
 #include "expr_parser.h"
 #include <string.h>
+#include "codegen.h"
 #include "function_stack.h"
 #include "parser.h"
 #include "pushdown.h"
 #include "symtable.h"
 #include "to_string.h"
+
+// Pool* g_pool = NULL;
 
 #define FREE_ALL(...)                                       \
     do {                                                    \
@@ -32,18 +35,18 @@ const Rule RULE_NAMES[] = {
 };
 
 const ComprarisonResult PRECEDENCE_TABLE[12][12] = {
-    {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},     /* +- */
-    {Left, Left, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},      /* * */
-    {Right, Right, Err, Left, Right, Right, Right, Left, Right, Left, Left, Left},     /* logic ==, <, >... */
-    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Left},   /* ?? */
-    {Left, Left, Left, Left, Err, Right, Right, Left, Right, Left, Left, Left},        /* pre */
-    {Left, Left, Left, Left, Left, Err, Err, Left, Right, Left, Left, Left},           /* post */
-    {Right, Right, Right, Right, Right, Right, Right, Equal, Right, Right, Left, Err}, /* ( */
-    {Left, Left, Left, Left, Left, Left, Err, Left, Err, Left, Left, Left},            /* ) */
-    {Left, Left, Left, Left, Left, Left, Equal, Left, Err, Left, Equal, Left},         /* id */
-    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* ,*/
-    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},    /* : */
-    {Right, Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};     /* $ */
+    {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},    /* +- */
+    {Left, Left, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},     /* * */
+    {Right, Right, Err, Left, Right, Right, Right, Left, Right, Left, Left, Left},    /* logic ==, <, >... */
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Left},  /* ?? */
+    {Left, Left, Left, Left, Err, Right, Right, Left, Right, Left, Left, Left},       /* pre */
+    {Left, Left, Left, Left, Left, Err, Err, Left, Right, Left, Left, Left},          /* post */
+    {Right, Right, Right, Right, Right, Right, Right, Equal, Right, Right, Err, Err}, /* ( */
+    {Left, Left, Left, Left, Left, Left, Err, Left, Err, Left, Left, Left},           /* ) */
+    {Left, Left, Left, Left, Left, Left, Equal, Left, Err, Left, Equal, Left},        /* id */
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},   /* ,*/
+    {Right, Right, Right, Right, Right, Right, Right, Left, Right, Left, Err, Err},   /* : */
+    {Right, Right, Right, Right, Right, Right, Right, Err, Right, Err, Err, Err}};    /* $ */
 
 Stack g_stack;
 Pushdown g_pushdown;
@@ -55,22 +58,26 @@ bool expr_parser_begin(Data* data) {
     pushdown_init(&g_pushdown);
 
     parse(g_parser.token, NULL);
+
+    // item that results from the reduction of the expression
     PushdownItem* item = pushdown_last(&g_pushdown);
 
     if (item != NULL)
         nterm = item->nterm;
 
-    // check if pushdown is reduced to one nonterminal
+    // check if pushdown is reduced to one nonterminal else error occurred during parsing
     if (g_pushdown.first == g_pushdown.last && nterm != NULL && nterm->name == 'E') {
         data->type = nterm->type;
-        data->value = nterm->value;
         data->is_nil = nterm->is_nil;
+
+        code_generation_raw("MOVE TF@res %s@%s", frame_to_string(nterm->frame), nterm->code_name);
+
         stack_free(&g_stack);
         pushdown_free(&g_pushdown);
         return true;
     }
 
-    // error occurred during parsing
+    // check if a semantic error occured during parsing otherwise a syntax error occured
     if (!got_error()) {
         syntax_err("Unexpected token: '%s'", token_to_string(&g_parser.token));
     }
@@ -213,6 +220,35 @@ PrecedenceCat char_to_precedence(char ch) {
     }
 }
 
+char* operator_to_instruction(Operator op) {
+    switch (op) {
+        case Operator_And:
+            return "AND";
+        case Operator_Or:
+            return "OR";
+        case Operator_DoubleEqual:
+        case Operator_NotEqual:
+            return "EQ";
+        case Operator_LessThan:
+        case Operator_LessOrEqual:
+            return "LT";
+        case Operator_MoreThan:
+        case Operator_MoreOrEqual:
+            return "GT";
+        case Operator_Plus:
+            return "ADD";
+        case Operator_Minus:
+            return "SUB";
+        case Operator_Multiply:
+            return "MUL";
+        case Operator_Divide:
+            return "DIV";
+        default:
+            SET_INT_ERROR(IntError_InvalidArgument, "Invalid operator");
+            return NULL;
+    }
+}
+
 void print_pushdown(Pushdown* pushdown) {
     PushdownItem* item = pushdown->first;
     printf("$");
@@ -235,12 +271,12 @@ void parse(Token token, Token* prev_token) {
     // puts("");
 
     switch (comp_res) {
-        case Left:
+        case Left:  // apply rule
             if (reduce())
                 parse(token, prev_token);
             break;
 
-        case Right: {
+        case Right: {  // insert token to pushdown with rule end marker
             PushdownItem* rule_end_marker = create_pushdown_item(NULL, NULL);
             PushdownItem* term = create_pushdown_item(&token, NULL);
             term->name = precedence_to_char(token_prec);
@@ -251,26 +287,9 @@ void parse(Token token, Token* prev_token) {
             parse(*parser_next_token(), &token);
         } break;
 
-        case Equal: {
+        case Equal: {  // insert token to pushdown
             PushdownItem* term = create_pushdown_item(&token, NULL);
             term->name = precedence_to_char(token_prec);
-
-            // previous token is function identifier
-            if (token.type == Token_ParenLeft) {
-                if (prev_token->type == Token_Identifier) {
-                    String fn_name = prev_token->attribute.data.value.string;
-                    FunctionSymbol* fn = get_fn_symbol(fn_name);
-
-                    if (fn == NULL)
-                        return;  // function is undefined
-
-                    stack_push(&g_stack, fn_name, fn);
-                } else if (prev_token->type == Token_Data) {
-                    undef_fun_err("'%s' is not callable", datatype_to_string(prev_token->attribute.data_type));
-                    return;
-                }
-            }
-
             pushdown_insert_last(&g_pushdown, term);
             parse(*parser_next_token(), &token);
         } break;
@@ -354,7 +373,9 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
     // default nonterminal attributes
     nterm->name = 'E';
     nterm->is_const = false;
-    nterm->is_named_arg = false;
+    nterm->is_nil = false;
+    nterm->param_name = NULL;
+    nterm->frame = Frame_Temporary;
 
     switch (rule) {
         case Rule_Identif:
@@ -376,10 +397,10 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
         case Rule_ArgsLE:
             return reduce_args(operands, nterm);
         case Rule_FnEmpty:
-            return reduce_function(nterm, NULL);
+            return reduce_function(nterm, operands[0]->term, NULL);
         case Rule_FnArgsProcessed:;
         case Rule_FnArgs:
-            return reduce_function(nterm, operands[2]->nterm);
+            return reduce_function(nterm, operands[0]->term, operands[2]->nterm);
         case Rule_NamedArg:
             return reduce_named_arg(operands, nterm);
         case NoRule:
@@ -387,6 +408,33 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
             return NULL;
     }
     return nterm;
+}
+
+char* get_unique_id() {
+    static int cnt = 0;
+    cnt++;
+
+    char* tmp = "tmp";
+
+    // Calculate the length of the resulting string
+    int strLen = snprintf(NULL, 0, "%d", cnt);
+    int totalLen = strlen(tmp) + strLen + 1;  // +1 for the null terminator
+
+    // Allocate memory for the concatenated string
+    char* result = (char*)malloc(totalLen);
+
+    // Check for memory allocation failure
+    if (result == NULL) {
+        SET_INT_ERROR(IntError_Memory, "Malloc failed");
+        return NULL;
+    }
+
+    // Copy the original string to the result
+    strcpy(result, tmp);
+
+    // Concatenate the integer to the result
+    sprintf(result + strlen(result), "%d", cnt);
+    return result;
 }
 
 NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
@@ -412,16 +460,55 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
         }
 
         nterm->type = vs->type;
+        nterm->frame = vs->code_frame;
+        nterm->code_name = vs->code_name.data;
+
     }
     // constant
     else {
+        Operand symb;
+        Operand var;
+
         if (id->attribute.data.is_nil) {
             nterm->type = DataType_Undefined;
             nterm->is_nil = true;
+            symb.symbol.constant.is_nil = true;
         } else
             nterm->type = id->attribute.data.type;
 
+        symb.symbol.type = SymbolType_Constant;
+        symb.symbol.constant.type = nterm->type;
         nterm->is_const = true;
+
+        var.variable.frame = Frame_Temporary;
+        var.variable.name = get_unique_id();
+
+        if (var.variable.name == NULL) {
+            return NULL;  // allocation error
+        }
+
+        switch (nterm->type) {
+            case DataType_Bool:
+                symb.symbol.constant.value.is_true = id->attribute.data.value.is_true;
+                break;
+            case DataType_Int:
+                symb.symbol.constant.value.number = id->attribute.data.value.number;
+                break;
+            case DataType_Double:
+                symb.symbol.constant.value.number_double = id->attribute.data.value.number_double;
+                break;
+            case DataType_String:
+                symb.symbol.constant.value.string = id->attribute.data.value.string;
+                break;
+            default:
+                symb.symbol.constant.is_nil = true;
+                break;
+        }
+
+        code_generation(Instruction_Move, &var, &symb, NULL);
+
+        nterm->frame = Frame_Temporary;
+        nterm->code_name = var.variable.name;
     }
     return nterm;
 }
@@ -430,6 +517,9 @@ NTerm* reduce_parenthesis(PushdownItem** operands, NTerm* nterm) {
     NTerm* expr = operands[1]->nterm;
     nterm->type = expr->type;
     nterm->is_const = expr->is_const;
+    nterm->is_nil = expr->is_nil;
+    nterm->code_name = expr->code_name;
+    nterm->frame = expr->frame;
     FREE_ALL(expr);
     return nterm;
 }
@@ -443,20 +533,29 @@ NTerm* reduce_prefix(PushdownItem** operands, NTerm* nterm) {
         return NULL;
     }
 
+    nterm->code_name = get_unique_id();
+
     // !E
     if (operands[0]->term->attribute.op == Operator_Negation) {
         if (operand->type != DataType_Bool) {
             expr_type_err("Expected 'Bool', found '%s'.", datatype_to_string(operand->type));
-            FREE_ALL(operand, nterm);
+            FREE_ALL(operand, nterm->code_name, nterm);
             return NULL;
         }
+        code_generation_raw("NOT TF@%s %s@%s", nterm->code_name, frame_to_string(operand->frame), operand->code_name);
     }
 
     // -E
     else {
-        if (operand->type != DataType_Int && operand->type != DataType_Double) {
+        if (operand->type == DataType_Int) {
+            code_generation_raw("SUB TF@%s int@0 %s@%s", nterm->code_name, frame_to_string(operand->frame),
+                                operand->code_name);
+        } else if (operand->type == DataType_Double) {
+            code_generation_raw("SUB TF@%s float@%a %s@%s", nterm->code_name, 0.0f, frame_to_string(operand->frame),
+                                operand->code_name);
+        } else {
             expr_type_err("Expected 'Int' or 'Double', found '%s'.", datatype_to_string(operand->type));
-            FREE_ALL(operand, nterm);
+            FREE_ALL(operand, nterm->code_name, nterm);
             return NULL;
         }
     }
@@ -494,6 +593,11 @@ NTerm* reduce_postfix(PushdownItem** operands, NTerm* nterm) {
             FREE_ALL(operand, nterm);
             return NULL;
     }
+
+    nterm->code_name = operand->code_name;
+    nterm->is_const = operand->is_const;
+    nterm->frame = operand->frame;
+
     FREE_ALL(operand);
     return nterm;
 }
@@ -503,32 +607,33 @@ NTerm* reduce_arithmetic(PushdownItem** operands, NTerm* nterm) {
     Operator op = operands[1]->term->attribute.op;
     NTerm* right = operands[2]->nterm;
 
+    // arithmetic operation on two constants is constant as well
     if (left->is_const && right->is_const)
         nterm->is_const = true;
 
-    if (!convert_to_same_types(left, right)) {
+    if (!try_convert_to_same_types(left, right)) {
         FREE_ALL(left, right, nterm);
         return NULL;
     }
 
-    switch (op) {
-        case Operator_Plus:
-            // generate("+", left, right, expr.value);
-            break;
-        case Operator_Minus:
-            // generate("-", left, right, expr.value);
-            break;
-        case Operator_Multiply:
-            // generate("*", left, right, expr.value);
-            break;
-        case Operator_Divide:
-            // generate("/", left, right, expr.value);
-            break;
-        default:
-            break;
+    if (left->type == DataType_Bool) {
+        expr_type_err("Cannot add two Bools");
+        FREE_ALL(left, right, nterm);
+        return NULL;
     }
 
+    nterm->code_name = get_unique_id();
     nterm->type = left->type;
+
+    if (op == Operator_Plus && nterm->type == DataType_String) {
+        code_generation_raw("CONCAT TF@%s %s@%s %s@%s", nterm->code_name, frame_to_string(left->frame), left->code_name,
+                            frame_to_string(right->frame), right->code_name);
+    } else {
+        code_generation_raw("%s TF@%s %s@%s %s@%s", operator_to_instruction(op), nterm->code_name,
+                            frame_to_string(left->frame), left->code_name, frame_to_string(right->frame),
+                            right->code_name);
+    }
+
     FREE_ALL(left, right);
     return nterm;
 }
@@ -538,27 +643,52 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
     NTerm* right = operands[2]->nterm;
     Operator op = operands[1]->term->attribute.op;
 
-    if (left->type == DataType_Undefined || right->type == DataType_Undefined) {
-        unknown_type_err("Cannot infer data type from nil");
+    if (!try_convert_to_same_types(left, right)) {
         FREE_ALL(left, right, nterm);
         return NULL;
     }
 
-    if (left->is_const && right->is_const)
-        nterm->is_const = true;
-
-    if (!convert_to_same_types(left, right)) {
-        FREE_ALL(left, right, nterm);
-        return NULL;
-    }
+    nterm->code_name = get_unique_id();
 
     switch (left->type) {
         case DataType_Bool:
+            // only equality comparison and &&, || operations allowed for bool data type, not <, >, <=, >=
+            if (op != Operator_DoubleEqual && op != Operator_NotEqual && op != Operator_And && op != Operator_Or) {
+                expr_type_err("binary operator '%s' cannot be applied to two 'Bool' operands.", operator_to_string(op));
+                FREE_ALL(left, right, nterm);
+                return NULL;
+            }
+            code_generation_raw("%s TF@%s %s@%s %s@%s", operator_to_instruction(op), nterm->code_name,
+                                frame_to_string(left->frame), left->code_name, frame_to_string(right->frame),
+                                right->code_name);
+
+            if (op == Operator_NotEqual) {
+                code_generation_raw("NOT TF@%s TF@%s", nterm->code_name, nterm->code_name);
+            }
+            break;
         case DataType_Int:
         case DataType_Double:
         case DataType_String:
-            // generate(op, left, right, nterm.value);
-            nterm->type = DataType_Bool;
+            code_generation_raw("%s TF@%s %s@%s %s@%s", operator_to_instruction(op), nterm->code_name,
+                                frame_to_string(left->frame), left->code_name, frame_to_string(right->frame),
+                                right->code_name);
+            switch (op) {
+                case Operator_LessOrEqual:
+                case Operator_MoreOrEqual: {
+                    char* tmp = get_unique_id();
+                    code_generation_raw("EQ TF@%s %s@%s %s@%s", tmp, frame_to_string(left->frame), left->code_name,
+                                        frame_to_string(right->frame), right->code_name);
+
+                    code_generation_raw("OR TF@%s TF@%s TF@%s", nterm->code_name, nterm->code_name, tmp);
+                    FREE_ALL(tmp);
+                    break;
+                } break;
+                case Operator_NotEqual:
+                    code_generation_raw("NOT TF@%s TF@%s", nterm->code_name, nterm->code_name);
+                    break;
+                default:
+                    break;
+            }
             break;
 
         default:
@@ -568,6 +698,7 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
             return NULL;
     }
 
+    nterm->type = DataType_Bool;
     FREE_ALL(left, right);
     return nterm;
 }
@@ -586,25 +717,25 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     switch (left->type) {
         case DataType_Bool:
         case DataType_MaybeBool:
-            type_match = convert_to_datatype(DataType_Bool, right, false);
+            type_match = try_convert_to_datatype(DataType_Bool, right, false);
             nterm->type = DataType_Bool;
             break;
 
         case DataType_Int:
         case DataType_MaybeInt:
-            type_match = convert_to_datatype(DataType_Int, right, false);
+            type_match = try_convert_to_datatype(DataType_Int, right, false);
             nterm->type = DataType_Int;
             break;
 
         case DataType_Double:
         case DataType_MaybeDouble:
-            type_match = convert_to_datatype(DataType_Double, right, false);
+            type_match = try_convert_to_datatype(DataType_Double, right, false);
             nterm->type = DataType_Double;
             break;
 
         case DataType_String:
         case DataType_MaybeString:
-            type_match = convert_to_datatype(DataType_String, right, false);
+            type_match = try_convert_to_datatype(DataType_String, right, false);
             nterm->type = DataType_String;
             break;
         case DataType_Undefined:
@@ -620,7 +751,18 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
         return NULL;
     }
 
-    FREE_ALL(left, right);
+    nterm->code_name = get_unique_id();
+    char* if_label = get_unique_id();
+    char* else_label = get_unique_id();
+
+    code_generation_raw("JUMPIFEQS %s %s@%s nil@nil", if_label, frame_to_string(left->frame), left->code_name);
+    code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(right->frame), right->code_name);
+    code_generation_raw("JUMP %s", else_label);
+    code_generation_raw("LABEL %s", if_label);
+    code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(right->frame), right->code_name);
+    code_generation_raw("LABEL %s", else_label);
+
+    FREE_ALL(left, right, if_label, else_label);
     return nterm;
 }
 
@@ -628,97 +770,127 @@ NTerm* reduce_args(PushdownItem** operands, NTerm* nterm) {
     NTerm* left = operands[0]->nterm;
     NTerm* right = operands[2]->nterm;
 
-    if (stack_empty(&g_stack)) {
-        syntax_err("Expected operation between operands not ','");
+    // E -> E, E => push new function stack node
+    if (left->name == 'E') {
+        stack_push(&g_stack);
+
+        if (!insert_param(stack_top(&g_stack), left)) {
+            FREE_ALL(left, right, nterm);
+            return NULL;  // allocation error
+        }
+    }
+
+    if (!insert_param(stack_top(&g_stack), right)) {
         FREE_ALL(left, right, nterm);
-        return NULL;
-    }
-
-    StackNode* node = stack_top(&g_stack);
-
-    if (left->name == 'E' && !left->is_named_arg) {
-        if (!process_unnamed_arg(node, left)) {
-            FREE_ALL(left, right, nterm);
-            return NULL;
-        }
-    }
-
-    if (right->name == 'E' && !right->is_named_arg) {
-        if (!process_unnamed_arg(node, right)) {
-            FREE_ALL(left, right, nterm);
-            return NULL;
-        }
+        return NULL;  // allocation error
     }
 
     nterm->name = 'L';
-    FREE_ALL(left, right);
+
     return nterm;
 }
 
 NTerm* reduce_named_arg(PushdownItem** operands, NTerm* nterm) {
-    char* arg_name = operands[0]->term->attribute.data.value.string.data;
     NTerm* arg_value = operands[2]->nterm;
 
-    if (stack_empty(&g_stack)) {
-        syntax_err("Expected operation between operands not ':'");
-        FREE_ALL(arg_value, nterm);
-        return NULL;
-    }
-
-    StackNode* fn_node = stack_top(&g_stack);
-
-    MASSERT(fn_node->fn != NULL, "Fucntion symbol cannot be null in named arg rule");
-
-    if (!process_named_arg(fn_node, arg_name, arg_value)) {
-        FREE_ALL(arg_value, nterm);
-        return NULL;
-    }
-    nterm->type = fn_node->fn->params[fn_node->processed_args - 1].type;
-    nterm->is_named_arg = true;
+    nterm->param_name = operands[0]->term->attribute.data.value.string.data;
+    nterm->type = operands[2]->nterm->type;
+    nterm->is_const = arg_value->is_const;
+    nterm->is_nil = arg_value->is_nil;
 
     FREE_ALL(arg_value);
     return nterm;
 }
 
-NTerm* reduce_function(NTerm* nterm, NTerm* arg) {
-    StackNode* node = stack_top(&g_stack);
-    char* fn_name = node->name.data;
-    FunctionSymbol* fs = node->fn;
-
-    MASSERT(node != NULL, "Function Node cannot be null in function rule!");
-
-    if (arg != NULL && arg->name == 'E' && !arg->is_named_arg) {
-        if (!is_valid_num_of_param(node) || !process_unnamed_arg(node, arg)) {
-            FREE_ALL(nterm, arg);
-            return NULL;
-        }
-    }
-
-    if (node->processed_args != fs->param_count) {
-        fun_type_err("Mising arguments in function '%s'", fn_name);
+NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
+    if (id->type == Token_Data) {
+        syntax_err("'%s is not callable", tokentype_to_string(id->type));
         FREE_ALL(nterm, arg);
         return NULL;
     }
 
-    FREE_ALL(arg);
+    // handle single argument function
+    if (arg != NULL && arg->name == 'E') {
+        stack_push(&g_stack);
+        if (!insert_param(stack_top(&g_stack), arg)) {
+            FREE_ALL(arg, nterm);
+            return NULL;  // allocation error
+        }
+    }
+    // no argument function
+    else if (arg == NULL) {
+        stack_push(&g_stack);
+    }
+    String fn_name = id->attribute.data.value.string;
+    StackNode* node = stack_top(&g_stack);
+    FunctionSymbol* expected_function = get_fn_symbol(fn_name);
+
+    if (!expected_function) {
+        FREE_ALL(arg, nterm);
+        return NULL;  // undefined function
+    }
+
+    // check number of parameters
+    if (node != NULL && expected_function->param_count != node->param_count) {
+        fun_type_err("Inavalid number of arguments in function '%s', expected %d, found %d.", fn_name,
+                     expected_function->param_count, node->param_count);
+        FREE_ALL(nterm, arg);
+        return NULL;
+    }
+
+    // compare arguments names and types
+    for (int i = 0; i < node->param_count; i++) {
+        FunctionParameter expected_param = expected_function->params[i];
+        NTerm* found_param = node->param[i];
+
+        // check if both are named or unnamed
+        if ((expected_param.is_named ^ (found_param->param_name != NULL))) {
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name);
+            FREE_ALL(arg, nterm);
+            return NULL;
+        }
+        if (found_param->param_name && strcmp(expected_param.oname.data, found_param->param_name) != 0) {
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name);
+            FREE_ALL(arg, nterm);
+            return NULL;
+        }
+
+        // check type and name of the parameters
+        if (!try_convert_to_datatype(expected_param.type, found_param, true)) {
+            fun_type_err("Unexpected type '%s' for %d. argument in function '%s'",
+                         datatype_to_string(found_param->type), i, fn_name);
+            FREE_ALL(arg, nterm);
+            return NULL;
+        }
+
+        FREE_ALL(found_param);
+    }
+
+    FREE_ALL(node->param, arg);
+
     stack_pop(&g_stack);
-    nterm->type = fs->return_value_type;
+
+    nterm->type = expected_function->return_value_type;
+    nterm->code_name = expected_function->code_name.data;
+    nterm->frame = Frame_Temporary;
+
     return nterm;
 }
 
-bool convert_to_same_types(NTerm* op1, NTerm* op2) {
-    if (op1->type == op2->type)
-        return true;
-
+bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
     if (op1->type == DataType_Undefined || op2->type == DataType_Undefined) {
         unknown_type_err("Cannot infer data type from nil");
         return false;
     }
 
+    if (op1->type == op2->type)
+        return true;
+
     if (op1->is_const && op2->is_const) {
         if (op1->type == DataType_Double && op2->type == DataType_Int) {
             op2->type = DataType_Double;
-            // generate(int2double, op2, , op2);
+            code_generation_raw("INT2FLOAT %s@%s %s@%s", frame_to_string(op2->frame), op2->code_name,
+                                frame_to_string(op2->frame), op2->code_name);
             return true;
         }
     }
@@ -726,11 +898,14 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2) {
     if (op1->is_const) {
         if (op1->type == DataType_Int && op2->type == DataType_Double) {
             op1->type = DataType_Double;
-            // generate(int2double, op1, , op1);
+            code_generation_raw("INT2FLOAT %s@%s %s@%s", frame_to_string(op1->frame), op1->code_name,
+                                frame_to_string(op1->frame), op1->code_name);
             return true;
         } else if (op1->type == DataType_Double && op2->type == DataType_Int) {
             op1->type = DataType_Int;
-            // generate(double2int, op1, , op1);
+            code_generation_raw("FLOAT2INT %s@%s %s@%s", frame_to_string(op1->frame), op1->code_name,
+                                frame_to_string(op1->frame), op1->code_name);
+
             return true;
         }
     }
@@ -738,11 +913,15 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2) {
     if (op2->is_const) {
         if (op1->type == DataType_Int && op2->type == DataType_Double) {
             op2->type = DataType_Int;
-            // generate(double2int, op2, , op2);
+            code_generation_raw("FLOAT2INT %s@%s %s@%s", frame_to_string(op2->frame), op2->code_name,
+                                frame_to_string(op2->frame), op2->code_name);
             return true;
+
         } else if (op1->type == DataType_Double && op2->type == DataType_Int) {
             op2->type = DataType_Double;
-            // generate(int2double, op2, , op2);
+            code_generation_raw("INT2FLOAT %s@%s %s@%s", frame_to_string(op2->frame), op2->code_name,
+                                frame_to_string(op2->frame), op2->code_name);
+
             return true;
         }
     }
@@ -753,96 +932,34 @@ bool convert_to_same_types(NTerm* op1, NTerm* op2) {
     return false;
 }
 
-bool convert_to_datatype(DataType dt, NTerm* op, bool allow_nil) {
-    if (dt == op->type)
+bool try_convert_to_datatype(DataType dt, NTerm* operand, bool allow_nil) {
+    if (dt == operand->type)
         return true;
 
-    if (op->is_const) {
-        if (op->type == DataType_Int && dt == DataType_Double) {
-            op->type = DataType_Double;
-            // generate(int2double, op, , op);
+    if (operand->is_const) {
+        if (operand->type == DataType_Int && dt == DataType_Double) {
+            operand->type = DataType_Double;
+            code_generation_raw("INT2FLOAT TF@%s TF@%s", operand->code_name, operand->code_name);
             return true;
-        } else if (op->type == DataType_Double && dt == DataType_Int) {
-            op->type = DataType_Int;
-            // generate(double2int, op, , op);
+        } else if (operand->type == DataType_Double && dt == DataType_Int) {
+            operand->type = DataType_Int;
+            code_generation_raw("FLOAT2INT TF@%s TF@%s", operand->code_name, operand->code_name);
             return true;
         }
     }
 
     switch (dt) {
         case DataType_MaybeBool:
-            return (op->type == DataType_Bool || (allow_nil && op->type == DataType_Undefined));
+            return (operand->type == DataType_Bool || (allow_nil && operand->type == DataType_Undefined));
         case DataType_MaybeString:
-            return (op->type == DataType_String || (allow_nil && op->type == DataType_Undefined));
+            return (operand->type == DataType_String || (allow_nil && operand->type == DataType_Undefined));
         case DataType_MaybeInt:
-            return (op->type == DataType_Int || (allow_nil && op->type == DataType_Undefined));
+            return (operand->type == DataType_Int || (allow_nil && operand->type == DataType_Undefined));
         case DataType_MaybeDouble:
-            return (op->type == DataType_Double || (allow_nil && op->type == DataType_Undefined));
+            return (operand->type == DataType_Double || (allow_nil && operand->type == DataType_Undefined));
         default:
             false;
     }
 
     return false;
-}
-
-bool is_valid_num_of_param(StackNode* fn_node) {
-    if (fn_node->processed_args >= fn_node->fn->param_count) {
-        fun_type_err("Too many arguments for function '%s'", fn_node->name.data);
-        return false;
-    }
-    return true;
-}
-
-bool process_unnamed_arg(StackNode* fn_node, NTerm* arg) {
-    if (!is_valid_num_of_param(fn_node))
-        return NULL;
-
-    MASSERT(fn_node->processed_args < fn_node->fn->param_count,
-            "Handle parameter count before unnamed argumant type check");
-    MASSERT(fn_node->name.data != NULL, "Function Name cannot be null");
-
-    FunctionParameter param = fn_node->fn->params[fn_node->processed_args];
-
-    if (param.oname.data != NULL) {
-        fun_type_err("In function '%s': The %d. argument should be named '%s', but an unnamed argument was found.",
-                     fn_node->name.data, fn_node->processed_args + 1, param.oname.data);
-        return false;
-    }
-
-    if (!convert_to_datatype(param.type, arg, true)) {
-        fun_type_err("Unexpected type '%s' for %d. argument of type '%s'", datatype_to_string(arg->type),
-                     fn_node->processed_args + 1, datatype_to_string(param.type));
-        return false;
-    }
-    fn_node->processed_args++;
-    return true;
-}
-
-bool process_named_arg(StackNode* fn_node, char* arg_name, NTerm* arg_value) {
-    if (!is_valid_num_of_param(fn_node))
-        return NULL;
-
-    MASSERT(fn_node != NULL, "How?");
-    FunctionParameter param = fn_node->fn->params[fn_node->processed_args];
-
-    if (param.oname.data == NULL) {
-        fun_type_err("In function '%s': Expected unnamed %d. argument, found named argument '%s'.", fn_node->name.data,
-                     fn_node->processed_args + 1, arg_name);
-        return false;
-    }
-
-    // check argument name
-    if (strcmp(param.oname.data, arg_name) != 0) {
-        fun_type_err("In function '%s', invalid name '%s' of the %d. argument, expected name is '%s'",
-                     fn_node->name.data, arg_name, fn_node->processed_args + 1, param.oname.data);
-        return false;
-    }
-
-    if (!convert_to_datatype(param.type, arg_value, true)) {
-        fun_type_err("Unexpected type '%s' for named argument '%s'", datatype_to_string(arg_value->type), arg_name);
-        return false;
-    }
-
-    fn_node->processed_args++;
-    return true;
 }

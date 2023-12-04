@@ -20,10 +20,13 @@
  * @brief Represents the result of the precedence comparison of the pushdown terminal and the input token.
  */
 typedef enum {
-    Left,  /**< Higher precedence on Pushdown. */
-    Right, /**< Current token has higher precedence. */
+    Left,  /**< Higher precedence of topmost token in Pushdown. */
+    Right, /**< Lower precedence of topmost token in Pushdown. */
     Equal, /**< Equal precedence. */
-    Err,   /**< No relation between tokens => error state */
+
+    ///  No relation between tokens => end of operator precedence analysis, potentially error state (depends whether
+    ///  pushdown is reduced to only on non-terminal) */
+    Err,
 } ComprarisonResult;
 
 /**
@@ -72,13 +75,19 @@ typedef enum {
  * @brief Rules for expression parsing
  */
 typedef struct NTerm {
-    DataValue value; /**< resulted value after applying a reduction rule */
-    DataType type;   /**< resulted type after applying a reduction rule */
+    DataType type; /**< resulted type after applying a reduction rule */
+    Frame frame;
+    char* code_name;
+    char* param_name;
     bool is_nil;
-    char name;         /**< E or L */
-    bool is_const;     /**< `true` only if const reduced to nonterminal, otherwise `false`*/
-    bool is_named_arg; /**< `true` if expression is created by reduction of named argument */
+    char name;     /**< E or L */
+    bool is_const; /**< `true` only if const reduced to nonterminal, otherwise `false`*/
 } NTerm;
+
+// typedef struct {
+//     void* ptr;
+//     Pool* next;
+// } Pool;
 
 // Forward declaration
 struct Pushdown;
@@ -239,10 +248,11 @@ NTerm* reduce_named_arg(struct PushdownItem** operands, NTerm* nterm);
  * @brief Apply rule for reducing function expression. Checks if there is enough arguments provided otherwise prints
  * error message. Process remaining argument if not processed yet.
  * @param[in] operands Array of operands needed for applying rule.
+ * @param[in] id Name of the function.
  * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_function(NTerm* nterm, NTerm* arg);
+NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg);
 
 /**
  * @brief Tries convert one operand type to the type of the other one. Conversion is possible only for immediate values
@@ -251,40 +261,40 @@ NTerm* reduce_function(NTerm* nterm, NTerm* arg);
  * @param[in] op2 Operand for conversion.
  * @return `true` if conversion was successful or operands are of the same type, otherwise returns `false`.
  */
-bool convert_to_same_types(NTerm* op1, NTerm* op2);
+bool try_convert_to_same_types(NTerm* op1, NTerm* op2);
 
 /**
  * @brief Tries convert operands one operand type to the type of the other one. Conversion is possible only for literals
  * (expression that was created by reducing an immediate value)
  * @param[in] dt `DataType` that `op` is converted to, if possible.
- * @param[in] op operand for type conversion (only possible for immediate values).
+ * @param[in] operand operand for type conversion (only possible for immediate values).
  * @param[in] allow_nil If `true` it allows nil being right operand for nullable `dt`.
  * @return `true` if conversion was successful or `op` is of the same type as `dt`, otherwise returns `false`.
  */
-bool convert_to_datatype(DataType dt, NTerm* op, bool allow_nil);
+bool try_convert_to_datatype(DataType dt, NTerm* operand, bool allow_nil);
 
-/**
- * @brief Checks if there is not too many arguments provided to a given function.
- * @param[in] fn_node Contains data about function.
- * @return `true` if there is not too many arguments provided to a given function, otherwise returns `false`.
- */
-bool is_valid_num_of_param(StackNode* fn_node);
+// /**
+//  * @brief Checks if there is not too many arguments provided to a given function.
+//  * @param[in] fn_node Contains data about function.
+//  * @return `true` if there is not too many arguments provided to a given function, otherwise returns `false`.
+//  */
+// bool is_valid_num_of_param(StackNode* fn_node);
 
-/**
- * @brief Checks if there is an unnamed argument at a given position in function as well as its data type.
- * @param[in] fn_node Contains data about function.
- * @param[in] arg Argument value for checking.
- * @return `true` if argument type and position are correct, otherwise returns `false`.
- */
-bool process_unnamed_arg(StackNode* fn_node, NTerm* arg);
+// /**
+//  * @brief Checks if there is an unnamed argument at a given position in function as well as its data type.
+//  * @param[in] fn_node Contains data about function.
+//  * @param[in] arg Argument value for checking.
+//  * @return `true` if argument type and position are correct, otherwise returns `false`.
+//  */
+// bool process_unnamed_arg(StackNode* fn_node, NTerm* arg);
 
-/**
- * @brief Checks if there is a named argument at a given position in function as well as its data type.
- * @param[in] fn_node Contains data about function.
- * @param[in] arg_name The external name of argument.
- * @param[in] arg_value Argument value for checking.
- * @return `true` if argument type, name and position are correct, otherwise returns `false`.
- */
-bool process_named_arg(StackNode* fn_node, char* arg_name, NTerm* arg_value);
+// /**
+//  * @brief Checks if there is a named argument at a given position in function as well as its data type.
+//  * @param[in] fn_node Contains data about function.
+//  * @param[in] arg_name The external name of argument.
+//  * @param[in] arg_value Argument value for checking.
+//  * @return `true` if argument type, name and position are correct, otherwise returns `false`.
+//  */
+// bool process_named_arg(StackNode* fn_node, char* arg_name, NTerm* arg_value);
 
 #endif  // _EXPR_PARSER_H_
