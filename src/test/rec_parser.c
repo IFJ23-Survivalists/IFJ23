@@ -187,6 +187,17 @@ int main() {
         test(prg("let a : Int = \n10\n if let a { var c : Int = 0\n c = c + a}") == 0);
         test(prg("let a = 12\n if let a { var c : Int = 0\n c = c + a}") == 0);
         test(prg("let a : Int? = nil\n if\n let a\n {\n var c : Int = 0\n c = c + a\n}\n") == 0);
+        test(prg(
+            "var a = 0\n"
+            "if (a == 0) {\n"
+                "var a = 0.0\n"
+            "} else if (a == 1) {\n"
+                "var b = 0.0\n"
+            "} else {\n"
+                "a = a+ 1\n"
+            "}\n"
+            "var b = 0\n"
+        ) == 0);
     }
     suite("Test Parser syntax/semantics - If/If-let statements - errors") {
         set_print_errors(false);

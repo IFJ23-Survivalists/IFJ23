@@ -36,7 +36,7 @@ bool add_builtin_functions() {
     // TODO: func readDouble() -> Double?
     // TODO: func readBool() -> Bool?
 
-    // TODO: func write(term1, term2, ..., termn)           :) enjoy
+    // TODO: func write(_ term)           :) enjoy
 
     // TODO: func Int2Double(_ term : Int) -> Double
     // TODO: func Int2Bool(_ term : Int) -> Bool
@@ -48,7 +48,6 @@ bool add_builtin_functions() {
     // TODO: func ord(_ c : String) -> Int
     // TODO: func chr(_ i : Int) -> String
 
-    symstack_bottom();
     return true;
 }
 

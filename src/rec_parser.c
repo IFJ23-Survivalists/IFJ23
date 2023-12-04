@@ -19,13 +19,13 @@
 bool rule_statementList();
 bool rule_statementSeparator();
 bool rule_statement();
-bool rule_ifStatement();
 bool rule_returnExpr();
-bool rule_ifCondition(bool is_let);
-bool rule_else();
+bool rule_ifStatement(int if_num, int after_num);
+bool rule_ifCondition(bool is_let, int if_num, int after_num);
+bool rule_else(int if_num, int after_num);
+bool rule_elseIf(int if_num, int after_num);
 bool rule_assignType(DataType* attr_dt);
 bool rule_assignExpr(VariableSymbol* var, const char* id_name);
-bool rule_elseIf();
 
 // Stores, which function we are currently processing, so that we can do semantic checks,
 // like:
@@ -33,17 +33,14 @@ bool rule_elseIf();
 //     - Finding the function to use for return statement checks.
 char* g_current_func;
 
-/**
- * @brief Stores a current while index.
- *
- * This variable is used for uniquelly indentifying while statements in IFJcode23
- */
+/// Statement counters used for uniquelly indentifying needed IFJcode23 labels.
 int g_while_index;
+int g_if_index;
 
 // Entry point to recursive parsing.
 bool rec_parser_begin() {
     g_current_func = NULL;
-    g_while_index = 0;
+    g_while_index = g_if_index = 0;
 
     code_generation_raw("DEFVAR GF@ret");
     code_generation_raw("MOVE GF@ret int@0");
@@ -393,7 +390,7 @@ bool rule_statement() {
     switch (g_parser.token.type) {
         case Token_If:
             parser_next_token();
-            return rule_ifStatement();
+            return rule_ifStatement(-1, 0);
         case Token_Let:
             parser_next_token();
             return handle_let_statement();
@@ -465,7 +462,12 @@ bool rule_returnExpr() {
     }
 }
 
-bool rule_ifStatement() {
+bool rule_ifStatement(int if_num, int after_num) {
+    if (if_num == -1) {
+        if_num = ++g_if_index;
+        after_num = 0;
+    }
+
     // Push new symtable here, because the potential if-let statement
     // will need to create a new variable {new because we access only a
     // variable defined using `let` statement, so we don't need reference}.
@@ -473,11 +475,11 @@ bool rule_ifStatement() {
     switch (g_parser.token.type) {
         case Token_ParenLeft:
             parser_next_token();
-            CALL_RULEp(rule_ifCondition, false);
+            CALL_RULEp(rule_ifCondition, false, if_num, after_num);
             break;
         case Token_Let:
             parser_next_token();
-            CALL_RULEp(rule_ifCondition, true);
+            CALL_RULEp(rule_ifCondition, true, if_num, after_num);
             break;
         default:
             syntax_err("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
@@ -486,12 +488,13 @@ bool rule_ifStatement() {
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
     CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
+    code_generation_raw("JUMP if%i_end", if_num);
     symstack_pop();
-    CALL_RULE(rule_else);
+    CALL_RULEp(rule_else, if_num, after_num);
     return true;
 }
 
-bool rule_ifCondition(bool is_let) {
+bool rule_ifCondition(bool is_let, int if_num, int after_num) {
     if (is_let) {
         const char* id_name = TOK_ID_STR;
         CHECK_TOKEN(Token_Identifier, "Unexpected token `" COL_Y("%s") "` in if-let statement. Expected indentifier.");
@@ -506,9 +509,10 @@ bool rule_ifCondition(bool is_let) {
             return false;
         }
 
-        // TODO: Retype the variable as non-maybe type in the new frame.
-        // TODO: Add code for checking the `nil` value of var. If it is `nil`,
-        //       then we need to jump after this if statement.
+        // Checking the `nil` value of var. If it is `nil`,
+        // then we need to jump after this if statement.
+        code_generation_raw("JUMPIFEQ if%i_after%i %s@%s nil@nil", if_num, after_num, frame_to_string(var->code_frame), var->code_name.data);
+
         // Either way, we need to add non-maybe type to symtable, because we need to reference
         // the correct variables in the if statement.
         if (is_maybe_datatype(var->type)) {
@@ -516,8 +520,10 @@ bool rule_ifCondition(bool is_let) {
             variable_symbol_init(&new_var);
             new_var.is_initialized = var->is_initialized;
             new_var.allow_modification = var->allow_modification;
-            // TODO : Generate code name info
             new_var.type = maybe_to_normal(var->type);
+            // We just reference the original variable, but this time we semantically treat it as without Maybe type.
+            string_concat_c_str(&new_var.code_name, var->code_name.data);
+            new_var.code_frame = var->code_frame;
             symtable_insert_variable(symstack_top(), id_name, new_var);
         } // NOTE: If variable is already of normal type, then we don't need to duplicate it.
     } else {
@@ -529,33 +535,38 @@ bool rule_ifCondition(bool is_let) {
             return false;
         }
 
-        // TODO: Add code for checking the expression result and jumping if needed.
+        // Add code for checking the expression result and jumping if needed.
+        code_generation_raw("JUMPIFNEQ if%i_after%i TF@res bool@true", if_num, after_num);
 
         CHECK_TOKEN(Token_ParenRight, "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.", TOK_STR);
     }
     return true;
 }
 
-bool rule_else() {
+bool rule_else(int if_num, int after_num) {
+    code_generation_raw("LABEL if%i_after%i", if_num, after_num++);
     switch (g_parser.token.type) {
         case Token_EOF:  case Token_BracketRight:
         case Token_If:   case Token_Let:
         case Token_Var:  case Token_While:
         case Token_Func: case Token_Return:
         case Token_Identifier:
+            code_generation_raw("LABEL if%i_end", if_num);
             return rule_statementList();        // For the statemens right after '}' on the same line.
         case Token_Else:
             parser_next_token();
-            return rule_elseIf();
+            return rule_elseIf(if_num, after_num);
         default:
-            if (HAS_EOL)
+            if (HAS_EOL) {
+                code_generation_raw("LABEL if%i_end", if_num);
                 return rule_statementList();
+            }
             syntax_err("Unexpected token `%s`. Expected `else` or end of statement.", TOK_STR);
             return false;
     }
 }
 
-bool rule_elseIf() {
+bool rule_elseIf(int if_num, int after_num) {
     switch (g_parser.token.type) {
         case Token_BracketLeft:
             parser_next_token();
@@ -566,10 +577,11 @@ bool rule_elseIf() {
             symstack_pop();
 
             CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` at the end of else clause. Expected `}`.", TOK_STR);
-            return rule_else();
+            code_generation_raw("LABEL if%i_end", if_num);
+            return rule_statementList();
         case Token_If:
             parser_next_token();
-            return rule_ifStatement();
+            return rule_ifStatement(if_num, after_num);
         default:
             syntax_err("Unexpected token `%s` after the `else` keyword. Expected `{` or `if`.", TOK_STR);
             return false;
