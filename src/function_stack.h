@@ -9,8 +9,11 @@
 #define _FUNCTION_STACK_H_
 
 #include <stdbool.h>
+#include "expr_parser.h"
 #include "string.h"
 #include "symtable.h"
+
+struct NTerm;
 
 /**
  * @struct Stack
@@ -26,9 +29,10 @@ typedef struct {
  * @brief Holds information about function.
  */
 typedef struct StackNode {
-    FunctionSymbol* fn;     /**< Holds information about parameters and function return value type. */
-    String name;            /**< Name of the function */
-    int processed_args;     /**< Number of currently processed arguments */
+    struct NTerm** param;
+    char* name;      /**< Name of the function */
+    int param_count; /**< Number of currently passed arguments */
+    int capacity;
     struct StackNode* next; /**< Pointer to function that contains current one */
 } StackNode;
 
@@ -61,14 +65,22 @@ void stack_pop(Stack* stack);
 /**
  * @brief Dynamically allocate a new node and add it at the top of the stack.
  * @param[out] stack The Stuck struct.
- * @param[in] fn The function symbol that holds information about function.
  */
-void stack_push(Stack* stack, String name, FunctionSymbol* fn);
+void stack_push(Stack* stack);
 
 /**
  * @brief Free all memory asocieted with stack.
  * @param[out] stack The Stuck struct.
+ * @param[in] param Expect already dynamically allocated `param`
  */
 void stack_free(Stack* stack);
+
+/**
+ * @brief Insert parameter into `node`.
+ * @param[out] node The node where will param be inserted.
+ * @param[in] param Dynamically allocated Param
+ * @return `true` if parameter was successfully inserted, otherwise `false`
+ */
+bool insert_param(StackNode* node, struct NTerm* param);
 
 #endif  // _FUNCTION_STACK_H_
