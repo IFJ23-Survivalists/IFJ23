@@ -71,6 +71,13 @@ void code_buf_push(CodeBuf *buf, String instruction_str) {
     g_code_buf->buf[g_code_buf->size++] = generated_inst;
 }
 
+void code_generation_raw(const char* code) {
+    if (!code)
+        return;
+    String str = string_from_c_str(code);
+    code_buf_push(g_code_buf, str);
+}
+
 void string_push_encoded(String *str, const char *s) {
     for (int i = 0; s[i]; i++) {
         char ch = s[i];
