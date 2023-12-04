@@ -286,5 +286,5 @@ void code_generation(Instruction, Operand *, Operand *, Operand *);
  * @brief Generate raw code right into the code buffer without any checks.
  * @param code Code to output.
  */
-void code_generation_raw(const char* code);
+void code_generation_raw(const char* fmt, ...);
 #endif

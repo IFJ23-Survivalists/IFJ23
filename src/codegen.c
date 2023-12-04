@@ -6,6 +6,7 @@
  */
 
 #include "codegen.h"
+#include <stdarg.h>
 #include <string.h>
 #include <stdio.h>
 
@@ -96,10 +97,21 @@ void code_buf_push(CodeBuf *buf, String instruction_str) {
     g_code_buf->buf[g_code_buf->size++] = generated_inst;
 }
 
-void code_generation_raw(const char* code) {
-    if (!code)
+void code_generation_raw(const char* fmt, ...) {
+    if (!fmt)
         return;
-    String str = string_from_c_str(code);
+
+    va_list args;
+    va_start(args, fmt);
+    size_t buf_size = vsnprintf(NULL, 0, fmt, args);
+    char* buf = calloc(buf_size + 1, sizeof(char));
+    va_end(args);
+    va_start(args, fmt);
+    vsprintf(buf, fmt, args);
+    String str = string_from_c_str(buf);
+    free(buf);
+    va_end(args);
+
     code_buf_push(g_code_buf, str);
 }
 
