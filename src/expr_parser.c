@@ -57,6 +57,7 @@ bool expr_parser_begin(Data* data) {
     stack_init(&g_stack);
     pushdown_init(&g_pushdown);
 
+    code_generation(Instruction_CreateFrame, NULL, NULL, NULL);
     parse(g_parser.token, NULL);
 
     // item that results from the reduction of the expression
@@ -70,6 +71,7 @@ bool expr_parser_begin(Data* data) {
         data->type = nterm->type;
         data->is_nil = nterm->is_nil;
 
+        code_generation_raw("DEFVAR TF@res");
         code_generation_raw("MOVE TF@res %s@%s", frame_to_string(nterm->frame), nterm->code_name);
 
         stack_free(&g_stack);
@@ -505,10 +507,11 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
                 break;
         }
 
-        code_generation(Instruction_Move, &var, &symb, NULL);
-
         nterm->frame = Frame_Temporary;
         nterm->code_name = var.variable.name;
+
+        code_generation_raw("DEFVAR TF@%s", nterm->code_name);
+        code_generation(Instruction_Move, &var, &symb, NULL);
     }
     return nterm;
 }
@@ -534,6 +537,7 @@ NTerm* reduce_prefix(PushdownItem** operands, NTerm* nterm) {
     }
 
     nterm->code_name = get_unique_id();
+    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
 
     // !E
     if (operands[0]->term->attribute.op == Operator_Negation) {
@@ -622,8 +626,10 @@ NTerm* reduce_arithmetic(PushdownItem** operands, NTerm* nterm) {
         return NULL;
     }
 
-    nterm->code_name = get_unique_id();
     nterm->type = left->type;
+    nterm->code_name = get_unique_id();
+
+    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
 
     if (op == Operator_Plus && nterm->type == DataType_String) {
         code_generation_raw("CONCAT TF@%s %s@%s %s@%s", nterm->code_name, frame_to_string(left->frame), left->code_name,
@@ -648,7 +654,10 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
         return NULL;
     }
 
+    nterm->type = DataType_Bool;
     nterm->code_name = get_unique_id();
+
+    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
 
     switch (left->type) {
         case DataType_Bool:
@@ -698,7 +707,6 @@ NTerm* reduce_logic(PushdownItem** operands, NTerm* nterm) {
             return NULL;
     }
 
-    nterm->type = DataType_Bool;
     FREE_ALL(left, right);
     return nterm;
 }
@@ -752,6 +760,8 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     }
 
     nterm->code_name = get_unique_id();
+    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
+
     char* if_label = get_unique_id();
     char* else_label = get_unique_id();
 
