@@ -51,6 +51,16 @@ bool add_builtin_functions() {
     return true;
 }
 
+void print_all_func_codes(Node* node) {
+    if (!node)
+        return;
+    if (node->type == NodeType_Function) {
+        code_buf_print(&node->value.function.code);
+    }
+    print_all_func_codes(node->left);
+    print_all_func_codes(node->right);
+}
+
 bool parser_begin(bool output_code) {
     code_buf_set(g_parser.currect_code);
 
@@ -71,7 +81,7 @@ bool parser_begin(bool output_code) {
     if (output_code) {
         printf(".IFJcode23\n");
         code_buf_print(&g_parser.global_code);
-        // TODO: Output code for statements inside functions.
+        print_all_func_codes(symstack_bottom()->root);
     }
 
     return true;
