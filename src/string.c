@@ -148,6 +148,7 @@ String string_take(String *str) {
 String string_clone(String *str) {
     String new;
 
+    string_init(&new);
     string_reserve(&new, str->length + 1);
 
     if (got_error()) {
