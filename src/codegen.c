@@ -37,6 +37,31 @@ void code_buf_print(CodeBuf *buf) {
     }
 }
 
+String code_buf_print_to_string(CodeBuf *buf) {
+    String res;
+    string_init(&res);
+
+    if (!buf->size) {
+        return res;
+    }
+
+    // 6 is the average length of an instruction
+    string_reserve(&res, buf->size * 6);
+
+    if (got_error()) {
+        return res;
+    }
+
+    size_t i = 0;
+
+    do {
+        string_concat_c_str(&res, buf->buf[i].code.data);
+        string_push(&res, '\n');
+    } while (++i < buf->size || got_error());
+
+    return res;
+}
+
 void code_buf_free(CodeBuf *buf) {
     if (!buf) return;
 

@@ -61,6 +61,23 @@ int main() {
         test(strcmp(g_code_buf->buf[0].code.data, "POPFRAME") == 0);
     }
 
+    suite("code_buf_print_to_string") {
+        code_buf_free(g_code_buf);
+
+        code_generation(Instruction_Start, NULL, NULL, NULL);
+        code_generation(Instruction_CreateFrame, NULL, NULL, NULL);
+        code_generation(Instruction_PushFrame, NULL, NULL, NULL);
+        code_generation(Instruction_CreateFrame, NULL, NULL, NULL);
+        code_generation(Instruction_PushFrame, NULL, NULL, NULL);
+        code_generation(Instruction_PopFrame, NULL, NULL, NULL);
+
+        String inst = code_buf_print_to_string(g_code_buf);
+
+        char *expected = ".IFJcode23\nCREATEFRAME\nPUSHFRAME\nCREATEFRAME\nPUSHFRAME\nPOPFRAME\n";
+        test(strcmp(inst.data, expected) == 0);
+        string_free(&inst);
+    }
+
     suite("code_buf_free") {
         code_buf_free(&buf1);
         code_buf_free(&buf2);
