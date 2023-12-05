@@ -415,28 +415,8 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
 char* get_unique_id() {
     static int cnt = 0;
     cnt++;
-
-    char* tmp = "tmp";
-
-    // Calculate the length of the resulting string
-    int strLen = snprintf(NULL, 0, "%d", cnt);
-    int totalLen = strlen(tmp) + strLen + 1;  // +1 for the null terminator
-
-    // Allocate memory for the concatenated string
-    char* result = (char*)malloc(totalLen);
-
-    // Check for memory allocation failure
-    if (result == NULL) {
-        SET_INT_ERROR(IntError_Memory, "Malloc failed");
-        return NULL;
-    }
-
-    // Copy the original string to the result
-    strcpy(result, tmp);
-
-    // Concatenate the integer to the result
-    sprintf(result + strlen(result), "%d", cnt);
-    return result;
+    String tmp = string_from_format("tmp%d", cnt);
+    return tmp.data;
 }
 
 NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
