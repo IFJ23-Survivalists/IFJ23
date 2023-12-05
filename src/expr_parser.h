@@ -25,7 +25,7 @@ typedef enum {
     Equal, /**< Equal precedence. */
 
     ///  No relation between tokens => end of operator precedence analysis, potentially error state (depends whether
-    ///  pushdown is reduced to only on non-terminal) */
+    ///  pushdown is reduced to only on non-terminal)
     Err,
 } ComprarisonResult;
 
@@ -75,19 +75,14 @@ typedef enum {
  * @brief Rules for expression parsing
  */
 typedef struct NTerm {
-    DataType type; /**< resulted type after applying a reduction rule */
-    Frame frame;
-    char* code_name;
-    char* param_name;
-    bool is_nil;
-    char name;     /**< E or L */
-    bool is_const; /**< `true` only if const reduced to nonterminal, otherwise `false`*/
+    DataType type;    /**< resulted type after applying a reduction rule */
+    Frame frame;      /** Frame where the value is stored */
+    char* code_name;  /** Name of the variable on the frame */
+    char* param_name; /** Name of the function parameter */
+    bool is_nil;      /** Tells whether constant is nil */
+    char name;        /**< E or L */
+    bool is_const;    /**< `true` only if const reduced to nonterminal, otherwise `false`*/
 } NTerm;
-
-// typedef struct {
-//     void* ptr;
-//     Pool* next;
-// } Pool;
 
 // Forward declaration
 struct Pushdown;
@@ -166,93 +161,102 @@ NTerm* apply_rule(Rule rule, struct PushdownItem** operands);
  * @brief Checks exitence of identifier in symtable. If identifier was not found prints corresponding error message and
  * return `NULL`. If identifier found return `NTerm` that holds information about identifier or immediate value. When
  * immediate value is reduced `NTerm::is_const` is set to `true`.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
- * @return Non terminal that holds data obtained by reducing `operands`.
+ * @param[in] id Token representing variable of constant.
+ * @param[in,out] nterm Non-terminal with default attributes set.
+ * @return Non terminal that holds data about variable/constant.
  */
-NTerm* reduce_identifier(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_identifier(Token* id, NTerm* nterm);
 
 /**
  * @brief Propagete data from nonterminal operand to `nterm`.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] expr The non-terminal to which the rule applies.
+ * @param[out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_parenthesis(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_parenthesis(NTerm* expr, NTerm* nterm);
 
 /**
  * @brief Apply rule for reducing logic and arithmetic negation. Checks type of the operands(prints error message if
  * there is a operand mismatch).
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] op Prefix operand. Either `-` or `!`.
+ * @param[in] expr The non-terminal to which the rule applies.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_prefix(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_prefix(Operator op, NTerm* expr, NTerm* nterm);
 
 /**
  * @brief Apply rule for unwrapping nullable type. For instance convert data type Int? to Int. If operand was null
  * runtime error will occure.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] expr The non-terminal to which the rule applies.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_postfix(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_postfix(NTerm* expr, NTerm* nterm);
 
 /**
  * @brief Apply rule for arithmetic operations (+-*\/). Checks type of the operands and if possible converts operand to
  * have the same data type (prints error message if there is a operand mismatch).
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] left The left operand in binary expression.
+ * @param[in] op Binary operator: '+', '-', '*', '/'
+ * @param[in] right The right operand in binary expression.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_arithmetic(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_arithmetic(NTerm* left, Operator op, NTerm* right, NTerm* nterm);
 
 /**
- * @brief Apply rule for logic operations (== < > != <= >=). Checks type of the operands and if possible converts
+ * @brief Apply rule for logic operations (== < > != <= >= && ||). Checks type of the operands and if possible converts
  * operand to have the same data type (prints error message if there is a operand mismatch).
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] left The left operand in binary expression.
+ * @param[in] op Binary operator: '==', '!=', '<', '>', '&&', '||', '>=', '<='
+ * @param[in] right The right operand in binary expression.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_logic(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm);
 
 /**
  * @brief Apply rule for replacing left operand if nil by a default value from the right operand. Checks type of the
  * operands(prints error message if there is a operand mismatch). If left operand is not nullable, right operand is
  * ignored.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] left The left operand in binary expression.
+ * @param[in] right The right operand in binary expression. This operand cannot be nil or nullable data type
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_nil_coalescing(struct PushdownItem** operands, NTerm* nterm);
-
-/**
- * @brief Apply rule for processing unnamed arguments as well as checking number of parameters. Prints error message if
- * there is too many argumets provided to function or unnamed has type mismatch.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
- * @return Non terminal that holds data obtained by reducing `operands`.
- */
-NTerm* reduce_args(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_nil_coalescing(NTerm* left, NTerm* right, NTerm* nterm);
 
 /**
  * @brief Apply rule for processing named arguments as well as checking number of parameters. Prints error message if
  * there is an type mismatch.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @param[in] id Name of the function
+ * @param[in] arg Function argument value.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_named_arg(struct PushdownItem** operands, NTerm* nterm);
+NTerm* reduce_named_arg(Token* id, NTerm* arg, NTerm* nterm);
 
 /**
- * @brief Apply rule for reducing function expression. Checks if there is enough arguments provided otherwise prints
- * error message. Process remaining argument if not processed yet.
- * @param[in] operands Array of operands needed for applying rule.
- * @param[in] id Name of the function.
- * @param[in,out] nterm Nonterminal that holds information obtain from the application of the rule.
+ * @brief Apply rule for processing unnamed arguments as well as checking number of parameters. Prints error message if
+ * there is too many argumets provided to function or unnamed has type mismatch.
+ * @param[in] left The first argument of the function ('E') or non-terminal that was created by applying this rule
+ * muliple times ('L')
+ * @param[in] right The next argument to be inserted into function parameter stack.
+ * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg);
+NTerm* reduce_args(NTerm* left, NTerm* right, NTerm* nterm);
+
+/**
+ * @brief Apply rule for reducing function expression. Checks if there is enough arguments provided and parameter names
+ * as well as their data types with comparison to function declaration
+ * @param[in] id Name of the function.
+ * @param[in] arg Function argument. Set to `NULL` if function does not have any parameters.
+ * @param[in,out] nterm Non-terminal with default attributes set.
+ * @return Non terminal that holds data obtained by reducing `operands`.
+ */
+NTerm* reduce_function(Token* id, NTerm* arg, NTerm* nterm);
 
 /**
  * @brief Tries convert one operand type to the type of the other one. Conversion is possible only for immediate values
@@ -272,29 +276,5 @@ bool try_convert_to_same_types(NTerm* op1, NTerm* op2);
  * @return `true` if conversion was successful or `op` is of the same type as `dt`, otherwise returns `false`.
  */
 bool try_convert_to_datatype(DataType dt, NTerm* operand, bool allow_nil);
-
-// /**
-//  * @brief Checks if there is not too many arguments provided to a given function.
-//  * @param[in] fn_node Contains data about function.
-//  * @return `true` if there is not too many arguments provided to a given function, otherwise returns `false`.
-//  */
-// bool is_valid_num_of_param(StackNode* fn_node);
-
-// /**
-//  * @brief Checks if there is an unnamed argument at a given position in function as well as its data type.
-//  * @param[in] fn_node Contains data about function.
-//  * @param[in] arg Argument value for checking.
-//  * @return `true` if argument type and position are correct, otherwise returns `false`.
-//  */
-// bool process_unnamed_arg(StackNode* fn_node, NTerm* arg);
-
-// /**
-//  * @brief Checks if there is a named argument at a given position in function as well as its data type.
-//  * @param[in] fn_node Contains data about function.
-//  * @param[in] arg_name The external name of argument.
-//  * @param[in] arg_value Argument value for checking.
-//  * @return `true` if argument type, name and position are correct, otherwise returns `false`.
-//  */
-// bool process_named_arg(StackNode* fn_node, char* arg_name, NTerm* arg_value);
 
 #endif  // _EXPR_PARSER_H_
