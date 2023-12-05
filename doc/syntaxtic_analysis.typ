@@ -1,8 +1,8 @@
-= Syntaktická analýza <syntaxtic_analysis>
-Syntaktickou analýzu jsme se rozhodli implementovat pomocí rekurivního sestupu a precedenční analýzy.
+= Syntaxtic analysis <syntaxtic_analysis>
+We have chosen to implement syntactic analysis using recursive descent and precedence analysis.
 
-== LL-gramatika
-List pravidel vypadá následovně:
+== LL-grammar
+This is our list of rules:
 #block(
   fill: luma(230),
   inset: 8pt,
@@ -42,19 +42,19 @@ List pravidel vypadá následovně:
 + $"<assignExpr>" -> epsilon$
 ]
 
-Gramatika obsahuje několik nejasností, které jsou řešeny až v kódu:
-- `<expr>` - Pokud se použije pravidlo, které obsahuje tento neterminál, tak se přepneme do precenedční analýzy.
-- `<stmtSeparator>` - Konkrétně se jedná o pravidlo č. 4, které když se použije, tak se token '`}`' nevyjme ze vstupní pásky. Důvodem je, že toto pravidlo existuje pouze, aby konec kódových bloků mohl oddělovat výrazy bez potřeby toho, aby mezi nima byl znak konce řádku. Zde ale nechceme zkonzumomvat konece bloku, abychom jsme ho mohli zpracovat až v pravidlech `6`, `7` atd.
-- Pravidlo `12` vs `13`:
-    - Zde se rozhodujem na základně toho, jestli `ID` je identifikátor funkce či proměnné. Pokud je to funkce, tak se přepneme do precedenční analýzy s použitím pravidla `13`, jinak předpokládáme, že se jedná o přiřazení a použijeme pravidlo `12`.
-    - Nevýhoda tohoto přístupu je, že nemáme jak podporovat výrazy typu: ```swift
+The grammar contains several ambiguities that are resolved in the code:
+- `<expr>` -When a rule containing this non-terminal is used, we switch to precedence analysis.
+- `<stmtSeparator>` - Specifically, rule #4, when used, does not extract the `'}'` token from the input tape. The reason is that this rule exists solely to separate statements with `'}'` without the need for a newline character between them. However, we do not want to consume the `'}'` here so that we can process it in rules `6`, `7`, etc.
+- Rule `12` vs `13`:
+    - The decision here is based on whether ID is an identifier for a function or a variable. If it's a function, we switch to precedence analysis using rule `13`; otherwise, we assume it's an assignment and use rule `12`.
+    - The drawback of this approach is that we cannot support expressions like: ```swift
         var a = 0
         a + 1
-    ``` kde se ale jedná o mrtvý kód, takže jsme se rozhodli, že to nepotřebujeme podporovat.
-- Token `EOL` - scanner jej počítá jako bílý znak společně s komentáři. Způsob jakým ho rozlišujeme je, že tokeny bílých znaků obsahuje atribut, který říká jestli obsahuje konec řádku či nikoliv.
+    ``` where this is a dead code, so we have decided to not support these.
+- Token `EOL` - the scanner counts it as whitespace along with comments. The way we distinguish it is by having an attribute in whitespace tokens indicating whether it contains an end-of-line or not.
 
-== LL-tabulka
-Z pravidel je vytvořená následující tabulka:
+== LL-table
+Using the rules above, we have the following LL-table:
 #figure(
     kind: table,
     caption: [LL-table 1/2]
@@ -119,8 +119,8 @@ Z pravidel je vytvořená následující tabulka:
         [\<assignExpr\>],    [],[],[],[],[],[],[],[],[],[],[],
     )
 ]
-_Pozn.: V tabulce není zaznačen neterminál `<expr>`, protože ten je součástí precedenční analýzy. To znamená, že by pro něj nebylo v tabulce zaznačené žádné pravidlo._
+_Note: The table does not include the non-terminal `<expr>` as it is part of the precedence analysis. This means there would be no rule for it in the table._
 
-Tabulka byla vygenerována pomocí programu, který napsal člen týmu _Jakub Kloub_ a je dostupný v našem Github repozitáři ve větvi _ll_table_. Program pouze implementuje algoritmy z přednášek a vypisuje tabulku.
+The table was generated using a program written by team member _Jakub Kloub_, and is available in our GitHub repository in the _ll_table_ branch. The program implements algorithms from the lectures and outputs the ll-table to stdout.
 
 #pagebreak()

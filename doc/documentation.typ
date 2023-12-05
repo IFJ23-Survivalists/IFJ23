@@ -60,7 +60,6 @@
 )
 
 #include "lexical_analysis.typ"
-#include "symtable.typ"
 #pagebreak()
 #include "syntaxtic_analysis.typ"
 #include "semantic_analysis.typ"

@@ -1,4 +1,4 @@
-= Symbol Table <symtable>
+== Symbol Table <symtable>
 The symbol table plays a crucial role in a compiler, and in this project, we have implemented it using an *AVL tree*. This self-balancing tree allows us to easily predict its performance. The implementation resides in `symtable.c`, with its methods exported in the header file `symtable.h`. Here are the core functions of the symbol table:
 
 - *`symtable_init(symtable)`*: Initializes the symbol table
