@@ -862,9 +862,8 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
             return NULL;
         }
 
-        code_generation_raw("DEFVAR LF@%s", expected_param.code_name.data);
-        code_generation_raw("MOVE TF@%s %s@%s", expected_param.code_name.data, frame_to_string(found_param->frame),
-                            found_param->code_name);
+        code_generation_raw("DEFVAR TF@%s", expected_param.code_name.data);
+        code_generation_raw("MOVE TF@%s LF@%s", expected_param.code_name.data, found_param->code_name);
 
         FREE_ALL(found_param);
     }
