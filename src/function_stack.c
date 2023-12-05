@@ -27,6 +27,15 @@ void stack_pop(Stack* stack) {
     if (!stack_empty(stack)) {
         StackNode* to_delete = stack->top;
         stack->top = to_delete->next;
+        if (to_delete->param) {
+            for (int i = 0; i < to_delete->param_count; i++) {
+                if (to_delete->param[i]->code_name != NULL) {
+                    free(to_delete->param[i]->code_name);
+                }
+                free(to_delete->param[i]);
+            }
+            free(to_delete->param);
+        }
         free(to_delete);
     }
 }
@@ -49,6 +58,7 @@ bool insert_param(StackNode* node, NTerm* param) {
     if (node->param_count + 1 >= node->capacity) {
         node->capacity *= 2;
         node->param = realloc(node->param, sizeof(NTerm*) * node->capacity);
+
         if (node->param == NULL) {
             SET_INT_ERROR(IntError_Memory, "Realloc failed");
             return false;
