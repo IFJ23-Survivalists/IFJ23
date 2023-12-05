@@ -163,63 +163,19 @@ PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
     return 0;
 }
 
-char precedence_to_char(PrecedenceCat cat) {
-    switch (cat) {
-        case PrecendeceCat_PlusMinus:
-            return '+';
-        case PrecendeceCat_MultiDiv:
-            return '*';
-        case PrecendeceCat_Logic:
-            return '>';
-        case PrecendeceCat_NilCoalescing:
-            return '?';
-        case PrecendeceCat_Pre:
-            return '-';
-        case PrecendeceCat_Post:
-            return '!';
-        case PrecendeceCat_LeftPar:
-            return '(';
-        case PrecendeceCat_RightPar:
-            return ')';
-        case PrecendeceCat_Id:
-            return 'i';
-        case PrecendeceCat_Comma:
-            return ',';
-        case PrecendeceCat_Colon:
-            return ':';
-        case PrecendeceCat_Expr_End:
-            return '$';
-    }
-    return '$';
-}
+static char PREC_NAMES[] = {
+    '+', '*', '>', '?', '-', '!', '(', ')',
+    'i', ',', ':', '$'
+};
+
+char precedence_to_char(PrecedenceCat cat) { return PREC_NAMES[cat]; }
 
 PrecedenceCat char_to_precedence(char ch) {
-    switch (ch) {
-        case '+':
-            return PrecendeceCat_PlusMinus;
-        case '*':
-            return PrecendeceCat_MultiDiv;
-        case '>':
-            return PrecendeceCat_Logic;
-        case '?':
-            return PrecendeceCat_NilCoalescing;
-        case '-':
-            return PrecendeceCat_Pre;
-        case '!':
-            return PrecendeceCat_Post;
-        case '(':
-            return PrecendeceCat_LeftPar;
-        case ')':
-            return PrecendeceCat_RightPar;
-        case 'i':
-            return PrecendeceCat_Id;
-        case ',':
-            return PrecendeceCat_Comma;
-        case ':':
-            return PrecendeceCat_Colon;
-        default:
-            return PrecendeceCat_Expr_End;
-    }
+    for (int i = 0; i < (int)sizeof(PREC_NAMES); i++)
+        if (PREC_NAMES[i] == ch)
+            return i;
+    MASSERT("false", "char_to_precedence: Unknown char");
+    return 0;
 }
 
 char* operator_to_instruction(Operator op) {
@@ -866,10 +822,6 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
         code_generation_raw("MOVE TF@%s LF@%s", expected_param.code_name.data, found_param->code_name);
 
         FREE_ALL(found_param);
-    }
-
-    if (arg->name == 'L') {
-        FREE_ALL(arg);
     }
 
     FREE_ALL(node->param);
