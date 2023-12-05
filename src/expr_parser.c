@@ -825,7 +825,7 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
 
     // check number of parameters
     if (node != NULL && expected_function->param_count != node->param_count) {
-        fun_type_err("Inavalid number of arguments in function '%s', expected %d, found %d.", fn_name,
+        fun_type_err("Inavalid number of arguments in function '%s', expected %d, found %d.", fn_name.data,
                      expected_function->param_count, node->param_count);
         FREE_ALL(nterm, arg);
         return NULL;
@@ -841,12 +841,12 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
 
         // check if both are named or unnamed
         if ((expected_param.is_named ^ (found_param->param_name != NULL))) {
-            fun_type_err("Unexpected name for %d. argument in function '%s'", i + 1, fn_name);
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name.data);
             FREE_ALL(arg, nterm);
             return NULL;
         }
         if (found_param->param_name && strcmp(expected_param.oname.data, found_param->param_name) != 0) {
-            fun_type_err("Unexpected name for %d. argument in function '%s'", i + 1, fn_name);
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name.data);
             FREE_ALL(arg, nterm);
             return NULL;
         }
@@ -854,7 +854,7 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
         // check type and name of the parameters
         if (!try_convert_to_datatype(expected_param.type, found_param, true)) {
             fun_type_err("Unexpected type '%s' for %d. argument in function '%s'",
-                         datatype_to_string(found_param->type), i + 1, fn_name);
+                         datatype_to_string(found_param->type), i, fn_name.data);
             FREE_ALL(arg, nterm);
             return NULL;
         }
