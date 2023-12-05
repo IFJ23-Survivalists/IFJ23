@@ -111,7 +111,7 @@ void string_concat_c_str(String *str, const char *str2);
 String string_from_c_str(const char *str);
 
 /**
- * @brief Initialize strign from a given format.
+ * @brief Initialize string from a given format.
  *
  * This function takes the format, its arguments and creates a new string from it.
  * @param[in] fmt Printf-like string format.
