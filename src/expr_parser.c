@@ -874,9 +874,11 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
     nterm->frame = Frame_Temporary;
 
     code_generation_raw("CALL %s", expected_function->code_name.data);
+
+    code_generation_raw("DEFVAR LF@%s", nterm->code_name);
+    code_generation_raw("MOVE LF@%s TF@ret", nterm->code_name);
+
     code_generation_raw("POPFRAME");
-    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
-    code_generation_raw("MOVE TF@%s TF@ret", nterm->code_name);
 
     return nterm;
 }
