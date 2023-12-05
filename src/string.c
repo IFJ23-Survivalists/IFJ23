@@ -144,6 +144,10 @@ String string_from_format(const char *fmt, ...) {
 
     // Allocate enough memory for the string.
     res.data = calloc(fmt_len + 1, sizeof(char));
+    if (!res.data) {
+        SET_INT_ERROR(IntError_Memory, "string_from_format: Calloc failed!");
+        return res;
+    }
     res.capacity = fmt_len + 1;
 
     // Reset the args, so we can use it again.
