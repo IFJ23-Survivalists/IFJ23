@@ -696,8 +696,8 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
     NTerm* right = operands[2]->nterm;
     bool type_match = false;
 
-    if (left->type == DataType_Undefined || right->type == DataType_Undefined) {
-        unknown_type_err("Cannot infer data type from nil");
+    if (right->type == DataType_Undefined) {
+        expr_type_err("Right operand for ?? must not be nil");
         FREE_ALL(left, right, nterm);
         return NULL;
     }
@@ -727,9 +727,9 @@ NTerm* reduce_nil_coalescing(PushdownItem** operands, NTerm* nterm) {
             nterm->type = DataType_String;
             break;
         case DataType_Undefined:
-            unknown_type_err("Cannot infer data type from nil");
-            FREE_ALL(left, right, nterm);
-            return NULL;
+            nterm->type = right->type;
+            nterm->is_const = right->is_const;
+            type_match = true;
     }
 
     if (!type_match) {
@@ -788,6 +788,7 @@ NTerm* reduce_named_arg(PushdownItem** operands, NTerm* nterm) {
     nterm->is_const = arg_value->is_const;
     nterm->is_nil = arg_value->is_nil;
     nterm->frame = arg_value->frame;
+    nterm->code_name = arg_value->code_name;
 
     FREE_ALL(arg_value);
     return nterm;
@@ -840,12 +841,12 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
 
         // check if both are named or unnamed
         if ((expected_param.is_named ^ (found_param->param_name != NULL))) {
-            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name);
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i + 1, fn_name);
             FREE_ALL(arg, nterm);
             return NULL;
         }
         if (found_param->param_name && strcmp(expected_param.oname.data, found_param->param_name) != 0) {
-            fun_type_err("Unexpected name for %d. argument in function '%s'", i, fn_name);
+            fun_type_err("Unexpected name for %d. argument in function '%s'", i + 1, fn_name);
             FREE_ALL(arg, nterm);
             return NULL;
         }
@@ -853,7 +854,7 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
         // check type and name of the parameters
         if (!try_convert_to_datatype(expected_param.type, found_param, true)) {
             fun_type_err("Unexpected type '%s' for %d. argument in function '%s'",
-                         datatype_to_string(found_param->type), i, fn_name);
+                         datatype_to_string(found_param->type), i + 1, fn_name);
             FREE_ALL(arg, nterm);
             return NULL;
         }
