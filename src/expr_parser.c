@@ -787,6 +787,7 @@ NTerm* reduce_named_arg(PushdownItem** operands, NTerm* nterm) {
     nterm->type = operands[2]->nterm->type;
     nterm->is_const = arg_value->is_const;
     nterm->is_nil = arg_value->is_nil;
+    nterm->frame = arg_value->frame;
 
     FREE_ALL(arg_value);
     return nterm;
@@ -811,6 +812,7 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
     else if (arg == NULL) {
         stack_push(&g_stack);
     }
+
     String fn_name = id->attribute.data.value.string;
     StackNode* node = stack_top(&g_stack);
     FunctionSymbol* expected_function = get_fn_symbol(fn_name);
@@ -827,6 +829,9 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
         FREE_ALL(nterm, arg);
         return NULL;
     }
+
+    code_generation_raw("PUSHFRAME");
+    code_generation_raw("CREATEFRAME");
 
     // compare arguments names and types
     for (int i = 0; i < node->param_count; i++) {
@@ -853,6 +858,10 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
             return NULL;
         }
 
+        code_generation_raw("DEFVAR TF@%s", expected_param.code_name.data);
+        code_generation_raw("MOVE TF@%s %s@%s", expected_param.code_name.data, frame_to_string(found_param->frame),
+                            found_param->code_name);
+
         FREE_ALL(found_param);
     }
 
@@ -861,8 +870,13 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
     stack_pop(&g_stack);
 
     nterm->type = expected_function->return_value_type;
-    nterm->code_name = expected_function->code_name.data;
+    nterm->code_name = get_unique_id();
     nterm->frame = Frame_Temporary;
+
+    code_generation_raw("CALL %s", expected_function->code_name.data);
+    code_generation_raw("POPFRAME");
+    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
+    code_generation_raw("MOVE TF@%s TF@ret", nterm->code_name);
 
     return nterm;
 }
