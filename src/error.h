@@ -172,6 +172,6 @@ void clear_int_error();
     if (!(expr)) {                                                                                  \
         fprintf(stderr, __FILE__":%i: Assertion `" #expr "` failed. Message: %s\n", __LINE__, msg); \
         exit(1);                                                                                    \
-    }} while(false)
+    }} while(0)
 
 #endif
