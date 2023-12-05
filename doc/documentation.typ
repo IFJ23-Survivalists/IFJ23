@@ -52,8 +52,8 @@
   year: "2023-2024",
   logo: "img/fit_logo.png",
   authors: (
-    (name: "Jakub Kloub", distribution: 25%, xlogin: "xkloub03 - vedouci", works: ("Syntaxtical Analysis",)),
-    (name: "Matúš Moravčík", distribution: 25%, xlogin: "xmorav48", works: ("Precedence Table",)),
+    (name: "Jakub Kloub", distribution: 25%, xlogin: "xkloub03 - vedoucí", works: ("Syntaxtical Analysis", "Symbol Table")),
+    (name: "Matúš Moravčík", distribution: 25%, xlogin: "xmorav48", works: ("Precedence Analysis",)),
     (name: "Le Duy Nguyen", distribution: 25%, xlogin: "xnguye27", works: ("Lexical Analysis", "Symbol Table")),
     (name: "Lukáš Habr", distribution: 25%, xlogin: "xhabrl01", works: ("Code Generation",)),
   ),
