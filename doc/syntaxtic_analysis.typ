@@ -53,6 +53,8 @@ The grammar contains several ambiguities that are resolved in the code:
     ``` where this is a dead code, so we have decided to not support these.
 - Token `EOL` - the scanner counts it as whitespace along with comments. The way we distinguish it is by having an attribute in whitespace tokens indicating whether it contains an end-of-line or not.
 
+The reason we have left those ambiguities here is that, they are either not solvable with LL(1) grammar, or it's much easier to solve them manually in the code.
+
 == LL-table
 Using the rules above, we have the following LL-table:
 #figure(
