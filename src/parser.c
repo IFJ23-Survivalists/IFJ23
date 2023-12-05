@@ -79,7 +79,6 @@ bool parser_begin(bool output_code) {
 
     // Output code for global statements
     if (output_code) {
-        printf(".IFJcode23\n");
         code_buf_print(&g_parser.global_code);
         print_all_func_codes(symstack_bottom()->root);
     }
@@ -101,11 +100,13 @@ void parser_scope_function(FunctionSymbol* func) {
     g_parser.scope = Scope_Local;
     g_parser.currect_code = &func->code;
     g_parser.local_var_counter = func->param_count;
+    code_buf_set(g_parser.currect_code);
 }
 
 void parser_scope_global() {
     g_parser.scope = Scope_Global;
     g_parser.currect_code = &g_parser.global_code;
+    code_buf_set(g_parser.currect_code);
 }
 
 Token* parser_next_token() {
@@ -156,11 +157,13 @@ void parser_variable_code_info(VariableSymbol* var, const char* name) {
 
 void parser_function_code_info(FunctionSymbol* func, const char* name) {
     string_clear(&func->code_name);
-    int len = strlen("func%") + strlen(name) + 1;
+    int len = strlen("func%") + strlen(name) + 2;
     string_reserve(&func->code_name, len);
     func->code_name.length = len;
-    MASSERT(func->code_name.length < func->code_name.capacity, "");
+    MASSERT(func->code_name.length <= func->code_name.capacity, "");
     sprintf(func->code_name.data, "func%%%s", name);
-    func->code_name.data[len] = '\0';
+    func->code_name.data[len - 1] = '\0';
+
+    parser_parameter_code_infos(func);
 }
 

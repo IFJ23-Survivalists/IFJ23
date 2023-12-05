@@ -42,6 +42,7 @@ bool rec_parser_begin() {
     g_current_func = NULL;
     g_while_index = g_if_index = 0;
 
+    code_generation_raw(".IFJcode23");
     code_generation_raw("DEFVAR GF@ret");
     code_generation_raw("MOVE GF@ret int@0");
 
@@ -283,6 +284,14 @@ bool handle_var_statement() {
     return true;
 }
 
+
+/* Function body generally looks like this */
+// PUSHFRAME    ... Parameters into local variables
+// .. Local statements ...
+// DEFVAR LF@ret
+// MOVE LF@ret TF@res   ... Result of return <expr> or something else
+// POPFRAME     ... Local frame --> Temporary frame
+// RETURN
 bool handle_func_statement() {
     // Skip until bracket left.
     char* func_id = TOK_ID_STR;
@@ -302,12 +311,18 @@ bool handle_func_statement() {
         var.type = func->params[i].type;
         var.is_initialized = true;
         var.allow_modification = true;
+        string_concat_c_str(&var.code_name, func->params[i].code_name.data);
+        var.code_frame = Frame_Local;
         symtable_insert_variable(symstack_top(), func->params[i].iname.data, var);
     }
     parser_scope_function(func);
 
-
-    // TODO: Code generation, we need to create a label and generate code to some buffer.
+    // Generate label indentifying this function.
+    Operand op = { .label = func->code_name.data };
+    code_generation(Instruction_Label, &op, NULL, NULL);
+    // We get parameters on the temporary frame, so we need to convert it to local frame,
+    // to get them as local variables.
+    code_generation(Instruction_PushFrame, NULL, NULL, NULL);
 
     g_current_func = func_id;
     CALL_RULE(rule_statementList);      // Process all statements inside this function
@@ -319,6 +334,8 @@ bool handle_func_statement() {
         return false;
     }
 
+    code_generation(Instruction_PopFrame, NULL, NULL, NULL);
+    code_generation(Instruction_Return, NULL, NULL, NULL);
     parser_scope_global();
     symstack_pop();
 
@@ -433,15 +450,18 @@ bool rule_returnExpr() {
                 return false;
             }
             g_current_func = NULL;
-            return true;
+            break;
         }
         default: {
+            // Return has `<expr>`, so check if function return something.
             if (func->return_value_type == DataType_Undefined) {
-                // FIXME: We COULD check if there is token of type that is not part of an expression.
+                // FIXME: We COULD check if there is token of type that is not part of an expression. But those are dead code.
                 return_err("Invalid expression after the `" COL_Y("return") "` statement. Function `" BOLD("%s") "` doesn't return anything. Expected `}`.",
                             g_current_func);
                 return false;
             }
+
+            // Evaluate the `<expr>` statement.
             Data expr_data;
             CALL_RULEp(expr_parser_begin, &expr_data);
             MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil, "We don't support expr result with DataType_Undefined and is_nil == false.");
@@ -453,13 +473,16 @@ bool rule_returnExpr() {
                 return false;
             }
 
-            // TODO: Code generation.
+            // Create a return value variable and move `<expr>` result into it.
+            code_generation_raw("DEFVAR LF@ret");
+            code_generation_raw("MOVE LF@ret TF@res");
 
             // Set current func to NULL, so that we can check in `handle_func_statement()`, if the function has a return statement.
             g_current_func = NULL;
-            return true;
+            break;
         }
     }
+    return true;
 }
 
 bool rule_ifStatement(int if_num, int after_num) {
