@@ -14,9 +14,16 @@ int main() {
     atexit(summary);
 
     Stack stack;
-    NTerm exp = {.name = 'E'};
-    NTerm rule = {.name = '|'};
-    NTerm id = {.name = 'i'};
+    NTerm* exp = malloc(sizeof(NTerm));
+    NTerm* rule = malloc(sizeof(NTerm));
+    NTerm* id = malloc(sizeof(NTerm));
+
+    exp->name = 'E';
+    rule->name = '|';
+    id->name = 'i';
+    exp->code_name = NULL;
+    rule->code_name = NULL;
+    id->code_name = NULL;
 
     suite("Test stack_init") {
         stack_init(&stack);
@@ -26,12 +33,12 @@ int main() {
     suite("Test stack_push and insert_param") {
         stack_push(&stack);
         test(stack_top(&stack)->param_count == 0);
-        insert_param(stack_top(&stack), &exp);
+        insert_param(stack_top(&stack), exp);
         test(stack_top(&stack)->param_count == 1);
         test(stack_top(&stack)->param[0]->name == 'E');
         stack_push(&stack);
-        insert_param(stack_top(&stack), &rule);
-        insert_param(stack_top(&stack), &id);
+        insert_param(stack_top(&stack), rule);
+        insert_param(stack_top(&stack), id);
         test(stack_top(&stack)->param_count == 2);
         test(stack_top(&stack)->param[0]->name == '|');
         test(stack_top(&stack)->param[1]->name == 'i');

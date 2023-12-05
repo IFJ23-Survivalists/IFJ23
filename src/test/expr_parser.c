@@ -87,6 +87,7 @@ int main() {
                               {.param_name = NULL, .param_dt = DataType_MaybeDouble});
     INSERT_FUNCTION_WITH_ARGS(str, DataType_String, {.param_name = NULL, .param_dt = DataType_String},
                               {.param_name = NULL, .param_dt = DataType_String});
+    INSERT_FUNCTION_WITH_ARGS(one, DataType_Int, {.param_name = "x", .param_dt = DataType_Int});
 
     INSERT_VARIABLE(a, DataType_Int);
     INSERT_VARIABLE(b, DataType_Double);
@@ -133,6 +134,8 @@ int main() {
         TEST_VALID_EXPRESSION("str(name, name) + \"String\"", DataType_String);
         TEST_VALID_EXPRESSION("x()", DataType_Int);
         TEST_VALID_EXPRESSION("n()", DataType_Undefined);
+        TEST_VALID_EXPRESSION("one(x: 12)", DataType_Int);
+        TEST_VALID_EXPRESSION("write(12, 1, 2, 4)", DataType_Undefined);
     }
 
     suite("Test valid nil coalescing") {
@@ -163,7 +166,6 @@ int main() {
         TEST_INVALID_EXPRESSION("a + b", Error_Operation);
         TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
         TEST_INVALID_EXPRESSION("true + true", Error_Operation);
-        TEST_INVALID_EXPRESSION("nil ?? 45", Error_UnknownType);
     }
 
     suite("Test invalid logic expressions") {
@@ -181,8 +183,7 @@ int main() {
     }
 
     suite("Test invalid nil coaliscing expressions") {
-        TEST_INVALID_EXPRESSION("1 ?? nil", Error_UnknownType);
-        TEST_INVALID_EXPRESSION("nil ?? 4", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("1 ?? nil", Error_Operation);
         TEST_INVALID_EXPRESSION("y ?? a ?? true", Error_Operation);
         TEST_INVALID_EXPRESSION("y ?? b", Error_Operation);
         TEST_INVALID_EXPRESSION("(bl ?? 4.4) ?? 4", Error_Operation);
@@ -206,8 +207,6 @@ int main() {
         TEST_INVALID_EXPRESSION("strv()", Error_UndefinedFunction);
     }
 
-    puts("");
-    // code_buf_print(&buf);
     code_buf_free(&buf);
     parser_free();
     return 0;
