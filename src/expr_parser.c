@@ -442,8 +442,11 @@ NTerm* reduce_identifier(PushdownItem** operands, NTerm* nterm) {
         }
 
         nterm->type = vs->type;
-        nterm->frame = vs->code_frame;
-        nterm->code_name = vs->code_name.data;
+        nterm->frame = Frame_Temporary;
+        nterm->code_name = get_unique_id();
+
+        code_generation_raw("DEFVAR TF@%s", nterm->code_name);
+        code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(vs->code_frame), vs->code_name.data);
 
     }
     // constant
@@ -866,7 +869,11 @@ NTerm* reduce_function(NTerm* nterm, Token* id, NTerm* arg) {
         FREE_ALL(found_param);
     }
 
-    FREE_ALL(node->param, arg);
+    if (arg->name == 'L') {
+        FREE_ALL(arg);
+    }
+
+    FREE_ALL(node->param);
 
     stack_pop(&g_stack);
 
