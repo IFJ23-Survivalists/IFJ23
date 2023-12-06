@@ -206,17 +206,23 @@ PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
                 case Operator_Plus:
                     return PrecendeceCat_PlusMinus;
                 case Operator_Minus:
-                    if (prev_token == NULL)
+                    if (prev_token == NULL) {
                         // unary
                         return PrecendeceCat_Pre;
+                    }
 
                     switch (prev_token->type) {
-                        // unary
+                        // binary
                         case Token_ParenRight:
                         case Token_Identifier:
+                        case Token_Data:
                             return PrecendeceCat_PlusMinus;
+                        case Token_Operator:
+                            if (prev_token->attribute.op == Operator_Negation)
+                                return PrecendeceCat_PlusMinus;
 
-                        // binary
+                            return PrecendeceCat_Pre;
+                        // unary
                         default:
                             return PrecendeceCat_Pre;
                     }
@@ -399,10 +405,10 @@ NTerm* reduce_identifier(Token* id, NTerm* nterm) {
 
         var.variable.frame = Frame_Temporary;
         var.variable.name = get_unique_id();
+        nterm->code_name = var.variable.name;
 
-        if (var.variable.name == NULL) {
+        if (var.variable.name == NULL)
             return NULL;  // allocation error
-        }
 
         switch (nterm->type) {
             case DataType_Bool:
@@ -416,13 +422,16 @@ NTerm* reduce_identifier(Token* id, NTerm* nterm) {
                 break;
             case DataType_String:
                 symb.symbol.constant.value.string = id->attribute.data.value.string;
+                if (id->attribute.data.value.string.data == NULL) {
+                    code_generation_raw("DEFVAR TF@%s", nterm->code_name);
+                    code_generation_raw("MOVE TF@%s string@", nterm->code_name);
+                    return nterm;
+                }
                 break;
             default:
                 symb.symbol.constant.is_nil = true;
                 break;
         }
-
-        nterm->code_name = var.variable.name;
 
         code_generation_raw("DEFVAR TF@%s", nterm->code_name);
         code_generation(Instruction_Move, &var, &symb, NULL);
@@ -432,7 +441,7 @@ NTerm* reduce_identifier(Token* id, NTerm* nterm) {
 
 NTerm* reduce_prefix(Operator op, NTerm* expr, NTerm* nterm) {
     if (expr->type == DataType_Undefined) {
-        unknown_type_err("Cannot infer data type from nil");
+        unknown_type_err("Cannot infer data type from nil in operation '%s'", operator_to_string(op));
         FREE_ALL(nterm);
         return NULL;
     }
@@ -523,7 +532,7 @@ NTerm* reduce_arithmetic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
             FREE_ALL(nterm);
             return NULL;
         case DataType_Undefined:
-            unknown_type_err("Cannot infer data type from nil");
+            unknown_type_err("Cannot convert 'nil' to '%s'.", datatype_to_string(right->type));
             FREE_ALL(nterm);
             return NULL;
         default:
@@ -606,7 +615,7 @@ NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
         case DataType_MaybeDouble:
         case DataType_Undefined:
             if (left->type == DataType_Undefined && left->is_nil ^ right->is_nil) {
-                unknown_type_err("Cannot infer data type from undefined value");
+                unknown_type_err("Cannot convert 'nil' to not nullable data type.");
                 FREE_ALL(nterm->code_name, nterm);
                 return NULL;
             }
@@ -871,7 +880,7 @@ bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
                     op1->type = op2->type;
                     return true;
                 default:
-                    unknown_type_err("Cannot infer data type from nil");
+                    unknown_type_err("Cannot convert 'nil' to '%s'", datatype_to_string(op2->type));
                     return false;
             }
         }
@@ -900,7 +909,7 @@ bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
                     return true;
                     break;
                 default:
-                    unknown_type_err("Cannot infer data type from nil");
+                    unknown_type_err("Cannot convert 'nil' to '%s'", datatype_to_string(op1->type));
                     return false;
             }
         }

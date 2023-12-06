@@ -97,7 +97,8 @@ struct PushdownItem;
 bool expr_parser_begin(Data* data);
 
 /**
- * @brief Classify `token` to precedence category. ambiguous token as - or ! are decided be `prev_token`
+ * @brief Classify `token` to precedence category. Ambiguous token as `-` or `!` needs previous token precedence
+ * category.
  * @param[in] token Current input token.
  * @param[in] prev_token Token from the last step.
  * @return `token` precedence category.
