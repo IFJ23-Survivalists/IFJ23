@@ -61,5 +61,5 @@
 
 #include "lexical_analysis.typ"
 #pagebreak()
-#include "syntaxtic_analysis.typ"
+#include "syntactic_analysis.typ"
 #include "semantic_analysis.typ"

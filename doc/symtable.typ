@@ -11,4 +11,15 @@ The symbol table plays a crucial role in a compiler, and in this project, we hav
 
 - *`symtable_get_symbol_type(symtable, key)`*: Returns the type of the symbol if it exists. This function can also be used to check for the existence of any data in the table with the given key.
 
-Note that the symbol table does not implement a `delete` operation because it is not needed for this project. Further details are available in the @semantic_analysis.
+_Note: Symbol table does not implement a `delete` operation because it is not needed for this project._
+
+=== Symbol table content
+Our symbol table stores the following:
+- Variable symbol information
+    - *Data type of the variable*: Used for type checks
+    - *Initialized and undefined variables flags*
+    - *Name and frame of the variable in IFJcode23*:  When the variable is declared, we deduce it's name and frame. When we later reference this variable, we don't need to worry about how to access it.
+- Funciton symbol information
+    - *What parameters it has, their type, etc.*
+    - *Return type*
+    - *Code name (label) and the IFJcode23 generated for this function*: We store the code of functions because we want to place it, along with all the functions, at the end of the program.
