@@ -1,10 +1,10 @@
-== Code Generation <code_generation>
+= Code Generation <code_generation>
 Code generation is a crucial component of a compiler or interpreter for a language, providing an abstraction for generating intermediate code from high-level language constructs.
 
-It allows for the separation of concerns between the front-end and the back-end of a compiler, ensuring that modifications or adaptations in the front-end components do not necessitate 
+It allows for the separation of concerns between the front-end and the back-end of a compiler, ensuring that modifications or adaptations in the front-end components do not necessitate
 extensive changes to the code generation logic.
 
-=== Instructions <instructions>
+== Instructions <instructions>
 We included three address instructions and stack instructions into the system architecture.\
 Sprecifically three address instructions follow a structured format comprising of a singular instruction code followed by three addresses, adhering to this predefined structure:\ \
 *`OPCODE DESTINATION SRC1 SRC2`* \ \
