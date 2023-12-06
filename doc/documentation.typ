@@ -73,3 +73,5 @@
 #include "syntactic_analysis.typ"
 #pagebreak()
 #include "semantic_analysis.typ"
+#pagebreak()
+#include "code_generation.typ"
