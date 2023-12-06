@@ -370,8 +370,6 @@ bool handle_func_statement() {
 }
 
 bool handle_while_statement() {
-    CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
-
     g_while_index++;  // Increment while counter to get unique while id.
     code_generation_raw("LABEL while%i_begin", g_while_index);
 
@@ -387,7 +385,6 @@ bool handle_while_statement() {
     // Generate code for checking the while result and jumping if necessary.
     code_generation_raw("JUMPIFNEQ while%i_end TF@res bool@true", g_while_index);
 
-    CHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` at the end of While clause. Expected `)`.", TOK_STR);
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s` after the while clause. Expected `{`.", TOK_STR);
 
     symstack_push();
@@ -527,17 +524,13 @@ bool rule_ifStatement(int if_num, int after_num) {
     // variable defined using `let` statement, so we don't need reference}.
     symstack_push();
     switch (g_parser.token.type) {
-        case Token_ParenLeft:
-            parser_next_token();
-            CALL_RULEp(rule_ifCondition, false, if_num, after_num);
-            break;
         case Token_Let:
             parser_next_token();
             CALL_RULEp(rule_ifCondition, true, if_num, after_num);
             break;
         default:
-            syntax_err("Unexpected token `%s` after the `if` keyword. Expected `(` or `let`.", TOK_STR);
-            return false;
+            CALL_RULEp(rule_ifCondition, false, if_num, after_num);
+            break;
     }
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
@@ -593,10 +586,6 @@ bool rule_ifCondition(bool is_let, int if_num, int after_num) {
 
         // Add code for checking the expression result and jumping if needed.
         code_generation_raw("JUMPIFNEQ if%i_after%i TF@res bool@true", if_num, after_num);
-
-        CHECK_TOKEN(Token_ParenRight,
-                    "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.",
-                    TOK_STR);
     }
     return true;
 }
