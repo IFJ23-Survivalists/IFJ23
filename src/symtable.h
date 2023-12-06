@@ -14,6 +14,7 @@
 
 #include "string.h"
 #include "scanner.h"
+#include "codegen.h"
 #include <stdint.h>
 #include <stdbool.h>
 
@@ -30,6 +31,7 @@ typedef struct {
     bool is_named;
     String iname;        ///< Name of the parameter when calling the function
     String oname;        ///< Name of the parameter when inside the function
+    String code_name;    ///< Name of the parameter when it is inserted into temporary frame during function calls.
 } FunctionParameter;
 
 /**
@@ -37,9 +39,13 @@ typedef struct {
  * @brief Represents a function symbol in the symbol table.
  */
 typedef struct {
-    int param_count;           /**< Number of items in ::FunctionSymbol::parameters. */
-    FunctionParameter* params; /**< Parameters of the function. */
-    DataType return_value_type;    /**< Return value data type. */
+    int param_count;               /**< Number of items in ::FunctionSymbol::parameters. */
+    FunctionParameter* params;     /**< Parameters of the function. */
+    DataType return_value_type;    /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
+    CodeBuf code;      /**< < Generated code for this function. */
+    CodeBuf code_defs;  /**< All variable definitions in given function local scope will be in this buffer. **/
+    String code_name;   /**< IFJcode23 label */
+    bool is_used;       /** Check if we should add this function to the resulting IFJcode23 */
 } FunctionSymbol;
 
 /**
@@ -50,6 +56,17 @@ typedef struct {
     DataType type;             /**< Data type of the variable. */
     bool is_initialized;       /**< Indicates if the variable is initialized. */
     bool allow_modification;   /**< Indicates if the variable can be modified. */
+    /**
+     * @brief Name of the variable in IFJcode23
+     *
+     * Name of the variable in IFJcode23 under which in can be fully referenced.
+     * @note This name already includes information about which frame the variable is defined in.
+     * @note This variable is to be created by `::parser_assign_code_name()` funciton call.
+     * @note This variable if free'd during symtable destruction.
+     */
+    String code_name;
+    /// Frame of the variable in IFJCode23
+    Frame code_frame;
 } VariableSymbol;
 
 /**
@@ -123,6 +140,23 @@ void function_symbol_init(FunctionSymbol *sym);
 void function_symbol_free(FunctionSymbol *sym);
 
 /**
+ * @brief Check if FunctionSymbol already contains given parameter.
+ * @param[in] sym Function symbol to search in.
+ * @param[in] oname Name of the parameter when calling the function.
+ * @param[in] iname Name of the parameter inside the function.
+ * @return 0 when the parameter in NOT present. Otherwise 1 if `oname` exist or 2 if iname `exists`.
+ */
+int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char* iname);
+
+/**
+ * @brief Get function parameter by outside name.
+ * @param[in] sym FunctinoSymbol to look for the parameter in.
+ * @param[in] oname Name of the parameter when calling the function.
+ * @return Pointer to function parameter on NULL when not found.
+ */
+FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const char* oname);
+
+/**
  * @brief Insert function parameter to parameters in function symbol.
  * @param[in,out] sym FunctionSymbol to insert the parameter into.
  * @param[in] param Initialized parameter to insert.
@@ -147,6 +181,12 @@ bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const cha
  * @note This will set all attributes to false and datatype to 0.
  */
 void variable_symbol_init(VariableSymbol *var);
+
+/**
+ * @brief Free all resources used by VariableSymbol.
+ * @param[in,out] var VariableSymbol to free resources of.
+ */
+void variable_symbol_free(VariableSymbol *var);
 
 /**
  * @brief Initialize a symbol table.

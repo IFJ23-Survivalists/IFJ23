@@ -12,6 +12,8 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
+#include "color.h"
 
 #ifdef NDEBUG
 #define debug(s)
@@ -31,6 +33,10 @@
 
 /// Print the error string with format like printf
 #define eprintf(s, ...) fprintf(stderr, s, __VA_ARGS__)
+
+/// Color used when printing error keyword.
+#define ERR_COL COL_R
+
 
 /// Represents various error types that can occur in the application.
 typedef enum {
@@ -82,6 +88,32 @@ Error got_error();
 
 /// @brief Print the `error` message to `stderr`
 void print_error_msg();
+
+/// Enable or disable error printing.
+void set_print_errors(bool b);
+
+// Forward declaration.
+struct Token;
+
+/**
+ * @brief Print given error message based on tok properties.
+ * @param[in] tok Token where the error happened. This is used for line and position in line.
+ * @param[in] err_type Type of error to set after printing.
+ * @param[in] fmt Format in which to print
+ * @param ... Argument to fmt
+ */
+void print_error(const struct Token* tok, Error err_type, const char* err_string, const char* fmt, ...);
+
+#define lex_err(...) print_error(&g_parser.token, Error_Lexical, "Lexical", __VA_ARGS__)
+#define syntax_err(...) print_error(&g_parser.token, Error_Syntax, "Syntax", __VA_ARGS__)
+/// Error for undefined or redefined functins or variables.
+#define undef_fun_err(...) print_error(&g_parser.token, Error_UndefinedFunction, "Syntax", __VA_ARGS__)
+#define fun_type_err(...) print_error(&g_parser.token, Error_TypeMismatched, "Type mismatch", __VA_ARGS__)
+#define undef_var_err(...) print_error(&g_parser.token, Error_UndefinedVariable, "Semantic", __VA_ARGS__)
+#define return_err(...) print_error(&g_parser.token, Error_ReturnValueMismatched, "Semantic", __VA_ARGS__)
+#define expr_type_err(...) print_error(&g_parser.token, Error_Operation, "Type mismatch", __VA_ARGS__)
+#define unknown_type_err(...) print_error(&g_parser.token, Error_UnknownType, "Semantic", __VA_ARGS__)
+#define semantic_err(...) print_error(&g_parser.token, Error_Semantic, "Semantic", __VA_ARGS__)
 
 /// Represents type of internal error.
 typedef enum {

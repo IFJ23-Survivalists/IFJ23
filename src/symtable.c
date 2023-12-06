@@ -1,6 +1,7 @@
 /**
  * @file symtable.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
+ * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 03/10/2023
  * @brief Implementation for symtable.h
  */
@@ -17,6 +18,7 @@ void function_parameter_init(FunctionParameter *par) {
         par->is_named = false;
         string_init(&par->oname);
         string_init(&par->iname);
+        string_init(&par->code_name);
     }
 }
 
@@ -24,6 +26,7 @@ void function_parameter_free(FunctionParameter *par) {
     if (par) {
         string_free(&par->iname);
         string_free(&par->oname);
+        string_free(&par->code_name);
     }
 }
 
@@ -31,14 +34,46 @@ void function_symbol_init(FunctionSymbol *sym) {
     sym->params = NULL;
     sym->param_count = 0;
     sym->return_value_type = (DataType)0;
+    sym->is_used = false;
+    code_buf_init(&sym->code);
+    code_buf_init(&sym->code_defs);
+    string_init(&sym->code_name);
 }
 
 void function_symbol_free(FunctionSymbol *sym) {
     for (int i = 0; i < sym->param_count; i++)
         function_parameter_free(sym->params + i);
-    free(sym->params);
+    if (sym->params)
+        free(sym->params);
     sym->params = NULL;
     sym->param_count = 0;
+    code_buf_free(&sym->code);
+    code_buf_free(&sym->code_defs);
+    string_free(&sym->code_name);
+}
+
+int string_comp(const char* a, const char* b) {
+    if (a == NULL || b == NULL)
+        return -1;
+    return strcmp(a, b);
+}
+
+int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char* iname) {
+    for (int i = 0; i < sym->param_count; i++) {
+        if (string_comp(sym->params[i].oname.data, oname) == 0)
+            return 1;
+        if (string_comp(sym->params[i].iname.data, iname) == 0)
+            return 2;
+    }
+    return 0;
+}
+
+FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const char* oname) {
+    for (int i = 0; i < sym->param_count; i++) {
+        if (strcmp(sym->params[i].oname.data, oname) == 0)
+            return sym->params + i;
+    }
+    return NULL;
 }
 
 bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param) {
@@ -79,6 +114,11 @@ void variable_symbol_init(VariableSymbol *var) {
     var->type = (DataType)0;
     var->is_initialized = false;
     var->allow_modification = false;
+    string_init(&var->code_name);
+}
+
+void variable_symbol_free(VariableSymbol *var) {
+    string_free(&var->code_name);
 }
 
 void symtable_init(Symtable *symtable) {
@@ -97,6 +137,8 @@ void node_free(Node **node) {
 
     if (aux->type == NodeType_Function)
         function_symbol_free(&aux->value.function);
+    else
+        variable_symbol_free(&aux->value.variable);
 
     string_free(&aux->key);
 

@@ -43,6 +43,7 @@ int main() {
 
     suite("Test symtable_insert_variable") {
         VariableSymbol bar;
+        variable_symbol_init(&bar);
         bar.type = DataType_Int;
         bar.is_initialized = true;
         bar.allow_modification = false;
@@ -50,6 +51,7 @@ int main() {
         test(symtable_insert_variable(&symtable, "bar", bar));
 
         VariableSymbol baz;
+        variable_symbol_init(&baz);
         baz.type = DataType_Double;
         baz.is_initialized = false;
         baz.allow_modification = true;

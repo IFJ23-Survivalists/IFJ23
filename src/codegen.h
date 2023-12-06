@@ -281,4 +281,10 @@ String code_buf_print_to_string(CodeBuf *buf);
  * @param operand3 The third operand.
  */
 void code_generation(Instruction, Operand *, Operand *, Operand *);
+
+/**
+ * @brief Generate raw code right into the code buffer without any checks.
+ * @param code Code to output.
+ */
+void code_generation_raw(const char* fmt, ...);
 #endif

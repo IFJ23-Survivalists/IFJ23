@@ -5,6 +5,8 @@
 /// @brief Implementation of functions defined in `error.h` file
 
 #include "error.h"
+#include <stdarg.h>
+#include "scanner.h"
 
 const char *MSG[] = {
     [1] = "Chyba v programu v rámci lexikální analýzy (chybná struktura aktuálního lexému)",
@@ -21,6 +23,8 @@ const char *MSG[] = {
 
 Error ERROR = Error_None;
 
+bool g_print_errors = true;
+
 void set_error(Error err) {
     ERROR = err;
 }
@@ -30,9 +34,28 @@ Error got_error() {
 }
 
 void print_error_msg() {
+    if (!g_print_errors)
+        return;
     if (ERROR) {
         fprintf(stderr, "ERROR: %s\n", MSG[ERROR]);
     }
+}
+
+void set_print_errors(bool b) {
+    g_print_errors = b;
+}
+
+void print_error(const struct Token* tok, Error err_type, const char* err_string, const char* fmt, ...) {
+    if (g_print_errors) {
+        fprintf(stderr, BOLD("line:%lu:%lu ") COL_R("%s error") ": ", tok->line, tok->position_in_line, err_string);
+        va_list args;
+        va_start(args, fmt);
+        vfprintf(stderr, fmt, args);
+        va_end(args);
+        fprintf(stderr, "\n");
+    }
+
+    set_error(err_type);
 }
 
 const char* INT_ERR_MSG[] = {
@@ -58,14 +81,16 @@ IntErrorType got_int_error() {
 }
 
 void print_int_error_msg() {
+    if (!g_print_errors)
+        return;
     if (g_int_error.type) {
 #ifdef PRINT_INT_ERR
         if (g_int_error.msg)
-            fprintf(stderr, "%s:%u: %s. Msg:\n\n%s\n",
+            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") ": %s\n",
                     g_int_error.file, g_int_error.line,
                     INT_ERR_MSG[(int)g_int_error.type], g_int_error.msg);
         else
-            fprintf(stderr, "%s:%u: %s\n", g_int_error.file, g_int_error.line,
+            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") "\n", g_int_error.file, g_int_error.line,
                     INT_ERR_MSG[(int)g_int_error.type]);
 #endif
     }

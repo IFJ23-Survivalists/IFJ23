@@ -381,7 +381,7 @@ int main() {
     suite("Literal: nil") {
         Operand nil;
         nil.symbol.type = SymbolType_Constant;
-        nil.symbol.constant.type = DataType_MaybeInt;
+        nil.symbol.constant.type = DataType_Undefined;
         nil.symbol.constant.value.number = 5;
         nil.symbol.constant.is_nil = true;
         code_generation(Instruction_DebugPrint, &nil, NULL, NULL);
