@@ -34,6 +34,7 @@ void function_symbol_init(FunctionSymbol *sym) {
     sym->params = NULL;
     sym->param_count = 0;
     sym->return_value_type = (DataType)0;
+    sym->is_used = false;
     code_buf_init(&sym->code);
     string_init(&sym->code_name);
 }

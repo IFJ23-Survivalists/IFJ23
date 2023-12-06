@@ -7,6 +7,7 @@
 #include "rec_parser.h"
 #include "scanner.h"
 #include "codegen.h"
+#include "builtin.h"
 #include <math.h>
 #include <string.h>
 
@@ -31,23 +32,17 @@ void parser_init() {
 }
 
 bool add_builtin_functions() {
-    // TODO: func readString() -> String?
-    // TODO: func readInt() -> Int?
-    // TODO: func readDouble() -> Double?
-    // TODO: func readBool() -> Bool?
-
-    // TODO: func write(_ term)           :) enjoy
-
-    // TODO: func Int2Double(_ term : Int) -> Double
-    // TODO: func Int2Bool(_ term : Int) -> Bool
-    // TODO: func Double2Int(_ term : Double) -> Int
-    // NOTE: There will be no Double2Int() function.
-    // TODO: func Bool2Int(_ term : Bool) -> Int
-    // TODO: func substring(of s : String, startingAt i : Int, endingBefore j : Int) -> String?
-    // TODO: func length(_ s : String) -> Int
-    // TODO: func ord(_ c : String) -> Int
-    // TODO: func chr(_ i : Int) -> String
-
+    builtin_add_readString();
+    builtin_add_readInt();
+    builtin_add_readDouble();
+    builtin_add_readBool();
+    builtin_add_write();
+    builtin_add_Int2Double();
+    builtin_add_Double2Int();
+    builtin_add_length();
+    builtin_add_substring();
+    builtin_add_ord();
+    builtin_add_chr();
     return true;
 }
 
@@ -55,7 +50,8 @@ void print_all_func_codes(Node* node) {
     if (!node)
         return;
     if (node->type == NodeType_Function) {
-        code_buf_print(&node->value.function.code);
+        if (node->value.function.is_used)
+            code_buf_print(&node->value.function.code);
     }
     print_all_func_codes(node->left);
     print_all_func_codes(node->right);
