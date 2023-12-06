@@ -34,6 +34,15 @@
         }                                                        \
     } while (0)
 
+#define CHECK_IF_PARAM(expr, ...)                                       \
+    do {                                                                \
+        if (expr->param_name != NULL) {                                 \
+            syntax_err("Cannot apply any oparation on named argument"); \
+            FREE_ALL(__VA_ARGS__);                                      \
+            return NULL;                                                \
+        }                                                               \
+    } while (0)
+
 const char RULES[RULE_COUNT][MAX_RULE_LENGTH] = {
     "i", "(E)", "-E", "E!", "E+E", "E*E", "E>E", "E?E", "E,E", "L,E", "i(L)", "i(E)", "i()", "i:E",
 };
@@ -77,7 +86,7 @@ bool expr_parser_begin(Data* data) {
         nterm = item->nterm;
 
     // check if pushdown is reduced to one nonterminal else error occurred during parsing
-    if (g_pushdown.first == g_pushdown.last && nterm != NULL && nterm->name == 'E') {
+    if (g_pushdown.first == g_pushdown.last && nterm != NULL && nterm->name == 'E' && nterm->param_name == NULL) {
         data->type = nterm->type;
         data->is_nil = nterm->is_nil;
 
@@ -150,13 +159,6 @@ char* get_unique_id() {
 }
 
 void parse(Token token, Token* prev_token) {
-    // PushdownItem* first = g_pushdown.first;
-    // while (first != NULL) {
-    //     printf("%c", first->name);
-    //     first = pushdown_next(first);
-    // }
-    // puts("");
-
     PushdownItem* topmost_terminal = pushdown_search_terminal(&g_pushdown);
     PrecedenceCat topmost_terminal_prec =
         topmost_terminal ? char_to_precedence(topmost_terminal->name) : PrecendeceCat_Expr_End;
@@ -440,6 +442,8 @@ NTerm* reduce_identifier(Token* id, NTerm* nterm) {
 }
 
 NTerm* reduce_prefix(Operator op, NTerm* expr, NTerm* nterm) {
+    CHECK_IF_PARAM(expr, nterm);  // cannot apply any oparation on named argument = syntax error
+
     if (expr->type == DataType_Undefined) {
         unknown_type_err("Cannot infer data type from nil in operation '%s'", operator_to_string(op));
         FREE_ALL(nterm);
@@ -483,6 +487,8 @@ NTerm* reduce_prefix(Operator op, NTerm* expr, NTerm* nterm) {
 }
 
 NTerm* reduce_postfix(NTerm* expr, NTerm* nterm) {
+    CHECK_IF_PARAM(expr, nterm);  // cannot apply any oparation on named argument = syntax error
+
     if (expr->type == DataType_Undefined) {
         unknown_type_err("Cannot unwrap nil value");
         FREE_ALL(nterm);
@@ -513,6 +519,9 @@ NTerm* reduce_postfix(NTerm* expr, NTerm* nterm) {
 }
 
 NTerm* reduce_arithmetic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
+    CHECK_IF_PARAM(left, nterm);   // cannot apply any oparation on named argument = syntax error
+    CHECK_IF_PARAM(right, nterm);  // cannot apply any oparation on named argument = syntax error
+
     // arithmetic operation on two constants results in constant as well
     if (left->is_const && right->is_const)
         nterm->is_const = true;
@@ -559,6 +568,9 @@ NTerm* reduce_arithmetic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
 }
 
 NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
+    CHECK_IF_PARAM(left, nterm);   // cannot apply any oparation on named argument = syntax error
+    CHECK_IF_PARAM(right, nterm);  // cannot apply any oparation on named argument = syntax error
+
     if (!try_convert_to_same_types(left, right)) {
         FREE_ALL(nterm);
         return NULL;
@@ -642,6 +654,9 @@ NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
 }
 
 NTerm* reduce_nil_coalescing(NTerm* left, NTerm* right, NTerm* nterm) {
+    CHECK_IF_PARAM(left, nterm);   // cannot apply any oparation on named argument = syntax error
+    CHECK_IF_PARAM(right, nterm);  // cannot apply any oparation on named argument = syntax error
+
     bool type_match = false;
 
     if (right->type == DataType_Undefined) {
@@ -734,6 +749,10 @@ NTerm* reduce_args(NTerm* left, NTerm* right, NTerm* nterm) {
 }
 
 NTerm* reduce_named_arg(Token* id, NTerm* arg) {
+    if (id->type != Token_Identifier) {
+        syntax_err("%s cannot be name of the argument", tokentype_to_string(id->type));
+        return NULL;
+    }
     arg->param_name = id->attribute.data.value.string.data;
     return arg;
 }

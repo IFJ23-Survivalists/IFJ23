@@ -207,6 +207,9 @@ int main() {
         TEST_INVALID_EXPRESSION("str(1, 1.5)", Error_TypeMismatched);
         TEST_INVALID_EXPRESSION("str(\"1\")", Error_TypeMismatched);
         TEST_INVALID_EXPRESSION("n() +1", Error_Operation);
+        TEST_INVALID_EXPRESSION("(1: 5) +5 - 5", Error_Syntax);
+        TEST_INVALID_EXPRESSION("(a, 5) +1", Error_Syntax);
+        TEST_INVALID_EXPRESSION("(a: 5) +1", Error_Syntax);
     }
 
     suite("Test undefined functions and variables") {
