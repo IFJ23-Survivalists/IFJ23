@@ -124,6 +124,8 @@ int main() {
         TEST_VALID_EXPRESSION("1.7 < b ", DataType_Bool);
         TEST_VALID_EXPRESSION("!bl!", DataType_Bool);
         TEST_VALID_EXPRESSION("(y!) != (-a) *2", DataType_Bool);
+        TEST_VALID_EXPRESSION("y == nil", DataType_Bool);
+        TEST_VALID_EXPRESSION("nil == y", DataType_Bool);
     }
 
     suite("Test valid function expressions") {
@@ -166,6 +168,8 @@ int main() {
         TEST_INVALID_EXPRESSION("a + b", Error_Operation);
         TEST_INVALID_EXPRESSION("1 + nil", Error_UnknownType);
         TEST_INVALID_EXPRESSION("true + true", Error_Operation);
+        TEST_INVALID_EXPRESSION("y + y", Error_Operation);
+        TEST_INVALID_EXPRESSION("nil + nil", Error_UnknownType);
     }
 
     suite("Test invalid logic expressions") {
@@ -179,7 +183,6 @@ int main() {
         TEST_INVALID_EXPRESSION("y ?? !!false", Error_Syntax);
         TEST_INVALID_EXPRESSION("true < false", Error_Operation);
         TEST_INVALID_EXPRESSION("n() == nil", Error_UnknownType);
-        TEST_INVALID_EXPRESSION("nil == nil", Error_UnknownType);
     }
 
     suite("Test invalid nil coaliscing expressions") {
