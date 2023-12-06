@@ -183,6 +183,7 @@ int main() {
         test(prg("let a : Int = 0\nif(a == 1) { let c = 0\nvar d = 2}") == 0);
         test(prg("var a\na= true\n if (a) { let c = 0 }") == 0);
         test(prg("let a= false\n if (a || true) { let c = 0 }") == 0);
+        test(prg("if 1 == 0 { let c = 0 }") == 0);
 
         test(prg("let a : Int? = nil\n if let a { var c : Int = 0\n c = c + a}") == 0);
         test(prg("let a : Int = \n10\n if let a { var c : Int = 0\n c = c + a}") == 0);
@@ -201,9 +202,8 @@ int main() {
     suite("Test Parser syntax/semantics - If/If-let statements - errors") {
         set_print_errors(false);
         test(prg("if(){}") == 2);
-        test(prg("if 1 == 0 { let c = 0 }") == 2);
         test(prg("if (1 + 0) { let c = 0 }") == 7);
-        test(prg("let a= \"aalkdjf\"\n if a { let c = 0 }") == 2);
+        test(prg("let a= \"aalkdjf\"\n if a { let c = 0 }") == 7);
         test(prg("let a= \"aalkdjf\"\n if (a) { let c = 0 }") == 7);
         test(prg("if let (a == 0) { let c = 0 }") == 2);
         test(prg("let a : Int? =0\nif let a { let a = 0 }") == 3);
