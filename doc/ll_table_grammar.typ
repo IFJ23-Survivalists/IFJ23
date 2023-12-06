@@ -10,7 +10,7 @@ This is our list of rules:
 + $"<stmtSeparator>" -> "EOL"$
 + $"<stmtSeparator>" -> "}"$
 + $"<stmtSeparator>" -> "$"$
-+ $"<stmt>" -> "while ( <expr> ) { <stmtList> } <stmtList>"$
++ $"<stmt>" -> "while  <expr>  { <stmtList> } <stmtList>"$
 + $"<stmt>" -> "func ID ( <params> ) <funcReturnType> { <stmtList> } <stmtList>"$
 + $"<stmt>" -> "return <returnExpr>"$
 + $"<stmt>" -> "if <ifStmt>"$
@@ -27,7 +27,7 @@ This is our list of rules:
 + $"<params_n>" -> epsilon$
 + $"<returnExpr>" -> "<expr>"$
 + $"<returnExpr>" -> epsilon$
-+ $"<ifCondition>" -> "( <expr> )"$
++ $"<ifCondition>" -> " <expr> "$
 + $"<ifCondition>" -> "let ID"$
 + $"<else>" -> "else <elseIf>"$
 + $"<else>" -> "<stmtList>"$
@@ -56,6 +56,8 @@ The grammar contains several ambiguities that are resolved in the code:
 
 The reason we have left those ambiguities here is that, they are either not solvable with LL(1) grammar, or it's much easier to solve them manually in the code.
 
+#v(1.0em)
+
 == LL-table
 Using the rules above, we have the following LL-table:
 #figure(
@@ -76,14 +78,14 @@ Using the rules above, we have the following LL-table:
         ,
         [nterm \\ term],     [\$],[\\n],[{],[}],[(],[)],[:],[\-\>],[=],[,],
         [\<stmtList\>],      [2],[2],[],[2],[],[],[],[],[],[],
-        [\<stmtSeparator\>], [5],[3],[4],[],[],[],[],[],[],[],
+        [\<stmtSeparator\>], [5],[3],[],[4],[],[],[],[],[],[],
         [\<stmt\>],          [],[],[],[],[],[],[],[],[],[],
         [\<funcReturnType\>],[15],[],[15],[],[],[],[],[14],[],[],
-        [\<ifStmt\>],        [],[],[],[],[16],[],[],[],[],[],
+        [\<ifStmt\>],        [],[],[],[],[],[],[],[],[],[],
         [\<params\>],        [18],[],[],[],[],[18],[],[],[],[],
         [\<params_n\>],      [20],[],[],[],[],[20],[],[],[],[19],
         [\<returnExpr\>],    [22],[22],[],[22],[],[],[],[],[],[],
-        [\<ifCondition\>],   [],[],[],[],[23],[],[],[],[],[],
+        [\<ifCondition\>],   [],[],[],[],[],[],[],[],[],[],
         [\<else\>],          [26],[26],[],[26],[],[],[],[],[],[],
         [\<elseIf\>],        [],[],[27],[],[],[],[],[],[],[],
         [\<assignType\>],    [30],[30],[],[30],[],[],[29],[],[30],[],
