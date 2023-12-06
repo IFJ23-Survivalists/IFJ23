@@ -715,7 +715,7 @@ NTerm* reduce_nil_coalescing(NTerm* left, NTerm* right, NTerm* nterm) {
     CHECK_ALLOCATION(else_label, nterm);
 
     code_generation_raw("JUMPIFEQ %s %s@%s nil@nil", if_label, frame_to_string(left->frame), left->code_name);
-    code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(right->frame), right->code_name);
+    code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(left->frame), left->code_name);
     code_generation_raw("JUMP %s", else_label);
     code_generation_raw("LABEL %s", if_label);
     code_generation_raw("MOVE TF@%s %s@%s", nterm->code_name, frame_to_string(right->frame), right->code_name);

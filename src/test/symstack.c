@@ -102,12 +102,14 @@ int main() {
 
         string_init(&fs.code_name);
         code_buf_init(&fs.code);
+        code_buf_init(&fs.code_defs);
         Symtable* s1 = symstack_push();
         symtable_insert_function(s1, "fun1", fs);
         symtable_insert_variable(s1, "var1", vs);
 
         string_init(&fs.code_name);
         code_buf_init(&fs.code);
+        code_buf_init(&fs.code_defs);
         Symtable* s2 = symstack_push();
         symtable_insert_function(s2, "fun2", fs);
         symtable_insert_variable(s2, "var1", vs);

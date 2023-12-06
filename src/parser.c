@@ -21,6 +21,7 @@ void parser_init() {
     symstack_push();
 
     g_parser.scope = Scope_Global;
+    code_buf_init(&g_parser.var_defs_code);
     code_buf_init(&g_parser.global_code);
     if (got_error()) {
         symstack_free();
@@ -50,8 +51,10 @@ void print_all_func_codes(Node* node) {
     if (!node)
         return;
     if (node->type == NodeType_Function) {
-        if (node->value.function.is_used)
+        if (node->value.function.is_used) {
+            code_buf_print(&node->value.function.code_defs);
             code_buf_print(&node->value.function.code);
+        }
     }
     print_all_func_codes(node->left);
     print_all_func_codes(node->right);
@@ -75,6 +78,7 @@ bool parser_begin(bool output_code) {
 
     // Output code for global statements
     if (output_code) {
+        code_buf_print(&g_parser.var_defs_code);
         code_buf_print(&g_parser.global_code);
         print_all_func_codes(symstack_bottom()->root);
     }
@@ -85,6 +89,7 @@ bool parser_begin(bool output_code) {
 void parser_free() {
     symstack_free();
     code_buf_free(&g_parser.global_code);
+    code_buf_free(&g_parser.var_defs_code);
     g_parser.currect_code = NULL;
 }
 

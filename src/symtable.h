@@ -43,6 +43,7 @@ typedef struct {
     FunctionParameter* params;     /**< Parameters of the function. */
     DataType return_value_type;    /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
     CodeBuf code;      /**< < Generated code for this function. */
+    CodeBuf code_defs;  /**< All variable definitions in given function local scope will be in this buffer. **/
     String code_name;   /**< IFJcode23 label */
     bool is_used;       /** Check if we should add this function to the resulting IFJcode23 */
 } FunctionSymbol;

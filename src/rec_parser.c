@@ -42,9 +42,12 @@ bool rec_parser_begin() {
     g_current_func = NULL;
     g_while_index = g_if_index = 0;
 
+    code_buf_set(&g_parser.var_defs_code);
     code_generation_raw(".IFJcode23");
     code_generation_raw("DEFVAR GF@ret");
     code_generation_raw("MOVE GF@ret int@0");
+    code_buf_set(&g_parser.global_code);
+    g_parser.currect_code = &g_parser.global_code;
 
     parser_next_token();
     CALL_RULEp(rule_statementList);
@@ -220,6 +223,9 @@ bool handle_let_statement() {
     variable_symbol_init(&var);
     parser_variable_code_info(&var, id_name);
 
+    FunctionSymbol* current_func = g_current_func ? symtable_get_function(symstack_bottom(), g_current_func) : NULL;
+    CodeBuf* defs_buf = current_func ? &current_func->code_defs : &g_parser.var_defs_code;
+
     TRY_BEGIN {
         bCALL_RULEp(rule_assignType, &var.type);
         bCHECK_TOKEN(Token_Equal, "Unexpected token `%s` after `let` assign statement. Expected `=`.", TOK_STR);
@@ -228,7 +234,9 @@ bool handle_let_statement() {
         Operand ifj_var;
         ifj_var.variable.name = var.code_name.data;
         ifj_var.variable.frame = var.code_frame;
+        code_buf_set(defs_buf);
         code_generation(Instruction_DefVar, &ifj_var, NULL, NULL);
+        code_buf_set(g_parser.currect_code);
 
         // Assign value to this variable.
         var.allow_modification = true;
@@ -261,12 +269,17 @@ bool handle_var_statement() {
     var.is_initialized = false;
     parser_variable_code_info(&var, id_name);
 
+    FunctionSymbol* current_func = g_current_func ? symtable_get_function(symstack_bottom(), g_current_func) : NULL;
+    CodeBuf* defs_buf = current_func ? &current_func->code_defs : &g_parser.var_defs_code;
+
     TRY_BEGIN {
         // Define the variable in IFJcode23
         Operand ifj_op;
         ifj_op.variable.name = var.code_name.data;
         ifj_op.variable.frame = var.code_frame;
+        code_buf_set(defs_buf);
         code_generation(Instruction_DefVar, &ifj_op, NULL, NULL);
+        code_buf_set(g_parser.currect_code);
 
         bCALL_RULEp(rule_assignType, &var.type);
         bCALL_RULEp(rule_assignExpr, &var, id_name);
@@ -317,12 +330,14 @@ bool handle_func_statement() {
     }
     parser_scope_function(func);
 
+    code_buf_set(&func->code_defs);
     // Generate label indentifying this function.
     Operand op = { .label = func->code_name.data };
     code_generation(Instruction_Label, &op, NULL, NULL);
     // We get parameters on the temporary frame, so we need to convert it to local frame,
     // to get them as local variables.
     code_generation(Instruction_PushFrame, NULL, NULL, NULL);
+    code_buf_set(&func->code);
 
     g_current_func = func_id;
     CALL_RULE(rule_statementList);      // Process all statements inside this function

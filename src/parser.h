@@ -23,6 +23,9 @@ typedef struct {
     Token token;      ///< Current non-whitespace token.
     Token token_ws;   ///< Current token before the `g_token`. This can be a Whitespace.
     Scope scope;      ///< Currenct scope of the parser.
+    /// Contains all global variable definitions. This is used so that all of them
+    /// are defined on the start of the program and aren't redefined in while statements.
+    CodeBuf var_defs_code;
     /// Code of all global statements.
     CodeBuf global_code;
     /// Pointer to currect buffer to which to generate.

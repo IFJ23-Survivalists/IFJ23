@@ -36,6 +36,7 @@ void function_symbol_init(FunctionSymbol *sym) {
     sym->return_value_type = (DataType)0;
     sym->is_used = false;
     code_buf_init(&sym->code);
+    code_buf_init(&sym->code_defs);
     string_init(&sym->code_name);
 }
 
@@ -47,6 +48,7 @@ void function_symbol_free(FunctionSymbol *sym) {
     sym->params = NULL;
     sym->param_count = 0;
     code_buf_free(&sym->code);
+    code_buf_free(&sym->code_defs);
     string_free(&sym->code_name);
 }
 
