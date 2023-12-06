@@ -9,24 +9,11 @@
 #include "parser.h"
 #include "scanner.h"
 
-int main(int argc, char** argv) {
-    if (argc != 2) {
-        eprint("The argument count must be exactly 1\n");
-        return 99;
-    }
-
-    FILE* file = fopen(argv[1], "r+");
-
-    if (!file) {
-        eprintf("Unable to read file %s\n", argv[1]);
-        return 99;
-    }
-
+int main() {
     // Initialize the parser to use this file for tokens.
-    scanner_init(file);
+    scanner_init(stdin);
     if (got_error()) {
         print_error_msg();
-        fclose(file);
         return 99;
     }
 
