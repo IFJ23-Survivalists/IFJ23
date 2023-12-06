@@ -1,7 +1,6 @@
 /**
- * @brief
- * @author
- * @file
+ * @file builtin.c
+ * @author Lukáš Habr
  */
 #include "scanner.h"
 #include "parser.h"

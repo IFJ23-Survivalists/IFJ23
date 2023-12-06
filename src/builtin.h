@@ -1,6 +1,7 @@
 /**
  * @brief Add builtin functions.
  * @file builtin.h
+ * @author Lukáš Habr
  */
 #ifndef _BUILTIN_H_
 #define _BUILTIN_H_
