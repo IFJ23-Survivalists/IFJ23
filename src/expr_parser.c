@@ -789,6 +789,9 @@ NTerm* reduce_function(Token* id, NTerm* arg, NTerm* nterm) {
         return NULL;  // undefined function error
     }
 
+    // Mark this funcion as used, so it is generated in the resulting IFJcode23
+    expected_function->is_used = true;
+
     // check number of arguments
     if (top_fn != NULL && expected_function->param_count != top_fn->param_count) {
         fun_type_err("Inavalid number of arguments in function '%s', expected %d, found %d.", fn_name.data,
