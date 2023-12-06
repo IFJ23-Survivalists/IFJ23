@@ -17,13 +17,13 @@ TEST_EXECUTABLES = $(patsubst $(TEST_DIR)/%.c, %, $(TEST))
 TEST_OBJS = $(subst main.o,, $(OBJS))
 
 $(PROJ): $(OBJS)
-	$(CC) $(CFLAGS) $(LDFLAGS) -o $(PROJ) $^
+	$(CC) $(CFLAGS) -o $(PROJ) $^ $(LDFLAGS)
 
 build: $(PROJ)
 
 # Compile each test file to its executable
 $(TEST_EXECUTABLES): %: $(TEST_OBJS) $(TEST_DIR)/%.c
-	$(CC) $(CFLAGS) $(LDFLAGS) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@
+	$(CC) $(CFLAGS) $(LDFLAGS) $(TEST_OBJS) $(TEST_DIR)/$*.c -o $@ $(LDFLAGS)
 
 # Run all tests
 test: $(TEST_EXECUTABLES)

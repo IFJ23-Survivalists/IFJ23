@@ -27,20 +27,44 @@ void stack_pop(Stack* stack) {
     if (!stack_empty(stack)) {
         StackNode* to_delete = stack->top;
         stack->top = to_delete->next;
+        if (to_delete->param) {
+            for (int i = 0; i < to_delete->param_count; i++) {
+                if (to_delete->param[i]->code_name != NULL) {
+                    free(to_delete->param[i]->code_name);
+                }
+                free(to_delete->param[i]);
+            }
+            free(to_delete->param);
+        }
         free(to_delete);
     }
 }
 
-void stack_push(Stack* stack, String name, FunctionSymbol* fn) {
+void stack_push(Stack* stack) {
     StackNode* node = malloc(sizeof(StackNode));
-    node->fn = fn;
-    node->name = name;
-    node->processed_args = 0;
     node->next = stack->top;
+    node->capacity = 2;
+    node->param = malloc(sizeof(NTerm*) * node->capacity);
+    node->param_count = 0;
     stack->top = node;
 }
 
 void stack_free(Stack* stack) {
     while (!stack_empty(stack))
         stack_pop(stack);
+}
+
+bool insert_param(StackNode* node, NTerm* param) {
+    if (node->param_count + 1 >= node->capacity) {
+        node->capacity *= 2;
+        node->param = realloc(node->param, sizeof(NTerm*) * node->capacity);
+
+        if (node->param == NULL) {
+            SET_INT_ERROR(IntError_Memory, "Realloc failed");
+            return false;
+        }
+    }
+
+    node->param[node->param_count++] = param;
+    return true;
 }

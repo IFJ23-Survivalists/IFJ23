@@ -6,7 +6,7 @@
  */
 
 #include <string.h>
-#include "../scanner.h"
+#include "../string.h"
 #include "test.h"
 
 int main() {
@@ -83,6 +83,16 @@ int main() {
         test(str2.length == 11);
         test(str2.capacity == 12);
         test(!strcmp(str2.data, "Hello world"));
+        string_free(&str2);
+    }
+
+    suite("Test string_from_format") {
+        String str2 = string_from_format("%i Hello %s", 123, "World");
+        const char *expected_res = "123 Hello World";
+
+        test(str2.length == strlen(expected_res));
+        test(str2.capacity == strlen(expected_res) + 1);
+        test(!strcmp(str2.data, expected_res));
         string_free(&str2);
     }
 

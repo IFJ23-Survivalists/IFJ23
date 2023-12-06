@@ -15,6 +15,7 @@ int main() {
     Pushdown pushdown;
     Token token;
     NTerm* nonterm = malloc(sizeof(NTerm));
+    nonterm->code_name = NULL;
 
     PushdownItem* rule_end_marker;
     PushdownItem* rule_end_marker2;

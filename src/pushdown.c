@@ -17,8 +17,11 @@ void pushdown_free(Pushdown* pushdown) {
     while (pushdown->first != NULL) {
         PushdownItem* to_delete = pushdown->first;
         pushdown->first = to_delete->next;
-        if (to_delete->nterm != NULL)
+        if (to_delete->nterm != NULL) {
+            if (to_delete->nterm->code_name != NULL)
+                free(to_delete->nterm->code_name);
             free(to_delete->nterm);
+        }
         free(to_delete);
     }
 }

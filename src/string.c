@@ -5,6 +5,7 @@
  */
 
 #include "string.h"
+#include <stdarg.h>
 #include <string.h>
 #include <stdlib.h>
 
@@ -128,6 +129,37 @@ String string_from_c_str(const char *str) {
         res.length = len;
     }
 
+    return res;
+}
+
+String string_from_format(const char *fmt, ...) {
+    String res;
+    string_init(&res);
+
+    va_list args;
+    va_start(args, fmt);
+
+    // Get the total length of the string after insertion of args.
+    size_t fmt_len = vsnprintf(NULL, 0, fmt, args);
+
+    // Allocate enough memory for the string.
+    res.data = calloc(fmt_len + 1, sizeof(char));
+    if (!res.data) {
+        SET_INT_ERROR(IntError_Memory, "string_from_format: Calloc failed!");
+        return res;
+    }
+    res.capacity = fmt_len + 1;
+
+    // Reset the args, so we can use it again.
+    va_end(args);
+    va_start(args, fmt);
+
+    // Insert string in given format into `res`.
+    vsprintf(res.data, fmt, args);
+    res.length = fmt_len;
+    MASSERT(res.length <= res.capacity, "string_from_format: Wrong string length");
+
+    va_end(args);
     return res;
 }
 
