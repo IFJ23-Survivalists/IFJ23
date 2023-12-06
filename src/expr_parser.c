@@ -150,6 +150,13 @@ char* get_unique_id() {
 }
 
 void parse(Token token, Token* prev_token) {
+    // PushdownItem* first = g_pushdown.first;
+    // while (first != NULL) {
+    //     printf("%c", first->name);
+    //     first = pushdown_next(first);
+    // }
+    // puts("");
+
     PushdownItem* topmost_terminal = pushdown_search_terminal(&g_pushdown);
     PrecedenceCat topmost_terminal_prec =
         topmost_terminal ? char_to_precedence(topmost_terminal->name) : PrecendeceCat_Expr_End;
@@ -205,14 +212,13 @@ PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
 
                     switch (prev_token->type) {
                         // unary
-                        case Token_ParenLeft:
-                        case Token_DoubleColon:
-                        case Token_Comma:
-                            return PrecendeceCat_Pre;
+                        case Token_ParenRight:
+                        case Token_Identifier:
+                            return PrecendeceCat_PlusMinus;
 
                         // binary
                         default:
-                            return PrecendeceCat_PlusMinus;
+                            return PrecendeceCat_Pre;
                     }
 
                 case Operator_Multiply:
