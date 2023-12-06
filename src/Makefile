@@ -39,7 +39,7 @@ doc:
 	typst c ../doc/documentation.typ ./dokumentace.pdf
 
 pack: doc
-	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozhodnuti.txt dokumentace.pdf
+	zip -j $(ZIP_FILE) *.c *.h Makefile ../rozdeleni ../rozsireni dokumentace.pdf
 
 -include $(DEPS)
 
