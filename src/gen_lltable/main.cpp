@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     g.add_rule(NTerm_StatementSeparator, "t", Token_EOF);
     g.add_rule(NTerm_StatementList, NULL);
 
-    g.add_rule(NTerm_Statement, "tanaanan", Token_While, '(', NTerm_Expr, ')', '{', NTerm_StatementList, '}', NTerm_StatementList);
+    g.add_rule(NTerm_Statement, "tnanan", Token_While, NTerm_Expr, '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Statement, "ttanananan", Token_Func, Token_Identifier, '(', NTerm_Params, ')', NTerm_FuncReturnType, '{', NTerm_StatementList, '}', NTerm_StatementList);
     g.add_rule(NTerm_Statement, "tn", Token_Return, NTerm_ReturnExpr);
     g.add_rule(NTerm_Statement, "tn", Token_If, NTerm_IfStatement);
@@ -58,7 +58,7 @@ int main(int argc, char* argv[]) {
     g.add_rule(NTerm_Params_n, NULL);
     g.add_rule(NTerm_ReturnExpr, "n", NTerm_Expr);
     g.add_rule(NTerm_ReturnExpr, NULL);
-    g.add_rule(NTerm_IfCondition, "ana", '(', NTerm_Expr, ')');
+    g.add_rule(NTerm_IfCondition, "n", NTerm_Expr);
     g.add_rule(NTerm_IfCondition, "tn", Token_Let, NTerm_Expr);
 
     g.add_rule(NTerm_Else, "tn", Token_Else, NTerm_ElseIf);
