@@ -158,6 +158,12 @@ bool reduce();
 NTerm* apply_rule(Rule rule, struct PushdownItem** operands);
 
 /**
+ * @brief Create non-terminal with default initialization.
+ * @return Initialize non-terminal.
+ */
+NTerm* init_nterm();
+
+/**
  * @brief Checks exitence of identifier in symtable. If identifier was not found prints corresponding error message and
  * return `NULL`. If identifier found return `NTerm` that holds information about identifier or immediate value. When
  * immediate value is reduced `NTerm::is_const` is set to `true`.
@@ -166,14 +172,6 @@ NTerm* apply_rule(Rule rule, struct PushdownItem** operands);
  * @return Non terminal that holds data about variable/constant.
  */
 NTerm* reduce_identifier(Token* id, NTerm* nterm);
-
-/**
- * @brief Propagete data from nonterminal operand to `nterm`.
- * @param[in] expr The non-terminal to which the rule applies.
- * @param[out] nterm Non-terminal with default attributes set.
- * @return Non terminal that holds data obtained by reducing `operands`.
- */
-NTerm* reduce_parenthesis(NTerm* expr, NTerm* nterm);
 
 /**
  * @brief Apply rule for reducing logic and arithmetic negation. Checks type of the operands(prints error message if
@@ -235,7 +233,7 @@ NTerm* reduce_nil_coalescing(NTerm* left, NTerm* right, NTerm* nterm);
  * @param[in,out] nterm Non-terminal with default attributes set.
  * @return Non terminal that holds data obtained by reducing `operands`.
  */
-NTerm* reduce_named_arg(Token* id, NTerm* arg, NTerm* nterm);
+NTerm* reduce_named_arg(Token* id, NTerm* arg);
 
 /**
  * @brief Apply rule for processing unnamed arguments as well as checking number of parameters. Prints error message if

@@ -14,8 +14,6 @@
 #include "symtable.h"
 #include "to_string.h"
 
-// Pool* g_pool = NULL;
-
 #define FREE_ALL(...)                                       \
     do {                                                    \
         size_t i = 0;                                       \
@@ -36,12 +34,6 @@
         }                                                        \
     } while (0)
 
-#define FREE_AND_RETURN_NULL(fn)                             \
-    do {                                                     \
-        for (int j = 0; j < fn->param_count; j++)            \
-            FREE_ALL(fn->param[j]->code_name, fn->param[j]); \
-    } while (0)
-
 const char RULES[RULE_COUNT][MAX_RULE_LENGTH] = {
     "i", "(E)", "-E", "E!", "E+E", "E*E", "E>E", "E?E", "E,E", "L,E", "i(L)", "i(E)", "i()", "i:E",
 };
@@ -50,6 +42,8 @@ const Rule RULE_NAMES[] = {
     Rule_Identif,       Rule_Paren,  Rule_Prefix, Rule_Postfix,         Rule_SumSub, Rule_MulDiv,  Rule_Logic,
     Rule_NilCoalescing, Rule_ArgsEE, Rule_ArgsLE, Rule_FnArgsProcessed, Rule_FnArgs, Rule_FnEmpty, Rule_NamedArg,
 };
+
+const char PREC_NAMES[] = {'+', '*', '>', '?', '-', '!', '(', ')', 'i', ',', ':', '$'};
 
 const ComprarisonResult PRECEDENCE_TABLE[12][12] = {
     {Left, Right, Left, Left, Right, Right, Right, Left, Right, Left, Left, Left},    /* +- */
@@ -107,82 +101,6 @@ bool expr_parser_begin(Data* data) {
     return false;
 }
 
-ComprarisonResult getPrecedence(PrecedenceCat pushdownItem, PrecedenceCat inputToken) {
-    return PRECEDENCE_TABLE[pushdownItem][inputToken];
-}
-
-PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
-    switch (token.type) {
-        case Token_Operator:
-            switch (token.attribute.op) {
-                case Operator_Plus:
-                    return PrecendeceCat_PlusMinus;
-                case Operator_Minus:
-                    if (prev_token == NULL)
-                        // unary
-                        return PrecendeceCat_Pre;
-
-                    switch (prev_token->type) {
-                        // unary
-                        case Token_ParenLeft:
-                        case Token_DoubleColon:
-                        case Token_Comma:
-                            return PrecendeceCat_Pre;
-
-                        // binary
-                        default:
-                            return PrecendeceCat_PlusMinus;
-                    }
-
-                case Operator_Multiply:
-                case Operator_Divide:
-                    return PrecendeceCat_MultiDiv;
-
-                case Operator_Negation:
-                    if (prev_token == NULL)
-                        return PrecendeceCat_Pre;
-
-                    switch (prev_token->type) {
-                        // postfix exclamation mark
-                        case Token_Identifier:
-                        case Token_Data:
-                        case Token_ParenRight:
-                            return PrecendeceCat_Post;
-
-                        default:
-                            return PrecendeceCat_Pre;
-                    }
-                case Operator_DoubleQuestionMark:
-                    return PrecendeceCat_NilCoalescing;
-
-                default:
-                    return PrecendeceCat_Logic;
-            }
-
-        case Token_ParenLeft:
-            return PrecendeceCat_LeftPar;
-
-        case Token_ParenRight:
-            return PrecendeceCat_RightPar;
-
-        case Token_Identifier:
-        case Token_Data:
-            return PrecendeceCat_Id;
-
-        case Token_Comma:
-            return PrecendeceCat_Comma;
-
-        case Token_DoubleColon:
-            return PrecendeceCat_Colon;
-
-        default:
-            return PrecendeceCat_Expr_End;
-    }
-    return 0;
-}
-
-static char PREC_NAMES[] = {'+', '*', '>', '?', '-', '!', '(', ')', 'i', ',', ':', '$'};
-
 char precedence_to_char(PrecedenceCat cat) {
     return PREC_NAMES[cat];
 }
@@ -224,6 +142,13 @@ char* operator_to_instruction(Operator op) {
     }
 }
 
+char* get_unique_id() {
+    static int cnt = 0;
+    cnt++;
+    String tmp = string_from_format("tmp%d", cnt);
+    return tmp.data;
+}
+
 void parse(Token token, Token* prev_token) {
     PushdownItem* topmost_terminal = pushdown_search_terminal(&g_pushdown);
     PrecedenceCat topmost_terminal_prec =
@@ -263,20 +188,69 @@ void parse(Token token, Token* prev_token) {
     }
 }
 
-FunctionSymbol* get_fn_symbol(String fn_name) {
-    Symtable* sym = symstack_search(fn_name.data);
+ComprarisonResult getPrecedence(PrecedenceCat pushdownItem, PrecedenceCat inputToken) {
+    return PRECEDENCE_TABLE[pushdownItem][inputToken];
+}
 
-    if (sym == NULL) {
-        undef_fun_err("Undefined function '%s'.", fn_name.data);
-        return NULL;
-    }
+PrecedenceCat getTokenPrecedenceCategory(Token token, Token* prev_token) {
+    switch (token.type) {
+        case Token_Operator:
+            switch (token.attribute.op) {
+                case Operator_Plus:
+                    return PrecendeceCat_PlusMinus;
+                case Operator_Minus:
+                    if (prev_token == NULL)
+                        // unary
+                        return PrecendeceCat_Pre;
 
-    FunctionSymbol* fs = symtable_get_function(sym, fn_name.data);
-    if (fs == NULL) {
-        undef_fun_err("'%s' is not a function", fn_name.data);
-        return NULL;
+                    switch (prev_token->type) {
+                        // unary
+                        case Token_ParenLeft:
+                        case Token_DoubleColon:
+                        case Token_Comma:
+                            return PrecendeceCat_Pre;
+
+                        // binary
+                        default:
+                            return PrecendeceCat_PlusMinus;
+                    }
+
+                case Operator_Multiply:
+                case Operator_Divide:
+                    return PrecendeceCat_MultiDiv;
+                case Operator_Negation:
+                    if (prev_token == NULL)
+                        return PrecendeceCat_Pre;
+
+                    switch (prev_token->type) {
+                        // postfix exclamation mark
+                        case Token_Identifier:
+                        case Token_Data:
+                        case Token_ParenRight:
+                            return PrecendeceCat_Post;
+
+                        default:
+                            return PrecendeceCat_Pre;
+                    }
+                case Operator_DoubleQuestionMark:
+                    return PrecendeceCat_NilCoalescing;
+                default:
+                    return PrecendeceCat_Logic;
+            }
+        case Token_ParenLeft:
+            return PrecendeceCat_LeftPar;
+        case Token_ParenRight:
+            return PrecendeceCat_RightPar;
+        case Token_Identifier:
+        case Token_Data:
+            return PrecendeceCat_Id;
+        case Token_Comma:
+            return PrecendeceCat_Comma;
+        case Token_DoubleColon:
+            return PrecendeceCat_Colon;
+        default:
+            return PrecendeceCat_Expr_End;
     }
-    return fs;
 }
 
 bool reduce() {
@@ -333,6 +307,39 @@ Rule get_rule(char* rule) {
 }
 
 NTerm* apply_rule(Rule rule, PushdownItem** operands) {
+    switch (rule) {
+        case Rule_Identif:
+            return reduce_identifier(operands[0]->term, init_nterm());
+        case Rule_Paren:
+            return operands[1]->nterm;
+        case Rule_Prefix:
+            return reduce_prefix(operands[0]->term->attribute.op, operands[1]->nterm, init_nterm());
+        case Rule_Postfix:
+            return reduce_postfix(operands[0]->nterm, init_nterm());
+        case Rule_SumSub:
+        case Rule_MulDiv:
+            return reduce_arithmetic(operands[0]->nterm, operands[1]->term->attribute.op, operands[2]->nterm,
+                                     init_nterm());
+        case Rule_Logic:
+            return reduce_logic(operands[0]->nterm, operands[1]->term->attribute.op, operands[2]->nterm, init_nterm());
+        case Rule_NilCoalescing:
+            return reduce_nil_coalescing(operands[0]->nterm, operands[2]->nterm, init_nterm());
+        case Rule_NamedArg:
+            return reduce_named_arg(operands[0]->term, operands[2]->nterm);
+        case Rule_ArgsEE:
+        case Rule_ArgsLE:
+            return reduce_args(operands[0]->nterm, operands[2]->nterm, init_nterm());
+        case Rule_FnEmpty:
+            return reduce_function(operands[0]->term, NULL, init_nterm());
+        case Rule_FnArgsProcessed:;
+        case Rule_FnArgs:
+            return reduce_function(operands[0]->term, operands[2]->nterm, init_nterm());
+        default:  // NoRule:
+            return NULL;
+    }
+}
+
+NTerm* init_nterm() {
     NTerm* nterm = malloc(sizeof(NTerm));
 
     // default non-terminal attributes
@@ -342,45 +349,7 @@ NTerm* apply_rule(Rule rule, PushdownItem** operands) {
     nterm->param_name = NULL;
     nterm->frame = Frame_Temporary;
     nterm->code_name = NULL;
-
-    switch (rule) {
-        case Rule_Identif:
-            return reduce_identifier(operands[0]->term, nterm);
-        case Rule_Paren:
-            return reduce_parenthesis(operands[1]->nterm, nterm);
-        case Rule_Prefix:
-            return reduce_prefix(operands[0]->term->attribute.op, operands[1]->nterm, nterm);
-        case Rule_Postfix:
-            return reduce_postfix(operands[0]->nterm, nterm);
-        case Rule_SumSub:
-        case Rule_MulDiv:
-            return reduce_arithmetic(operands[0]->nterm, operands[1]->term->attribute.op, operands[2]->nterm, nterm);
-        case Rule_Logic:
-            return reduce_logic(operands[0]->nterm, operands[1]->term->attribute.op, operands[2]->nterm, nterm);
-        case Rule_NilCoalescing:
-            return reduce_nil_coalescing(operands[0]->nterm, operands[2]->nterm, nterm);
-        case Rule_NamedArg:
-            return reduce_named_arg(operands[0]->term, operands[2]->nterm, nterm);
-        case Rule_ArgsEE:
-        case Rule_ArgsLE:
-            return reduce_args(operands[0]->nterm, operands[2]->nterm, nterm);
-        case Rule_FnEmpty:
-            return reduce_function(operands[0]->term, NULL, nterm);
-        case Rule_FnArgsProcessed:;
-        case Rule_FnArgs:
-            return reduce_function(operands[0]->term, operands[2]->nterm, nterm);
-        case NoRule:
-            FREE_ALL(nterm);
-            return NULL;
-    }
     return nterm;
-}
-
-char* get_unique_id() {
-    static int cnt = 0;
-    cnt++;
-    String tmp = string_from_format("tmp%d", cnt);
-    return tmp.data;
 }
 
 NTerm* reduce_identifier(Token* id, NTerm* nterm) {
@@ -453,11 +422,6 @@ NTerm* reduce_identifier(Token* id, NTerm* nterm) {
         code_generation(Instruction_Move, &var, &symb, NULL);
     }
     return nterm;
-}
-
-NTerm* reduce_parenthesis(NTerm* expr, NTerm* nterm) {
-    FREE_ALL(nterm);
-    return expr;
 }
 
 NTerm* reduce_prefix(Operator op, NTerm* expr, NTerm* nterm) {
@@ -537,17 +501,27 @@ NTerm* reduce_arithmetic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
     // arithmetic operation on two constants results in constant as well
     if (left->is_const && right->is_const)
         nterm->is_const = true;
-
     if (!try_convert_to_same_types(left, right)) {
         FREE_ALL(nterm);
         return NULL;
     }
 
-    // only bools are not summable
-    if (left->type == DataType_Bool) {
-        expr_type_err("Cannot add two Bools");
-        FREE_ALL(nterm);
-        return NULL;
+    switch (left->type) {
+        case DataType_Bool:
+        case DataType_MaybeBool:
+        case DataType_MaybeDouble:
+        case DataType_MaybeInt:
+        case DataType_MaybeString:
+            expr_type_err("Invalid operands left '%s' and right '%s'.", datatype_to_string(left->type),
+                          datatype_to_string(right->type));
+            FREE_ALL(nterm);
+            return NULL;
+        case DataType_Undefined:
+            unknown_type_err("Cannot infer data type from nil");
+            FREE_ALL(nterm);
+            return NULL;
+        default:
+            break;
     }
 
     nterm->type = left->type;
@@ -574,7 +548,6 @@ NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
         FREE_ALL(nterm);
         return NULL;
     }
-
     nterm->type = DataType_Bool;
     nterm->code_name = get_unique_id();
     CHECK_ALLOCATION(nterm->code_name, nterm);
@@ -621,12 +594,32 @@ NTerm* reduce_logic(NTerm* left, Operator op, NTerm* right, NTerm* nterm) {
                     break;
             }
             break;
+        case DataType_MaybeBool:
+        case DataType_MaybeString:
+        case DataType_MaybeInt:
+        case DataType_MaybeDouble:
+        case DataType_Undefined:
+            if (left->type == DataType_Undefined && left->is_nil ^ right->is_nil) {
+                unknown_type_err("Cannot infer data type from undefined value");
+                FREE_ALL(nterm->code_name, nterm);
+                return NULL;
+            }
+            // nullable types support only == and != comparison
+            if (op != Operator_DoubleEqual && op != Operator_NotEqual) {
+                expr_type_err("Invalid operands left '%s' and right '%s' operands for relation '%s'.",
+                              datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
+                FREE_ALL(nterm->code_name, nterm);
+                return NULL;
+            }
+
+            code_generation_raw("EQ TF@%s %s@%s %s@%s", nterm->code_name, frame_to_string(left->frame), left->code_name,
+                                frame_to_string(right->frame), right->code_name);
+            if (op == Operator_NotEqual)
+                code_generation_raw("NOT TF@%s TF@%s", nterm->code_name, nterm->code_name);
+            break;
 
         default:
-            expr_type_err("Invalid operands left '%s' and right '%s' operands for relation '%s'.",
-                          datatype_to_string(left->type), datatype_to_string(right->type), operator_to_string(op));
-            FREE_ALL(nterm->code_name, nterm);
-            return NULL;
+            break;
     }
 
     FREE_ALL(left->code_name, left, right->code_name, right);
@@ -725,9 +718,8 @@ NTerm* reduce_args(NTerm* left, NTerm* right, NTerm* nterm) {
     return nterm;
 }
 
-NTerm* reduce_named_arg(Token* id, NTerm* arg, NTerm* nterm) {
+NTerm* reduce_named_arg(Token* id, NTerm* arg) {
     arg->param_name = id->attribute.data.value.string.data;
-    FREE_ALL(nterm);
     return arg;
 }
 
@@ -820,8 +812,7 @@ NTerm* reduce_function(Token* id, NTerm* arg, NTerm* nterm) {
         }
 
         code_generation_raw("DEFVAR TF@%s", expected_param.code_name.data);
-        code_generation_raw("MOVE TF@%s LF@%s", expected_param.code_name.data, frame_to_string(provided_arg->frame),
-                            provided_arg->code_name);
+        code_generation_raw("MOVE TF@%s LF@%s", expected_param.code_name.data, provided_arg->code_name);
     }
 
     stack_pop(&g_stack);
@@ -840,11 +831,6 @@ NTerm* reduce_function(Token* id, NTerm* arg, NTerm* nterm) {
 }
 
 bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
-    if (op1->type == DataType_Undefined || op2->type == DataType_Undefined) {
-        unknown_type_err("Cannot infer data type from nil");
-        return false;
-    }
-
     if (op1->type == op2->type)
         return true;
 
@@ -870,6 +856,18 @@ bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
             code_generation_raw("FLOAT2INT %s@%s %s@%s", frame_to_string(op1->frame), op1->code_name,
                                 frame_to_string(op1->frame), op1->code_name);
             return true;
+        } else if (op1->is_nil) {
+            switch (op2->type) {
+                case DataType_MaybeBool:
+                case DataType_MaybeString:
+                case DataType_MaybeInt:
+                case DataType_MaybeDouble:
+                    op1->type = op2->type;
+                    return true;
+                default:
+                    unknown_type_err("Cannot infer data type from nil");
+                    return false;
+            }
         }
     }
 
@@ -886,6 +884,19 @@ bool try_convert_to_same_types(NTerm* op1, NTerm* op2) {
                                 frame_to_string(op2->frame), op2->code_name);
 
             return true;
+        } else if (op2->is_nil) {
+            switch (op1->type) {
+                case DataType_MaybeBool:
+                case DataType_MaybeString:
+                case DataType_MaybeInt:
+                case DataType_MaybeDouble:
+                    op2->type = op1->type;
+                    return true;
+                    break;
+                default:
+                    unknown_type_err("Cannot infer data type from nil");
+                    return false;
+            }
         }
     }
 
@@ -924,4 +935,20 @@ bool try_convert_to_datatype(DataType dt, NTerm* operand, bool allow_nil) {
     }
 
     return false;
+}
+
+FunctionSymbol* get_fn_symbol(String fn_name) {
+    Symtable* sym = symstack_search(fn_name.data);
+
+    if (sym == NULL) {
+        undef_fun_err("Undefined function '%s'.", fn_name.data);
+        return NULL;
+    }
+
+    FunctionSymbol* fs = symtable_get_function(sym, fn_name.data);
+    if (fs == NULL) {
+        undef_fun_err("'%s' is not a function", fn_name.data);
+        return NULL;
+    }
+    return fs;
 }
