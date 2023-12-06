@@ -1,4 +1,4 @@
-#let project(title: "", year: "", authors: (), logo: none, body) = {
+#let project(title: "", year: "", authors: (), logo: none, team: "", extensions: (), body) = {
   // Set the document's basic properties.
   set document(author: authors.map(a => a.name), title: title)
   set page(numbering: "1", number-align: center)
@@ -17,6 +17,8 @@
       #text(2em, weight: 700, title) \
       #text(1.5em, year)
 
+      #v(0.4fr)
+      #text(1.2em, team)
       #v(0.6fr)
 
       // Author information.
@@ -34,6 +36,9 @@
           ]),
         ),
       )
+
+      #v(0.4fr)
+      Extensions: #extensions.join(", ")
   ]
 
   v(2.4fr)
@@ -52,14 +57,19 @@
   year: "2023-2024",
   logo: "img/fit_logo.png",
   authors: (
-    (name: "Jakub Kloub", distribution: 25%, xlogin: "xkloub03 - vedouci", works: ("Syntaxtical Analysis",)),
-    (name: "Matúš Moravčík", distribution: 25%, xlogin: "xmorav48", works: ("Precedence Table",)),
-    (name: "Le Duy Nguyen", distribution: 25%, xlogin: "xnguye27", works: ("Lexical Analysis", "Symbol Table")),
-    (name: "Lukáš Habr", distribution: 25%, xlogin: "xhabrl01", works: ("Code Generation",)),
+    (name: "Jakub Kloub", distribution: 28%, xlogin: "xkloub03 - vedoucí", works: ("Recursive descent", "Symbol Table")),
+    (name: "Matúš Moravčík", distribution: 28%, xlogin: "xmorav48", works: ("Precedence Analysis",)),
+    (name: "Le Duy Nguyen", distribution: 29%, xlogin: "xnguye27", works: ("Lexical Analysis", "Symbol Table")),
+    (name: "Lukáš Habr", distribution: 15%, xlogin: "xhabrl01", works: ("Code Generation",)),
   ),
+  team: "Tým xkloub03, varianta vv-BVS",
+  extensions: ("BOOLTHEN", "FUNEXP"),
 )
 
+#include "info.typ"
+#pagebreak()
 #include "lexical_analysis.typ"
-#include "symtable.typ"
-#include "syntaxtic_analysis.typ"
+#pagebreak()
+#include "syntactic_analysis.typ"
+#pagebreak()
 #include "semantic_analysis.typ"
