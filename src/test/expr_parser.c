@@ -110,6 +110,7 @@ int main() {
         TEST_VALID_EXPRESSION("b - 1", DataType_Double);
         TEST_VALID_EXPRESSION("y! - (-a)", DataType_Int);
         TEST_VALID_EXPRESSION("((((((1) +1) -1) +1) -1) *0.1)", DataType_Double);
+        TEST_VALID_EXPRESSION("\"\" + \"d\"", DataType_String);
     }
 
     suite("Test valid logic expressions") {
@@ -126,6 +127,7 @@ int main() {
         TEST_VALID_EXPRESSION("(y!) != (-a) *2", DataType_Bool);
         TEST_VALID_EXPRESSION("y == nil", DataType_Bool);
         TEST_VALID_EXPRESSION("nil == y", DataType_Bool);
+        TEST_VALID_EXPRESSION("true && false", DataType_Bool);
     }
 
     suite("Test valid function expressions") {
@@ -147,6 +149,8 @@ int main() {
         TEST_VALID_EXPRESSION("fn(x:1, y:2.1) ?? 4.5 ?? 0.5", DataType_Double);
         TEST_VALID_EXPRESSION("y ?? 1+ 2 + a - (-6)", DataType_Int);
         TEST_VALID_EXPRESSION("(s ?? \" \") + s!", DataType_String);
+        TEST_VALID_EXPRESSION("y ?? -1 + 2", DataType_Int);
+        TEST_VALID_EXPRESSION("y ?? (-1) + (2) - 1.1", DataType_Int);
     }
 
     suite("Test valid nested expression") {
@@ -183,6 +187,7 @@ int main() {
         TEST_INVALID_EXPRESSION("y ?? !!false", Error_Syntax);
         TEST_INVALID_EXPRESSION("true < false", Error_Operation);
         TEST_INVALID_EXPRESSION("n() == nil", Error_UnknownType);
+        TEST_INVALID_EXPRESSION("nil || nil", Error_Operation);
     }
 
     suite("Test invalid nil coaliscing expressions") {
@@ -190,6 +195,7 @@ int main() {
         TEST_INVALID_EXPRESSION("y ?? a ?? true", Error_Operation);
         TEST_INVALID_EXPRESSION("y ?? b", Error_Operation);
         TEST_INVALID_EXPRESSION("(bl ?? 4.4) ?? 4", Error_Operation);
+        TEST_INVALID_EXPRESSION("y ?? !true", Error_Operation);
     }
 
     suite("Test invalid function expressions") {
@@ -200,6 +206,7 @@ int main() {
         TEST_INVALID_EXPRESSION("many(int: 1, 1.5, nil, x: nil)", Error_TypeMismatched);
         TEST_INVALID_EXPRESSION("str(1, 1.5)", Error_TypeMismatched);
         TEST_INVALID_EXPRESSION("str(\"1\")", Error_TypeMismatched);
+        TEST_INVALID_EXPRESSION("n() +1", Error_Operation);
     }
 
     suite("Test undefined functions and variables") {
