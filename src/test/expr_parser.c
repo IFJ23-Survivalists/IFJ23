@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/expr_parser.c
  * @author Matúš Moravčík, xmorav48, VUT FIT
  * @date 27/11/2023

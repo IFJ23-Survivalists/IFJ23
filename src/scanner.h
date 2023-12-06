@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file scanner.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 25/09/2023
@@ -11,8 +12,8 @@
 #ifndef SCANNER_H
 #define SCANNER_H
 
-#include <stdio.h>
 #include <stdbool.h>
+#include <stdio.h>
 #include "string.h"
 
 /// Represents data type
@@ -140,7 +141,7 @@ typedef struct Token {
  *
  * @param[in] src Pointer to the source file to be analyzed.
  */
-void scanner_init(FILE *src);
+void scanner_init(FILE* src);
 
 /**
  * @brief Initialize a Scanner instance with a string.
@@ -150,7 +151,7 @@ void scanner_init(FILE *src);
  *
  * @param[in] str string to be analyzed.
  */
-void scanner_init_str(const char *str);
+void scanner_init_str(const char* str);
 
 /**
  * @brief Clean up resources associated with a Scanner instance.

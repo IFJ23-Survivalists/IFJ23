@@ -1,17 +1,18 @@
 /*
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/scanner.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 10/10/2023
  * @brief Tester for scanner.h
  */
 
-#include <string.h>
 #include "../scanner.h"
+#include <string.h>
 #include "test.h"
 
 int main() {
     atexit(summary);
-    FILE *file = fopen("test/scanner.swift", "r+");
+    FILE* file = fopen("test/scanner.swift", "r+");
 
     if (!file) {
         eprint("Unable to read file\n");
@@ -26,7 +27,7 @@ int main() {
 
     Token token;
 
-	suite("Test Scanner Whitespace") {
+    suite("Test Scanner Whitespace") {
         token = scanner_advance();
         test(token.type == Token_Whitespace);
         test(token.attribute.has_eol);
@@ -215,7 +216,6 @@ int main() {
 
         token = scanner_advance_non_whitespace();
         test(token.type == Token_ArrowRight);
-
     }
 
     suite("Test Scanner identifier") {

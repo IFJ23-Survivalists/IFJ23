@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Declarations for precedence analysis
  * @file expr_parser.h
  * @author Jakub Kloub, xkloub03, VUT FIT

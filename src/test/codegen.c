@@ -1,10 +1,10 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/codegen.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 03/12/2023
  * @brief Tester for codegen.h
  */
-
 
 #include "../codegen.h"
 #include <string.h>
@@ -13,7 +13,7 @@
 int main() {
     atexit(summary);
 
-    extern CodeBuf *g_code_buf;
+    extern CodeBuf* g_code_buf;
 
     CodeBuf buf1;
     CodeBuf buf2;
@@ -73,7 +73,7 @@ int main() {
 
         String inst = code_buf_print_to_string(g_code_buf);
 
-        char *expected = ".IFJcode23\nCREATEFRAME\nPUSHFRAME\nCREATEFRAME\nPUSHFRAME\nPOPFRAME\n";
+        char* expected = ".IFJcode23\nCREATEFRAME\nPUSHFRAME\nCREATEFRAME\nPUSHFRAME\nPOPFRAME\n";
         test(strcmp(inst.data, expected) == 0);
         string_free(&inst);
     }
@@ -341,13 +341,12 @@ int main() {
         label.label = "retezec s lomitkem \\ a\nnovym#radkem";
         code_generation(Instruction_Label, &label, NULL, NULL);
 
-        char *expected = "LABEL retezec\\032s\\032lomitkem\\032\\092\\032a\\010novym\\035radkem";
+        char* expected = "LABEL retezec\\032s\\032lomitkem\\032\\092\\032a\\010novym\\035radkem";
         test(strcmp(buf1.buf[0].code.data, expected) == 0);
         code_buf_free(&buf1);
     }
 
     suite("Symbol") {
-
         code_buf_free(&buf1);
     }
 
@@ -372,7 +371,7 @@ int main() {
         str.symbol.constant.is_nil = false;
         code_generation(Instruction_DebugPrint, &str, NULL, NULL);
 
-        char *expected = "DPRINT string@retezec\\032s\\032lomitkem\\032\\092\\032a\\010novym\\035radkem";
+        char* expected = "DPRINT string@retezec\\032s\\032lomitkem\\032\\092\\032a\\010novym\\035radkem";
         test(strcmp(buf1.buf[0].code.data, expected) == 0);
         string_free(&str.symbol.constant.value.string);
         code_buf_free(&buf1);
@@ -386,7 +385,7 @@ int main() {
         nil.symbol.constant.is_nil = true;
         code_generation(Instruction_DebugPrint, &nil, NULL, NULL);
 
-        char *expected = "DPRINT nil@nil";
+        char* expected = "DPRINT nil@nil";
         test(strcmp(buf1.buf[0].code.data, expected) == 0);
         code_buf_free(&buf1);
     }

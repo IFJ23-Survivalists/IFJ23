@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Definitions for `symstack.h`.
  * @file symstack.c
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -10,11 +11,12 @@ SymStack* g_symstack = NULL;
 
 // Check if `ss` argument is NULL or not. This can be made to do nothing in release build.
 // TODO: Check only in release build.
-#define CHECK_SS(ret) do {   \
-        if (g_symstack == NULL) {          \
+#define CHECK_SS(ret)                                                                                    \
+    do {                                                                                                 \
+        if (g_symstack == NULL) {                                                                        \
             SET_INT_ERROR(IntError_Runtime, "SymStack is not initialized. Call symstack_init() first."); \
-            return ret;   \
-        }                   \
+            return ret;                                                                                  \
+        }                                                                                                \
     } while (false)
 
 bool symstack_init() {

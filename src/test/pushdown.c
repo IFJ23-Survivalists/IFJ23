@@ -1,12 +1,12 @@
 /**
- * @file test/scanner.c
- * @author Le Duy Nguyen, xnguye27, VUT FIT
- * @date 10/10/2023
- * @brief Tester for scanner.h
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
+ * @file test/pushdown.c
+ * @author Matúš Moravčík, xmorav48, VUT FIT
+ * @date 01/12/2023
+ * @brief Tester for pushdown.c
  */
 
 #include "../pushdown.h"
-#include "../scanner.h"
 #include "test.h"
 
 int main() {

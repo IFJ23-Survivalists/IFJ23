@@ -1,15 +1,17 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Implementation for the parser.h
  * @file parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
+ * @date 23/11/2023
  */
 #include "parser.h"
-#include "rec_parser.h"
-#include "scanner.h"
-#include "codegen.h"
-#include "builtin.h"
 #include <math.h>
 #include <string.h>
+#include "builtin.h"
+#include "codegen.h"
+#include "rec_parser.h"
+#include "scanner.h"
 
 Parser g_parser;
 
@@ -112,10 +114,9 @@ void parser_scope_global() {
 
 Token* parser_next_token() {
     g_parser.token_ws = scanner_advance();
-    g_parser.token = g_parser.token_ws.type == Token_Whitespace
-                   ? scanner_advance()
-                   : g_parser.token_ws;
-    MASSERT(g_parser.token.type != Token_DataType || g_parser.token.attribute.data_type != DataType_Undefined, "Scanner cannot return DataType_Undefined");
+    g_parser.token = g_parser.token_ws.type == Token_Whitespace ? scanner_advance() : g_parser.token_ws;
+    MASSERT(g_parser.token.type != Token_DataType || g_parser.token.attribute.data_type != DataType_Undefined,
+            "Scanner cannot return DataType_Undefined");
     return &g_parser.token;
 }
 
@@ -129,9 +130,9 @@ bool parser_tok_is_fun_id() {
 // Insert `name%index` into string `str`
 void create_var_name(String* str, const char* name, int index) {
     string_clear(str);
-    int index_chars = index != 0 ? (int)((ceil(log10(index))+1)) : 1;
+    int index_chars = index != 0 ? (int)((ceil(log10(index)) + 1)) : 1;
     size_t name_len = strlen(name);
-    string_reserve(str, name_len + index_chars + 2);    // + 2 <--- % a \0
+    string_reserve(str, name_len + index_chars + 2);  // + 2 <--- % a \0
     string_concat_c_str(str, name);
     sprintf(str->data + name_len, "%%%i", index);
     str->length = name_len + index_chars + 1;
@@ -167,4 +168,3 @@ void parser_function_code_info(FunctionSymbol* func, const char* name) {
 
     parser_parameter_code_infos(func);
 }
-

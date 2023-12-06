@@ -1,9 +1,10 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Implementation of dynamically growing array.
  * @file pushdown.h
  * @author Jakub Kloub, xkloub03, FIT VUT
  * @author Matúš Moravčík, xmorav48, FIT VUT
- * @date 10/11/2023
+ * @date 23/11/2023
  */
 #ifndef _PUSHDOWN_H_
 #define _PUSHDOWN_H_

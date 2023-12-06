@@ -1,19 +1,26 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file builtin.c
  * @author Lukáš Habr
+ * @date 5/12/2023
  */
-#include "scanner.h"
-#include "parser.h"
-#include "symtable.h"
 #include "builtin.h"
+#include "parser.h"
+#include "scanner.h"
+#include "symtable.h"
 
 typedef struct param_info {
     DataType dt;
-    const char *iname;
-    const char *oname;
+    const char* iname;
+    const char* oname;
 } ParamInfo;
 
-void builtin_add_function(DataType return_data_type, const char* function_name, char** code, size_t code_size, ParamInfo* params, size_t  params_size) {
+void builtin_add_function(DataType return_data_type,
+                          const char* function_name,
+                          char** code,
+                          size_t code_size,
+                          ParamInfo* params,
+                          size_t params_size) {
     FunctionSymbol func;
     function_symbol_init(&func);
     func.return_value_type = return_data_type;
@@ -30,7 +37,7 @@ void builtin_add_function(DataType return_data_type, const char* function_name, 
     code_generation_raw("DEFVAR LF@ret");
 
     // Code generation
-    code_buf_set(&func.code);       // Generate code into this function.
+    code_buf_set(&func.code);  // Generate code into this function.
     for (size_t i = 0; i < code_size; i++) {
         const char* stmt = code[i];
         code_generation_raw("%s", stmt);
@@ -43,28 +50,20 @@ void builtin_add_function(DataType return_data_type, const char* function_name, 
 }
 
 void builtin_add_readString() {
-    char *code[] = {
-        "READ LF@ret string"
-    };
+    char* code[] = {"READ LF@ret string"};
     builtin_add_function(DataType_MaybeString, "readString", code, 1, NULL, 0);
 }
 
 void builtin_add_readInt() {
-    char *code[] = {
-        "READ LF@ret int"
-    };
+    char* code[] = {"READ LF@ret int"};
     builtin_add_function(DataType_MaybeInt, "readInt", code, 1, NULL, 0);
 }
 void builtin_add_readDouble() {
-    char *code[] = {
-        "READ LF@ret float"
-    };
+    char* code[] = {"READ LF@ret float"};
     builtin_add_function(DataType_MaybeDouble, "readDouble", code, 1, NULL, 0);
 }
 void builtin_add_readBool() {
-    char *code[] = {
-        "READ LF@ret bool"
-    };
+    char* code[] = {"READ LF@ret bool"};
     builtin_add_function(DataType_MaybeBool, "readBool", code, 1, NULL, 0);
 }
 
@@ -75,29 +74,23 @@ void builtin_add_write() {
 }
 
 void builtin_add_Int2Double() {
-    char *code[] = {
-        "INT2FLOAT LF@ret LF@term%0"
-    };
+    char* code[] = {"INT2FLOAT LF@ret LF@term%0"};
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_Int, .oname = NULL, .iname = "term" },
+        (ParamInfo){.dt = DataType_Int, .oname = NULL, .iname = "term"},
     };
     builtin_add_function(DataType_Double, "Int2Double", code, 1, params, 1);
 }
 void builtin_add_Double2Int() {
-    char *code[] = {
-        "FLOAT2INT LF@ret LF@term%0"
-    };
+    char* code[] = {"FLOAT2INT LF@ret LF@term%0"};
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_Double, .oname = NULL, .iname = "term" },
+        (ParamInfo){.dt = DataType_Double, .oname = NULL, .iname = "term"},
     };
     builtin_add_function(DataType_Int, "Double2Int", code, 1, params, 1);
 }
 void builtin_add_length() {
-    char *code[] = {
-        "STRLEN LF@ret LF@s%0"
-    };
+    char* code[] = {"STRLEN LF@ret LF@s%0"};
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_String, .oname = NULL, .iname = "s" },
+        (ParamInfo){.dt = DataType_String, .oname = NULL, .iname = "s"},
     };
     builtin_add_function(DataType_Int, "length", code, 1, params, 1);
 }
@@ -156,9 +149,9 @@ void builtin_add_substring() {
         "LABEL substring_end",
     };
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_String, .oname = "of", .iname = "s" },
-        (ParamInfo){ .dt = DataType_Int, .oname = "startingAt", .iname = "i" },
-        (ParamInfo){ .dt = DataType_Int, .oname = "endingBefore", .iname = "j" },
+        (ParamInfo){.dt = DataType_String, .oname = "of", .iname = "s"},
+        (ParamInfo){.dt = DataType_Int, .oname = "startingAt", .iname = "i"},
+        (ParamInfo){.dt = DataType_Int, .oname = "endingBefore", .iname = "j"},
     };
     builtin_add_function(DataType_MaybeString, "substring", code, sizeof(code) / sizeof(*code), params, 3);
 }
@@ -177,18 +170,15 @@ void builtin_add_ord() {
         "LABEL ord_end",
     };
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_String, .oname = NULL, .iname = "c" },
+        (ParamInfo){.dt = DataType_String, .oname = NULL, .iname = "c"},
     };
     builtin_add_function(DataType_Int, "ord", code, sizeof(code) / sizeof(*code), params, 1);
 }
 
 void builtin_add_chr() {
-    char* code[] = {
-        "INT2CHAR LF@ret LF@i%0"
-    };
+    char* code[] = {"INT2CHAR LF@ret LF@i%0"};
     ParamInfo params[] = {
-        (ParamInfo){ .dt = DataType_Int, .oname = NULL, .iname = "i" },
+        (ParamInfo){.dt = DataType_Int, .oname = NULL, .iname = "i"},
     };
     builtin_add_function(DataType_String, "chr", code, 1, params, 1);
 }
-

@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Symbol table stack declarations
  * @file symstack.h
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -21,8 +22,8 @@ typedef struct SymStackNode {
  * Uses single linked list for storing the symtables.
  */
 typedef struct {
-    size_t size;            ///< Number of node in the stack.
-    SymStackNode* top;    ///< Pointer to the top node.
+    size_t size;        ///< Number of node in the stack.
+    SymStackNode* top;  ///< Pointer to the top node.
 } SymStack;
 
 /**

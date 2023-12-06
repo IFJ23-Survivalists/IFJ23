@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file expr_parser.c
  * @brief Implementation for the expr_parser.h
  * @author Jakub Kloub, xkloub03, VUT FIT

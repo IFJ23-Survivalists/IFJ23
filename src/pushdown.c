@@ -1,8 +1,9 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Definition of ADT dynamic pushdownay.
  * @author Jakub Kloub, xkloub03, FIT VUT
  * @author Matúš Moravčík, xmorav48, FIT VUT
- * @date 10/11/2023
+ * @date 23/11/2023
  */
 #include "pushdown.h"
 #include <stdlib.h>

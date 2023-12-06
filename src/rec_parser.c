@@ -1,11 +1,13 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file rec_parser.c
  * @brief Recursive parser logic.
  * @author Jakub Kloub, xkloub03, VUT FIT
+ * @date 23/11/2023
  */
 #include "rec_parser.h"
-#include "expr_parser.h"
 #include "error.h"
+#include "expr_parser.h"
 #include "scanner.h"
 #include "symtable.h"
 #include "to_string.h"
@@ -90,7 +92,9 @@ bool rule_statementSeparator() {
     return false;
 }
 
-bool is_maybe_datatype(DataType dt) { return dt >= DataType_MaybeInt && dt <= DataType_MaybeBool; }
+bool is_maybe_datatype(DataType dt) {
+    return dt >= DataType_MaybeInt && dt <= DataType_MaybeBool;
+}
 DataType maybe_to_normal(DataType maybe_dt) {
     MASSERT(is_maybe_datatype(maybe_dt), "");
     return maybe_dt - DataType_MaybeInt;
@@ -141,7 +145,8 @@ int assign_try_implicit_convesion(VariableSymbol* var, Data* rhs) {
  */
 bool assign_expr(VariableSymbol* var, const char* id_name) {
     if (var->allow_modification == false) {
-        undef_fun_err("Cannot assign to variable `" COL_Y("%s") "` defined using the `" COL_C("let") "` keyword.", id_name);
+        undef_fun_err("Cannot assign to variable `" COL_Y("%s") "` defined using the `" COL_C("let") "` keyword.",
+                      id_name);
         return false;
     }
 
@@ -168,8 +173,10 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
     // Otherwise check the datatype compatibility.
     else if (!assign_types_compatible(var->type, &expr_data)) {
         if ((impl_conv = assign_try_implicit_convesion(var, &expr_data)) == 0) {
-            expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD("%s") "` of type `" COL_Y("%s") "`.",
-                         IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name, datatype_to_string(var->type));
+            expr_type_err("Type mismatch. Cannot assign value of type `" COL_Y("%s") "` to variable `" BOLD(
+                              "%s") "` of type `" COL_Y("%s") "`.",
+                          IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), id_name,
+                          datatype_to_string(var->type));
             return false;
         }
     }
@@ -199,19 +206,19 @@ bool assign_expr(VariableSymbol* var, const char* id_name) {
 bool define_variable_check(const char* name) {
     // Check if there is already a function with the same name.
     if (symtable_get_function(symstack_bottom(), name) != NULL) {
-        undef_fun_err("Cannot define variable `" COL_Y("%s") "`. There is already a function with the same name.", name);
+        undef_fun_err("Cannot define variable `" COL_Y("%s") "`. There is already a function with the same name.",
+                      name);
         return false;
     }
 
     NodeType* symtype = symtable_get_symbol_type(symstack_top(), name);
-    if (symtype) {      // Symbol found
-        undef_fun_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.",
-                name, *symtype == NodeType_Variable ? "variable" : "function");
+    if (symtype) {  // Symbol found
+        undef_fun_err("Cannot define `" COL_Y("%s") "`. There is already a %s with the same name.", name,
+                      *symtype == NodeType_Variable ? "variable" : "function");
         return false;
     }
     return true;
 }
-
 
 bool handle_let_statement() {
     const char* id_name = TOK_ID_STR;
@@ -249,10 +256,12 @@ bool handle_let_statement() {
             SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
             BREAK_FINAL;
         }
-    } TRY_FINAL {
+    }
+    TRY_FINAL {
         variable_symbol_free(&var);
         return false;
-    } TRY_END;
+    }
+    TRY_END;
 
     return true;
 }
@@ -289,14 +298,15 @@ bool handle_var_statement() {
             SET_INT_ERROR(IntError_Runtime, "Could not insert variable into symbol table.");
             BREAK_FINAL;
         }
-    } TRY_FINAL {
+    }
+    TRY_FINAL {
         variable_symbol_free(&var);
         return false;
-    } TRY_END;
+    }
+    TRY_END;
 
     return true;
 }
-
 
 /* Function body generally looks like this */
 // PUSHFRAME    ... Parameters into local variables
@@ -332,7 +342,7 @@ bool handle_func_statement() {
 
     code_buf_set(&func->code_defs);
     // Generate label indentifying this function.
-    Operand op = { .label = func->code_name.data };
+    Operand op = {.label = func->code_name.data};
     code_generation(Instruction_Label, &op, NULL, NULL);
     // We get parameters on the temporary frame, so we need to convert it to local frame,
     // to get them as local variables.
@@ -340,12 +350,12 @@ bool handle_func_statement() {
     code_buf_set(&func->code);
 
     g_current_func = func_id;
-    CALL_RULE(rule_statementList);      // Process all statements inside this function
+    CALL_RULE(rule_statementList);  // Process all statements inside this function
 
     // Check for missing return statement.
     if (g_current_func != NULL && func->return_value_type != DataType_Undefined) {
         return_err("Missing return statement in function `" COL_Y("%s") "`.", func_id);
-        g_current_func = NULL;      // Maybe for future error recovery.
+        g_current_func = NULL;  // Maybe for future error recovery.
         return false;
     }
 
@@ -362,7 +372,7 @@ bool handle_func_statement() {
 bool handle_while_statement() {
     CHECK_TOKEN(Token_ParenLeft, "Unexpected token `%s` after the `While` keyword. Expected `(`.", TOK_STR);
 
-    g_while_index++;    // Increment while counter to get unique while id.
+    g_while_index++;  // Increment while counter to get unique while id.
     code_generation_raw("LABEL while%i_begin", g_while_index);
 
     Data expr_data;
@@ -470,21 +480,26 @@ bool rule_returnExpr() {
         default: {
             // Return has `<expr>`, so check if function return something.
             if (func->return_value_type == DataType_Undefined) {
-                // FIXME: We COULD check if there is token of type that is not part of an expression. But those are dead code.
-                return_err("Invalid expression after the `" COL_Y("return") "` statement. Function `" BOLD("%s") "` doesn't return anything. Expected `}`.",
-                            g_current_func);
+                // FIXME: We COULD check if there is token of type that is not part of an expression. But those are dead
+                // code.
+                return_err("Invalid expression after the `" COL_Y("return") "` statement. Function `" BOLD(
+                               "%s") "` doesn't return anything. Expected `}`.",
+                           g_current_func);
                 return false;
             }
 
             // Evaluate the `<expr>` statement.
             Data expr_data;
             CALL_RULEp(expr_parser_begin, &expr_data);
-            MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil, "We don't support expr result with DataType_Undefined and is_nil == false.");
+            MASSERT(expr_data.type != DataType_Undefined || expr_data.is_nil,
+                    "We don't support expr result with DataType_Undefined and is_nil == false.");
 
             // Check if expr's datatype matched the funcion's datatype.
             if (!assign_types_compatible(func->return_value_type, &expr_data)) {
-                fun_type_err("Cannot return value of type `" COL_Y("%s") "` from function `" BOLD("%s") "() -> " COL_Y("%s") "`.",
-                        IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), g_current_func, datatype_to_string(func->return_value_type));
+                fun_type_err("Cannot return value of type `" COL_Y("%s") "` from function `" BOLD("%s") "() -> " COL_Y(
+                                 "%s") "`.",
+                             IS_NIL(expr_data) ? "nil" : datatype_to_string(expr_data.type), g_current_func,
+                             datatype_to_string(func->return_value_type));
                 return false;
             }
 
@@ -492,7 +507,8 @@ bool rule_returnExpr() {
             code_generation_raw("DEFVAR LF@ret");
             code_generation_raw("MOVE LF@ret TF@res");
 
-            // Set current func to NULL, so that we can check in `handle_func_statement()`, if the function has a return statement.
+            // Set current func to NULL, so that we can check in `handle_func_statement()`, if the function has a return
+            // statement.
             g_current_func = NULL;
             break;
         }
@@ -525,7 +541,8 @@ bool rule_ifStatement(int if_num, int after_num) {
     }
     CHECK_TOKEN(Token_BracketLeft, "Unexpected token `%s`. Expected `{`.", TOK_STR);
     CALL_RULE(rule_statementList);
-    CHECK_TOKEN(Token_BracketRight, "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
+    CHECK_TOKEN(Token_BracketRight,
+                "Unexpected token `%s` after statement list at the end of `if` statement. Expected `}`.", TOK_STR);
     code_generation_raw("JUMP if%i_end", if_num);
     symstack_pop();
     CALL_RULEp(rule_else, if_num, after_num);
@@ -549,7 +566,8 @@ bool rule_ifCondition(bool is_let, int if_num, int after_num) {
 
         // Checking the `nil` value of var. If it is `nil`,
         // then we need to jump after this if statement.
-        code_generation_raw("JUMPIFEQ if%i_after%i %s@%s nil@nil", if_num, after_num, frame_to_string(var->code_frame), var->code_name.data);
+        code_generation_raw("JUMPIFEQ if%i_after%i %s@%s nil@nil", if_num, after_num, frame_to_string(var->code_frame),
+                            var->code_name.data);
 
         // Either way, we need to add non-maybe type to symtable, because we need to reference
         // the correct variables in the if statement.
@@ -563,7 +581,7 @@ bool rule_ifCondition(bool is_let, int if_num, int after_num) {
             string_concat_c_str(&new_var.code_name, var->code_name.data);
             new_var.code_frame = var->code_frame;
             symtable_insert_variable(symstack_top(), id_name, new_var);
-        } // NOTE: If variable is already of normal type, then we don't need to duplicate it.
+        }  // NOTE: If variable is already of normal type, then we don't need to duplicate it.
     } else {
         Data expr_data;
         CALL_RULEp(expr_parser_begin, &expr_data);
@@ -576,7 +594,9 @@ bool rule_ifCondition(bool is_let, int if_num, int after_num) {
         // Add code for checking the expression result and jumping if needed.
         code_generation_raw("JUMPIFNEQ if%i_after%i TF@res bool@true", if_num, after_num);
 
-        CHECK_TOKEN(Token_ParenRight, "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.", TOK_STR);
+        CHECK_TOKEN(Token_ParenRight,
+                    "Unexpected token `" COL_Y("%s") "` at the end of if statement. Expected `" COL_C(")") "`.",
+                    TOK_STR);
     }
     return true;
 }
@@ -584,13 +604,17 @@ bool rule_ifCondition(bool is_let, int if_num, int after_num) {
 bool rule_else(int if_num, int after_num) {
     code_generation_raw("LABEL if%i_after%i", if_num, after_num++);
     switch (g_parser.token.type) {
-        case Token_EOF:  case Token_BracketRight:
-        case Token_If:   case Token_Let:
-        case Token_Var:  case Token_While:
-        case Token_Func: case Token_Return:
+        case Token_EOF:
+        case Token_BracketRight:
+        case Token_If:
+        case Token_Let:
+        case Token_Var:
+        case Token_While:
+        case Token_Func:
+        case Token_Return:
         case Token_Identifier:
             code_generation_raw("LABEL if%i_end", if_num);
-            return rule_statementList();        // For the statemens right after '}' on the same line.
+            return rule_statementList();  // For the statemens right after '}' on the same line.
         case Token_Else:
             parser_next_token();
             return rule_elseIf(if_num, after_num);
@@ -653,7 +677,7 @@ bool rule_assignType(DataType* attr_dt) {
 bool rule_assignExpr(VariableSymbol* var, const char* id_name) {
     switch (g_parser.token.type) {
         case Token_EOF:
-        case Token_BracketRight:    // When there is no assign in the `var` statement.
+        case Token_BracketRight:  // When there is no assign in the `var` statement.
             break;
         case Token_Equal:
             parser_next_token();
@@ -681,4 +705,3 @@ bool rule_assignExpr(VariableSymbol* var, const char* id_name) {
 
     return true;
 }
-

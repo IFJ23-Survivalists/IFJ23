@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file function_stack.h
  * @author Matúš Moravčík, xmorav48, VUT FIT
  * @date 30/11/2023

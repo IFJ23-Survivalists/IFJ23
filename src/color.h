@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Color printing utilities.
  * @file color.h
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -46,4 +47,4 @@
 /// Convert to bold text.
 #define BOLD(text) PRINT_BOLD text PRINT_RESET
 
-#endif // _COLOR_H_
+#endif  // _COLOR_H_

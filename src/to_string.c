@@ -1,7 +1,9 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Implementation for to_string.h
  * @file to_string.c
  * @author Jakub Kloub, xkloub03, VUT FIT
+ * @date 28/11/2023
  */
 #include "to_string.h"
 #include <math.h>
@@ -56,4 +58,3 @@ String unsigned_to_string(unsigned num) {
     sprintf(str.data, "%i", num);
     return str;
 }
-

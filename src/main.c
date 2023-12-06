@@ -1,3 +1,4 @@
+/// @note Project: Implementace překladače imperativního jazyka IFJ23
 /// @file main.c
 /// @author Le Duy Nguyen, xnguye27, VUT FIT
 /// @author Jakub Kloub, xkloub03, VUT FIT
@@ -8,14 +9,13 @@
 #include "parser.h"
 #include "scanner.h"
 
-
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
     if (argc != 2) {
         eprint("The argument count must be exactly 1\n");
         return 99;
     }
 
-    FILE *file = fopen(argv[1], "r+");
+    FILE* file = fopen(argv[1], "r+");
 
     if (!file) {
         eprintf("Unable to read file %s\n", argv[1]);

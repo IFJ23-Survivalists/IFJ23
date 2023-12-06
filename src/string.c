@@ -1,4 +1,6 @@
-/** @file string.h
+/**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
+ * @file string.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 03/10/2023
  * @brief Implementation of the module string.h.
@@ -6,44 +8,43 @@
 
 #include "string.h"
 #include <stdarg.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 /// Fix for Github action
-size_t
-strlcpy(char * __restrict dst, const char * __restrict src, size_t dsize)
-{
-	const char *osrc = src;
-	size_t nleft = dsize;
+size_t strlcpy(char* __restrict dst, const char* __restrict src, size_t dsize) {
+    const char* osrc = src;
+    size_t nleft = dsize;
 
-	/* Copy as many bytes as will fit. */
-	if (nleft != 0) {
-		while (--nleft != 0) {
-			if ((*dst++ = *src++) == '\0')
-				break;
-		}
-	}
+    /* Copy as many bytes as will fit. */
+    if (nleft != 0) {
+        while (--nleft != 0) {
+            if ((*dst++ = *src++) == '\0')
+                break;
+        }
+    }
 
-	/* Not enough room in dst, add NUL and traverse rest of src. */
-	if (nleft == 0) {
-		if (dsize != 0)
-			*dst = '\0';		/* NUL-terminate dst */
-		while (*src++)
-			;
-	}
+    /* Not enough room in dst, add NUL and traverse rest of src. */
+    if (nleft == 0) {
+        if (dsize != 0)
+            *dst = '\0'; /* NUL-terminate dst */
+        while (*src++)
+            ;
+    }
 
-	return(src - osrc - 1);	/* count does not include NUL */
+    return (src - osrc - 1); /* count does not include NUL */
 }
 
-void string_init(String *str) {
-    if (!str) return;
+void string_init(String* str) {
+    if (!str)
+        return;
 
     str->data = NULL;
     str->length = 0;
     str->capacity = 0;
 }
 
-void string_free(String *str) {
+void string_free(String* str) {
     if (str && str->data) {
         free(str->data);
         str->data = NULL;
@@ -52,19 +53,19 @@ void string_free(String *str) {
     }
 }
 
-void string_clear(String *str) {
+void string_clear(String* str) {
     if (string_len(str)) {
         str->length = 0;
         str->data[0] = '\0';
     }
 }
 
-void string_reserve(String *str, size_t capacity) {
+void string_reserve(String* str, size_t capacity) {
     if (capacity <= str->capacity) {
         return;
     }
 
-    char *new = (char *)realloc(str->data, sizeof(char) * capacity);
+    char* new = (char*)realloc(str->data, sizeof(char) * capacity);
 
     if (!new) {
         set_error(Error_Internal);
@@ -76,11 +77,11 @@ void string_reserve(String *str, size_t capacity) {
     str->capacity = capacity;
 }
 
-size_t string_len(String *str) {
+size_t string_len(String* str) {
     return str->length;
 }
 
-void string_push(String *str, char ch) {
+void string_push(String* str, char ch) {
     string_reserve(str, str->length + 2);
 
     if (got_error()) {
@@ -91,7 +92,7 @@ void string_push(String *str, char ch) {
     str->data[str->length] = '\0';
 }
 
-void string_concat_c_str(String *str, const char *str2) {
+void string_concat_c_str(String* str, const char* str2) {
     size_t length = strlen(str2);
 
     if (!length) {
@@ -111,7 +112,7 @@ void string_concat_c_str(String *str, const char *str2) {
     str->length = new_length;
 }
 
-String string_from_c_str(const char *str) {
+String string_from_c_str(const char* str) {
     String res;
 
     string_init(&res);
@@ -132,7 +133,7 @@ String string_from_c_str(const char *str) {
     return res;
 }
 
-String string_from_format(const char *fmt, ...) {
+String string_from_format(const char* fmt, ...) {
     String res;
     string_init(&res);
 
@@ -163,12 +164,8 @@ String string_from_format(const char *fmt, ...) {
     return res;
 }
 
-String string_take(String *str) {
-    String new = {
-        .data = str->data,
-        .length = str->length,
-        .capacity = str->capacity
-    };
+String string_take(String* str) {
+    String new = {.data = str->data, .length = str->length, .capacity = str->capacity};
 
     str->data = NULL;
     str->length = 0;
@@ -177,7 +174,7 @@ String string_take(String *str) {
     return new;
 }
 
-String string_clone(String *str) {
+String string_clone(String* str) {
     String new;
 
     string_init(&new);
@@ -192,11 +189,10 @@ String string_clone(String *str) {
     new.length = str->length;
     new.capacity = str->length + 1;
 
-
     return new;
 }
 
-void string_remove_ident(String *str, int ident_level) {
+void string_remove_ident(String* str, int ident_level) {
     String new;
     string_init(&new);
 
@@ -217,15 +213,14 @@ void string_remove_ident(String *str, int ident_level) {
             continue;
         }
 
-        int ident = ch == '\t' ? 4
-                  : ch == ' '  ? 1
-                  : 0;
+        int ident = ch == '\t' ? 4 : ch == ' ' ? 1 : 0;
 
         if (!ident && (current_ident < ident_level)) {
-             eprintf("string_remove_ident: cannot remove ident of %d levels for the given string\n%s\n", ident_level, str->data);
-             string_free(&new);
-             set_error(Error_Internal);
-             return;
+            eprintf("string_remove_ident: cannot remove ident of %d levels for the given string\n%s\n", ident_level,
+                    str->data);
+            string_free(&new);
+            set_error(Error_Internal);
+            return;
         }
 
         if (current_ident < ident_level) {

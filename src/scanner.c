@@ -1,34 +1,35 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file scanner.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 25/09/2023
  * @brief Implementation for the scanner.h
  */
 
-#include <stdio.h>
 #include <limits.h>
-#include <string.h>
+#include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
-#include "scanner.h"
 #include "error.h"
+#include "scanner.h"
 
-char *KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
+char* KEYWORD[] = {"if", "else", "let", "var", "while", "func", "return", NULL};
 TokenType KEYWORD_TYPE[] = {Token_If, Token_Else, Token_Let, Token_Var, Token_While, Token_Func, Token_Return};
 
-char *DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", NULL};
+char* DATA_TYPE_IDENTIFIER[] = {"Int", "Double", "String", "Bool", NULL};
 DataType DATA_TYPE[] = {DataType_Int, DataType_Double, DataType_String, DataType_Bool};
 DataType OPTIONAL_DATA_TYPE[] = {DataType_MaybeInt, DataType_MaybeDouble, DataType_MaybeString, DataType_MaybeBool};
 
 typedef struct {
-    Token *tokens;
+    Token* tokens;
     unsigned capacity;
     unsigned len;
 } TokenList;
 
 const int c_chunk = 10;
 
-static void tokenlist_init(TokenList *list) {
+static void tokenlist_init(TokenList* list) {
     list->tokens = malloc(sizeof(Token) * c_chunk);
     list->capacity = c_chunk;
     list->len = 0;
@@ -42,8 +43,8 @@ static void tokenlist_init(TokenList *list) {
 static void tokenlist_free(TokenList* list) {
     for (unsigned i = 0; i < list->len; i++) {
         Token token = list->tokens[i];
-        bool is_string = token.type == Token_Identifier
-            || (token.type == Token_Data && token.attribute.data.type == DataType_String);
+        bool is_string = token.type == Token_Identifier ||
+                         (token.type == Token_Data && token.attribute.data.type == DataType_String);
 
         if (is_string) {
             string_free(&token.attribute.data.value.string);
@@ -138,7 +139,7 @@ typedef struct {
     int current_position;
     union {
         String string;
-        FILE *file;
+        FILE* file;
     };
 } Input;
 
@@ -163,7 +164,7 @@ typedef struct {
 
 Scanner g_scanner;
 
-void scanner_init(FILE *src) {
+void scanner_init(FILE* src) {
     if (!src) {
         eprint("File not found\n");
         set_error(Error_Lexical);
@@ -187,13 +188,12 @@ void scanner_init(FILE *src) {
     g_scanner.initialized = true;
 }
 
-void scanner_init_str(const char *str) {
+void scanner_init_str(const char* str) {
     g_scanner.list_idx = 0;
     g_scanner.line = 1;
     g_scanner.position_in_line = 0;
     g_scanner.current_state = State_Start;
-    g_scanner.input.is_string = true,
-    g_scanner.input.string = string_from_c_str(str);
+    g_scanner.input.is_string = true, g_scanner.input.string = string_from_c_str(str);
     g_scanner.input.current_position = 0;
     string_init(&g_scanner.string);
     tokenlist_init(&g_scanner.token_list);
@@ -210,7 +210,8 @@ void scanner_free() {
         if (g_scanner.input.is_string) {
             string_free(&g_scanner.input.string);
         } else {
-            if (g_scanner.input.file) fclose(g_scanner.input.file);
+            if (g_scanner.input.file)
+                fclose(g_scanner.input.file);
         }
 
         string_free(&g_scanner.string);
@@ -227,17 +228,17 @@ void print_position() {
 
 double make_number_double(int full, int decimalpart) {
     double res = (double)full;
-    double point = decimalpart == 0        ? 0.0
-                 : decimalpart < 10        ? (double)decimalpart / 10.0
-                 : decimalpart < 100       ? (double)decimalpart / 100.0
-                 : decimalpart < 1000      ? (double)decimalpart / 1000.0
-                 : decimalpart < 10000     ? (double)decimalpart / 10000.0
-                 : decimalpart < 100000    ? (double)decimalpart / 100000.0
-                 : decimalpart < 1000000   ? (double)decimalpart / 1000000.0
-                 : decimalpart < 10000000  ? (double)decimalpart / 10000000.0
-                 : decimalpart < 100000000 ? (double)decimalpart / 100000000.0
-                                           : (double)decimalpart / 1000000000.0;
-                                                               /// 2147483647 je 2^31-1
+    double point = decimalpart == 0          ? 0.0
+                   : decimalpart < 10        ? (double)decimalpart / 10.0
+                   : decimalpart < 100       ? (double)decimalpart / 100.0
+                   : decimalpart < 1000      ? (double)decimalpart / 1000.0
+                   : decimalpart < 10000     ? (double)decimalpart / 10000.0
+                   : decimalpart < 100000    ? (double)decimalpart / 100000.0
+                   : decimalpart < 1000000   ? (double)decimalpart / 1000000.0
+                   : decimalpart < 10000000  ? (double)decimalpart / 10000000.0
+                   : decimalpart < 100000000 ? (double)decimalpart / 100000000.0
+                                             : (double)decimalpart / 1000000000.0;
+    /// 2147483647 je 2^31-1
 
     if (point > 1.0) {
         print_position();
@@ -247,7 +248,7 @@ double make_number_double(int full, int decimalpart) {
     return res + point;
 }
 
-void get_current_token(Token *token) {
+void get_current_token(Token* token) {
     switch (g_scanner.current_state) {
         case State_EOF:
             token->type = Token_EOF;
@@ -470,7 +471,8 @@ int scanner_next_char() {
 
     if (g_scanner.input.is_string) {
         ch = g_scanner.input.string.data[idx];
-        if (!ch) ch = EOF;
+        if (!ch)
+            ch = EOF;
     } else {
         ch = fgetc(g_scanner.input.file);
     }
@@ -537,7 +539,7 @@ Token scanner_advance() {
         State next_state = ch != EOF ? step(ch) : State_EOF;
 
         if (got_error()) {
-            return token; /// panik
+            return token;  /// panik
         }
 
         /// Skip if we are inside a block comment
@@ -555,11 +557,10 @@ Token scanner_advance() {
 
                 whitespace_token.attribute.has_eol = whitespace_token.attribute.has_eol || token.attribute.has_eol;
 
-                whitespace_token.line = whitespace_token.line
-                    ? whitespace_token.line : token.line;
+                whitespace_token.line = whitespace_token.line ? whitespace_token.line : token.line;
 
-                whitespace_token.position_in_line = whitespace_token.position_in_line
-                    ? whitespace_token.position_in_line : token.line;
+                whitespace_token.position_in_line =
+                    whitespace_token.position_in_line ? whitespace_token.position_in_line : token.line;
 
                 g_scanner.current_state = next_state;
                 continue;
@@ -590,7 +591,6 @@ Token scanner_advance() {
         g_scanner.list_idx += 1;
     }
 
-
     return token;
 }
 
@@ -605,7 +605,7 @@ Token scanner_advance_non_whitespace() {
 }
 
 static bool is_character(char ch) {
-    ch |= (1 << 5); // simple binary trick to make ascii character lowercase
+    ch |= (1 << 5);  // simple binary trick to make ascii character lowercase
     return ch >= 'a' && ch <= 'z';
 }
 
@@ -649,24 +649,42 @@ static State step_start(char ch) {
     }
 
     switch (ch) {
-        case ':': return State_DoubleColon;
-        case '}': return State_BracketRight;
-        case '{': return State_BracketLeft;
-        case ')': return State_ParenRight;
-        case '(': return State_ParenLeft;
-        case '+': return State_Plus;
-        case '-': return State_Minus;
-        case '*': return State_Multiply;
-        case '/': return State_Divide;
-        case '=': return State_EqualSign;
-        case '<': return State_LessThan;
-        case '>': return State_MoreThan;
-        case '|': return State_Pipe;
-        case '&': return State_Ampersand;
-        case '!': return State_Negation;
-        case '?': return State_QuestionMark;
-        case '"': return State_StringStart;
-        case ',': return State_Comma;
+        case ':':
+            return State_DoubleColon;
+        case '}':
+            return State_BracketRight;
+        case '{':
+            return State_BracketLeft;
+        case ')':
+            return State_ParenRight;
+        case '(':
+            return State_ParenLeft;
+        case '+':
+            return State_Plus;
+        case '-':
+            return State_Minus;
+        case '*':
+            return State_Multiply;
+        case '/':
+            return State_Divide;
+        case '=':
+            return State_EqualSign;
+        case '<':
+            return State_LessThan;
+        case '>':
+            return State_MoreThan;
+        case '|':
+            return State_Pipe;
+        case '&':
+            return State_Ampersand;
+        case '!':
+            return State_Negation;
+        case '?':
+            return State_QuestionMark;
+        case '"':
+            return State_StringStart;
+        case ',':
+            return State_Comma;
 
         case 0x20:
         case 0x0A:
@@ -697,9 +715,12 @@ static State step_question_mark(char ch) {
 
 static State step_divide(char ch) {
     switch (ch) {
-        case '*': return State_BlockCommentStart;
-        case '/': return State_LineComment;
-        default: return State_Start;
+        case '*':
+            return State_BlockCommentStart;
+        case '/':
+            return State_LineComment;
+        default:
+            return State_Start;
     }
 }
 
@@ -713,7 +734,6 @@ static State step_identifier(char ch) {
 
         return State_Identifier;
     }
-
 
     if (ch == '?') {
         bool maybe_nil_type = false;
@@ -733,7 +753,7 @@ static State step_identifier(char ch) {
     return State_Start;
 }
 
-static void push_number(int *number, int to_push) {
+static void push_number(int* number, int to_push) {
     bool will_overflow = *number > ((INT_MAX - to_push) / 10);
 
     if (will_overflow) {
@@ -822,8 +842,6 @@ static State step_number_exponent_start(char ch) {
 
     g_scanner.exponent = num;
     return State_NumberExponent;
-
-
 }
 static State step_number_exponent_sign(char ch) {
     int num = parse_decimal(ch);
@@ -845,7 +863,6 @@ static State step_number_exponent(char ch) {
     if (num == -1) {
         return State_Start;
     }
-
 
     push_number(&g_scanner.exponent, num);
     return State_NumberExponent;
@@ -923,7 +940,8 @@ static State step_string_escape(char ch, bool is_line_string) {
         case 'n':
             to_push = '\n';
             break;
-        case 'u': return is_line_string ? State_LineStringEscapeUnicode : State_BlockStringEscapeUnicode;
+        case 'u':
+            return is_line_string ? State_LineStringEscapeUnicode : State_BlockStringEscapeUnicode;
         default:
             print_position();
             eprint("Invalid escape sequence in literal\n");
@@ -1023,9 +1041,7 @@ static State step_block_string(char ch) {
 
 static State step_block_string_end(char ch, int nth) {
     if (nth == 1) {
-        int ident = ch == ' ' ? 1
-                  : ch == '\t' ? 4
-                  : 0;
+        int ident = ch == ' ' ? 1 : ch == '\t' ? 4 : 0;
 
         if (ident) {
             g_scanner.number += ident;
@@ -1035,8 +1051,10 @@ static State step_block_string_end(char ch, int nth) {
 
     if (ch == '"') {
         switch (nth) {
-            case 1: return State_BlockStringEnd2;
-            case 2: return State_BlockStringEnd3;
+            case 1:
+                return State_BlockStringEnd2;
+            case 2:
+                return State_BlockStringEnd3;
             case 3: {
                 string_remove_ident(&g_scanner.string, g_scanner.number);
 
@@ -1075,23 +1093,32 @@ State step_comment_block(char ch) {
     switch (g_scanner.current_state) {
         case State_Start:
             switch (ch) {
-                case '/': return State_Divide;
-                case '*': return State_Multiply;
-                default: return State_Start;
+                case '/':
+                    return State_Divide;
+                case '*':
+                    return State_Multiply;
+                default:
+                    return State_Start;
             }
 
         case State_Divide:
             switch (ch) {
-                case '*': return State_BlockCommentStart;
-                case '/': return State_Divide;
-                default: return State_Start;
+                case '*':
+                    return State_BlockCommentStart;
+                case '/':
+                    return State_Divide;
+                default:
+                    return State_Start;
             }
 
         case State_Multiply:
             switch (ch) {
-                case '*': return State_Multiply;
-                case '/': return State_BlockCommentEnd;
-                default: return State_Start;
+                case '*':
+                    return State_Multiply;
+                case '/':
+                    return State_BlockCommentEnd;
+                default:
+                    return State_Start;
             }
 
         case State_BlockCommentStart:
@@ -1106,7 +1133,8 @@ State step_comment_block(char ch) {
             scanner_step_back(ch);
             return State_Start;
 
-        default: return State_Start;
+        default:
+            return State_Start;
     }
 }
 
@@ -1121,7 +1149,8 @@ static State step_whitespace(char ch) {
         case 0x00:
             return State_Whitespace;
 
-        default: return State_Start;
+        default:
+            return State_Start;
     }
 }
 
@@ -1135,46 +1164,84 @@ static State step(char ch) {
     }
 
     switch (g_scanner.current_state) {
-        case State_EOF: return State_EOF;
+        case State_EOF:
+            return State_EOF;
 
-        case State_Start: return step_start(ch);
-        case State_Whitespace: return step_whitespace(ch);
-        case State_QuestionMark: return step_question_mark(ch);
-        case State_Divide: return step_divide(ch);
-        case State_Identifier: return step_identifier(ch);
-        case State_Number: return step_number(ch);
-        case State_NumberDoubleStart: return step_number_double_start(ch);
-        case State_NumberDouble: return step_number_double(ch);
-        case State_NumberExponentStart: return step_number_exponent_start(ch);
-        case State_NumberExponentSign: return step_number_exponent_sign(ch);
-        case State_NumberExponent: return step_number_exponent(ch);
-        case State_StringStart: return step_string_start(ch);
-        case State_DoubleQuote: return step_double_quote(ch);
-        case State_LineString: return step_line_string(ch);
-        case State_LineStringEscape: return step_string_escape(ch, true);
-        case State_LineStringEscapeUnicode: return step_string_escape_unicode(ch, true);
-        case State_LineStringEscapeHexStart: return step_string_escape_hex_start(ch, true);
-        case State_LineStringEscapeHex1: return step_string_escape_hex(ch, 1, true);
-        case State_LineStringEscapeHex2: return step_string_escape_hex(ch, 2, true);
-        case State_BlockString: return step_block_string(ch);
-        case State_BlockStringStart: return step_block_string_start(ch);
-        case State_BlockStringEnd1: return step_block_string_end(ch, 1);
-        case State_BlockStringEnd2: return step_block_string_end(ch, 2);
-        case State_BlockStringEnd3: return step_block_string_end(ch, 3);
-        case State_BlockStringEscape: return step_string_escape(ch, false);
-        case State_BlockStringEscapeUnicode: return step_string_escape_unicode(ch, false);
-        case State_BlockStringEscapeHexStart: return step_string_escape_hex_start(ch, false);
-        case State_BlockStringEscapeHex1: return step_string_escape_hex(ch, 1, false);
-        case State_BlockStringEscapeHex2: return step_string_escape_hex(ch, 2, false);
+        case State_Start:
+            return step_start(ch);
+        case State_Whitespace:
+            return step_whitespace(ch);
+        case State_QuestionMark:
+            return step_question_mark(ch);
+        case State_Divide:
+            return step_divide(ch);
+        case State_Identifier:
+            return step_identifier(ch);
+        case State_Number:
+            return step_number(ch);
+        case State_NumberDoubleStart:
+            return step_number_double_start(ch);
+        case State_NumberDouble:
+            return step_number_double(ch);
+        case State_NumberExponentStart:
+            return step_number_exponent_start(ch);
+        case State_NumberExponentSign:
+            return step_number_exponent_sign(ch);
+        case State_NumberExponent:
+            return step_number_exponent(ch);
+        case State_StringStart:
+            return step_string_start(ch);
+        case State_DoubleQuote:
+            return step_double_quote(ch);
+        case State_LineString:
+            return step_line_string(ch);
+        case State_LineStringEscape:
+            return step_string_escape(ch, true);
+        case State_LineStringEscapeUnicode:
+            return step_string_escape_unicode(ch, true);
+        case State_LineStringEscapeHexStart:
+            return step_string_escape_hex_start(ch, true);
+        case State_LineStringEscapeHex1:
+            return step_string_escape_hex(ch, 1, true);
+        case State_LineStringEscapeHex2:
+            return step_string_escape_hex(ch, 2, true);
+        case State_BlockString:
+            return step_block_string(ch);
+        case State_BlockStringStart:
+            return step_block_string_start(ch);
+        case State_BlockStringEnd1:
+            return step_block_string_end(ch, 1);
+        case State_BlockStringEnd2:
+            return step_block_string_end(ch, 2);
+        case State_BlockStringEnd3:
+            return step_block_string_end(ch, 3);
+        case State_BlockStringEscape:
+            return step_string_escape(ch, false);
+        case State_BlockStringEscapeUnicode:
+            return step_string_escape_unicode(ch, false);
+        case State_BlockStringEscapeHexStart:
+            return step_string_escape_hex_start(ch, false);
+        case State_BlockStringEscapeHex1:
+            return step_string_escape_hex(ch, 1, false);
+        case State_BlockStringEscapeHex2:
+            return step_string_escape_hex(ch, 2, false);
 
-        case State_Minus: return ch == '>' ? State_ArrowRight : State_Start;
-        case State_EqualSign: return ch == '=' ? State_DoubleEqualSign : State_Start;
-        case State_LessThan: return ch == '=' ? State_LessOrEqual : State_Start;
-        case State_MoreThan: return ch == '=' ? State_MoreOrEqual : State_Start;
-        case State_Negation: return ch == '=' ? State_NotEqual : State_Start;
-        case State_Pipe: return ch == '|' ? State_Or : State_Start;
-        case State_Ampersand: return ch == '&' ? State_And : State_Start;
-        case State_LineComment: return ch == '\n' ? State_Whitespace : State_LineComment;
+        case State_Minus:
+            return ch == '>' ? State_ArrowRight : State_Start;
+        case State_EqualSign:
+            return ch == '=' ? State_DoubleEqualSign : State_Start;
+        case State_LessThan:
+            return ch == '=' ? State_LessOrEqual : State_Start;
+        case State_MoreThan:
+            return ch == '=' ? State_MoreOrEqual : State_Start;
+        case State_Negation:
+            return ch == '=' ? State_NotEqual : State_Start;
+        case State_Pipe:
+            return ch == '|' ? State_Or : State_Start;
+        case State_Ampersand:
+            return ch == '&' ? State_And : State_Start;
+        case State_LineComment:
+            return ch == '\n' ? State_Whitespace : State_LineComment;
 
         case State_ParenLeft:
         case State_ParenRight:

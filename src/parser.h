@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file parser.h
  * @brief Definitions for parser
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -9,20 +10,20 @@
 
 #include <signal.h>
 #include <stdbool.h>
-#include "symtable.h"
-#include "symstack.h"
 #include "codegen.h"
+#include "symstack.h"
+#include "symtable.h"
 
 typedef enum {
-    Scope_Local,    ///< Scope inside function
-    Scope_Global,   ///< Scope outside function
+    Scope_Local,   ///< Scope inside function
+    Scope_Global,  ///< Scope outside function
 } Scope;
 
 /// Represents a parser state.
 typedef struct {
-    Token token;      ///< Current non-whitespace token.
-    Token token_ws;   ///< Current token before the `g_token`. This can be a Whitespace.
-    Scope scope;      ///< Currenct scope of the parser.
+    Token token;     ///< Current non-whitespace token.
+    Token token_ws;  ///< Current token before the `g_token`. This can be a Whitespace.
+    Scope scope;     ///< Currenct scope of the parser.
     /// Contains all global variable definitions. This is used so that all of them
     /// are defined on the start of the program and aren't redefined in while statements.
     CodeBuf var_defs_code;
@@ -35,7 +36,8 @@ typedef struct {
     int global_var_counter;
     /// Used for counting number of declarations in local scope. This is
     /// used for unique names in functions.
-    /// @note This variable is reset each time we enter a function, but the uniquenes remains, because we also add function name to it.
+    /// @note This variable is reset each time we enter a function, but the uniquenes remains, because we also add
+    /// function name to it.
     int local_var_counter;
 } Parser;
 
@@ -123,4 +125,4 @@ void parser_variable_code_info(VariableSymbol* var, const char* name);
  */
 void parser_function_code_info(FunctionSymbol* func, const char* name);
 
-#endif // _PARSER_H_
+#endif  // _PARSER_H_

@@ -1,13 +1,12 @@
 /**
- * @file test/string.c
- * @author Le Duy Nguyen, xnguye27, VUT FIT
- * @date 13/10/2023
- * @brief Tester for string.h
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
+ * @file test/function_stack.c
+ * @author Matúš Moravčík, xmorav48, VUT FIT
+ * @date 01/12/2023
+ * @brief Tester for function_stack.c
  */
 
 #include "../function_stack.h"
-#include <stdbool.h>
-#include <string.h>
 #include "test.h"
 
 int main() {

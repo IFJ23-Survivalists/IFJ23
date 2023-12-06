@@ -1,7 +1,9 @@
 /**
- * @brief Add builtin functions.
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file builtin.h
  * @author Lukáš Habr
+ * @brief Add builtin functions.
+ * @date 5/12/2023
  */
 #ifndef _BUILTIN_H_
 #define _BUILTIN_H_

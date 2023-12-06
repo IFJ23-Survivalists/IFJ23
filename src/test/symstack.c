@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/symstack.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 25/11/2023
@@ -7,7 +8,6 @@
 
 #include "../symstack.h"
 #include "test.h"
-
 
 int main() {
     atexit(summary);

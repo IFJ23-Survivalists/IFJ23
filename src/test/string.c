@@ -1,12 +1,13 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/string.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 13/10/2023
  * @brief Tester for string.h
  */
 
-#include <string.h>
 #include "../string.h"
+#include <string.h>
 #include "test.h"
 
 int main() {
@@ -88,7 +89,7 @@ int main() {
 
     suite("Test string_from_format") {
         String str2 = string_from_format("%i Hello %s", 123, "World");
-        const char *expected_res = "123 Hello World";
+        const char* expected_res = "123 Hello World";
 
         test(str2.length == strlen(expected_res));
         test(str2.capacity == strlen(expected_res) + 1);
@@ -130,8 +131,8 @@ int main() {
     }
 
     suite("Test string_remove_ident") {
-        char *input = "\tHello\n     World\n \tOnce\n\t Again";
-        char *expected = "Hello\n World\nOnce\n Again";
+        char* input = "\tHello\n     World\n \tOnce\n\t Again";
+        char* expected = "Hello\n World\nOnce\n Again";
 
         string_clear(&str);
         string_concat_c_str(&str, input);

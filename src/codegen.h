@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file codegen.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 03/12/2023
@@ -184,36 +185,36 @@ typedef enum {
  * @brief Enumeration representing different frames for the custom interpreter.
  */
 typedef enum {
-    Frame_Global, ///< Global Frame (GF)
-    Frame_Local, ///< Local Frame (LF)
-    Frame_Temporary, ///< Temporary Frame (TF)
+    Frame_Global,     ///< Global Frame (GF)
+    Frame_Local,      ///< Local Frame (LF)
+    Frame_Temporary,  ///< Temporary Frame (TF)
 } Frame;
 
 /**
  * @brief Structure representing a variable with its frame and name.
  */
 typedef struct {
-    Frame frame; ///< Frame of the variable
-    char *name;  ///< Name of the variable
+    Frame frame;  ///< Frame of the variable
+    char* name;   ///< Name of the variable
 } Variable;
 
 /**
  * @brief Enumeration representing the type of a symbol (Variable or Constant).
  */
 typedef enum {
-   SymbolType_Variable, ///< Symbol represents a variable
-   SymbolType_Constant, ///< Symbol represents a constant
+    SymbolType_Variable,  ///< Symbol represents a variable
+    SymbolType_Constant,  ///< Symbol represents a constant
 } SymbolType;
 
 /**
  * @brief A tagged union representing either a Variable or a Constant.
  */
 typedef struct {
-    SymbolType type; ///< Type of the union
+    SymbolType type;  ///< Type of the union
 
     union {
-        Variable variable; ///< Represents a variable
-        Data constant; ///< Represents a constant
+        Variable variable;  ///< Represents a variable
+        Data constant;      ///< Represents a constant
     };
 } Symbol;
 
@@ -221,57 +222,57 @@ typedef struct {
  * @brief Union representing different operand types (Variable, Symbol, DataType, Label).
  */
 typedef union {
-    Variable variable; ///< Represents a variable
-    Symbol symbol;     ///< Represents a symbol
-    DataType data_type; ///< Represents a data type
-    char *label;       ///< Represents a label
+    Variable variable;   ///< Represents a variable
+    Symbol symbol;       ///< Represents a symbol
+    DataType data_type;  ///< Represents a data type
+    char* label;         ///< Represents a label
 } Operand;
 /**
  * @brief Structure representing a generated instruction.
  */
 typedef struct {
-    String code; ///< The generated code for the instruction
+    String code;  ///< The generated code for the instruction
 } GeneratedInstruction;
 
 /**
  * @brief Structure representing a buffer for storing generated code instructions.
  */
 typedef struct {
-    GeneratedInstruction *buf; ///< Buffer storing generated instructions
-    size_t size;               ///< Current size of the buffer
-    size_t capacity;           ///< Capacity of the buffer
+    GeneratedInstruction* buf;  ///< Buffer storing generated instructions
+    size_t size;                ///< Current size of the buffer
+    size_t capacity;            ///< Capacity of the buffer
 } CodeBuf;
 
 /**
  * @brief Initialize a CodeBuf instance.
  * @param buf The CodeBuf instance to initialize.
  */
-void code_buf_init(CodeBuf *buf);
+void code_buf_init(CodeBuf* buf);
 
 /**
  * @brief Free the resources associated with a CodeBuf instance.
  * @param buf The CodeBuf instance to free.
  */
-void code_buf_free(CodeBuf *buf);
+void code_buf_free(CodeBuf* buf);
 
 /**
  * @brief Set the active `CodeBuf`.
  * @param buf The CodeBuf to set as active.
  */
-void code_buf_set(CodeBuf *buf);
+void code_buf_set(CodeBuf* buf);
 
 /**
  * @brief Print all instructions in the active `CodeBuf` to stdout.
  * @param buf The `CodeBuf` to be printed.
  */
-void code_buf_print(CodeBuf *buf);
+void code_buf_print(CodeBuf* buf);
 
 /**
  * @brief Print all instructions in the active `CodeBuf` to a `String` and return it.
  * @param buf The `CodeBuf` to be printed.
  * @return instructions `String`
  */
-String code_buf_print_to_string(CodeBuf *buf);
+String code_buf_print_to_string(CodeBuf* buf);
 
 /**
  * @brief Generate code for an instruction with specified operands and insert it into the active `CodeBuf`.
@@ -280,7 +281,7 @@ String code_buf_print_to_string(CodeBuf *buf);
  * @param operand2 The second operand.
  * @param operand3 The third operand.
  */
-void code_generation(Instruction, Operand *, Operand *, Operand *);
+void code_generation(Instruction, Operand*, Operand*, Operand*);
 
 /**
  * @brief Generate raw code right into the code buffer without any checks.

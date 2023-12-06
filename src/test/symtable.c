@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/symtable.c
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -7,8 +8,8 @@
  */
 
 #include "../symtable.h"
-#include "test.h"
 #include <string.h>
+#include "test.h"
 
 int main() {
     atexit(summary);
@@ -57,7 +58,6 @@ int main() {
         baz.allow_modification = true;
         test(!symtable_insert_variable(&symtable, "bar", baz));
         test(symtable_insert_variable(&symtable, "baz", baz));
-
     }
 
     suite("Test symtable_get_function") {
@@ -66,7 +66,7 @@ int main() {
         test(!symtable_get_function(&symtable, "bar"));
         test(!symtable_get_function(&symtable, "baz"));
 
-        FunctionSymbol *func = symtable_get_function(&symtable, "foo");
+        FunctionSymbol* func = symtable_get_function(&symtable, "foo");
         test(func);
         test(func->return_value_type == DataType_Undefined);
 
@@ -89,13 +89,13 @@ int main() {
         test(!symtable_get_variable(&symtable, "foo"));
         test(!symtable_get_variable(&symtable, "foo2"));
 
-        VariableSymbol *var = symtable_get_variable(&symtable, "bar");
+        VariableSymbol* var = symtable_get_variable(&symtable, "bar");
         test(var);
         test(var->type == DataType_Int);
         test(var->is_initialized == true);
         test(var->allow_modification == false);
 
-        VariableSymbol *var2 = symtable_get_variable(&symtable, "baz");
+        VariableSymbol* var2 = symtable_get_variable(&symtable, "baz");
         test(var);
         test(var != var2);
         test(var2->type == DataType_Double);
@@ -110,7 +110,7 @@ int main() {
     suite("Test symtable_get_symbol_type") {
         test(!symtable_get_symbol_type(&symtable, ""));
         test(!symtable_get_symbol_type(&symtable, "unknown"));
-        NodeType *node = symtable_get_symbol_type(&symtable, "foo");
+        NodeType* node = symtable_get_symbol_type(&symtable, "foo");
         test(node);
         test(*node == NodeType_Function);
 

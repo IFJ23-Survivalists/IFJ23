@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file symtable.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @author Jakub Kloub, xkloub03, VUT FIT
@@ -12,26 +13,26 @@
 #ifndef SYMTABLE_H
 #define SYMTABLE_H
 
-#include "string.h"
-#include "scanner.h"
-#include "codegen.h"
-#include <stdint.h>
 #include <stdbool.h>
+#include <stdint.h>
+#include "codegen.h"
+#include "scanner.h"
+#include "string.h"
 
 /**
  * @struct FunctionParameter
  * @brief Represennts a single function parameter
  */
 typedef struct {
-    DataType type;          ///< Datatype of parameter
+    DataType type;  ///< Datatype of parameter
     /**
      * @brief Identifies if the parameter has outside name or not.
      * @warning When true, then the value of ::FunctionParameter::out_name is undefined
      */
     bool is_named;
-    String iname;        ///< Name of the parameter when calling the function
-    String oname;        ///< Name of the parameter when inside the function
-    String code_name;    ///< Name of the parameter when it is inserted into temporary frame during function calls.
+    String iname;      ///< Name of the parameter when calling the function
+    String oname;      ///< Name of the parameter when inside the function
+    String code_name;  ///< Name of the parameter when it is inserted into temporary frame during function calls.
 } FunctionParameter;
 
 /**
@@ -39,13 +40,14 @@ typedef struct {
  * @brief Represents a function symbol in the symbol table.
  */
 typedef struct {
-    int param_count;               /**< Number of items in ::FunctionSymbol::parameters. */
-    FunctionParameter* params;     /**< Parameters of the function. */
-    DataType return_value_type;    /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
-    CodeBuf code;      /**< < Generated code for this function. */
-    CodeBuf code_defs;  /**< All variable definitions in given function local scope will be in this buffer. **/
-    String code_name;   /**< IFJcode23 label */
-    bool is_used;       /** Check if we should add this function to the resulting IFJcode23 */
+    int param_count;           /**< Number of items in ::FunctionSymbol::parameters. */
+    FunctionParameter* params; /**< Parameters of the function. */
+    DataType
+        return_value_type; /**< Value the function returns or ::DataType_Undefined when it doesn't return anything. */
+    CodeBuf code;          /**< < Generated code for this function. */
+    CodeBuf code_defs;     /**< All variable definitions in given function local scope will be in this buffer. **/
+    String code_name;      /**< IFJcode23 label */
+    bool is_used;          /** Check if we should add this function to the resulting IFJcode23 */
 } FunctionSymbol;
 
 /**
@@ -53,9 +55,9 @@ typedef struct {
  * @brief Represents a variable symbol in the symbol table.
  */
 typedef struct {
-    DataType type;             /**< Data type of the variable. */
-    bool is_initialized;       /**< Indicates if the variable is initialized. */
-    bool allow_modification;   /**< Indicates if the variable can be modified. */
+    DataType type;           /**< Data type of the variable. */
+    bool is_initialized;     /**< Indicates if the variable is initialized. */
+    bool allow_modification; /**< Indicates if the variable can be modified. */
     /**
      * @brief Name of the variable in IFJcode23
      *
@@ -92,12 +94,12 @@ typedef union {
  * @brief Represents a node of an AVL tree that contains an item (variable or function) in the symbol table.
  */
 typedef struct item_t {
-    String key;             /**< Key (name) of the item. */
-    NodeType type;          /**< Type of the node (a function or a variable)*/
-    NodeValue value;        /**< Value of the node */
-    struct item_t *left;    /**< Pointer to the left item */
-    struct item_t *right;   /**< Pointer to the right item */
-    int height;            /**< Height of the current AVL node*/
+    String key;           /**< Key (name) of the item. */
+    NodeType type;        /**< Type of the node (a function or a variable)*/
+    NodeValue value;      /**< Value of the node */
+    struct item_t* left;  /**< Pointer to the left item */
+    struct item_t* right; /**< Pointer to the right item */
+    int height;           /**< Height of the current AVL node*/
 } Node;
 
 /**
@@ -105,7 +107,7 @@ typedef struct item_t {
  * @brief Represents the symbol table.
  */
 typedef struct {
-    Node *root;
+    Node* root;
 } Symtable;
 
 /**
@@ -115,7 +117,7 @@ typedef struct {
  *
  * @param[out] par The FunctionParameter struct to initialize.
  */
-void function_parameter_init(FunctionParameter *par);
+void function_parameter_init(FunctionParameter* par);
 
 /**
  * @brief Free memory associated with a FunctionParameter struct.
@@ -124,20 +126,21 @@ void function_parameter_init(FunctionParameter *par);
  *
  * @param[in,out] par The FunctionParameter struct to free.
  */
-void function_parameter_free(FunctionParameter *par);
+void function_parameter_free(FunctionParameter* par);
 
 /**
  * @brief Initialize the function symbol.
  * @param[in,out] sym Function symbol to initialize.
- * @warning Using FunctionSymbol without initializing could cause some memory to not be free'd during `symtable_free()`, because there could be uninitialized values.
+ * @warning Using FunctionSymbol without initializing could cause some memory to not be free'd during `symtable_free()`,
+ * because there could be uninitialized values.
  */
-void function_symbol_init(FunctionSymbol *sym);
+void function_symbol_init(FunctionSymbol* sym);
 
 /**
  * @brief Free all memory resources used by ::FuncitonSymbol
  * @param[in,out] sym Function symbol to free resources of.
  */
-void function_symbol_free(FunctionSymbol *sym);
+void function_symbol_free(FunctionSymbol* sym);
 
 /**
  * @brief Check if FunctionSymbol already contains given parameter.
@@ -146,7 +149,7 @@ void function_symbol_free(FunctionSymbol *sym);
  * @param[in] iname Name of the parameter inside the function.
  * @return 0 when the parameter in NOT present. Otherwise 1 if `oname` exist or 2 if iname `exists`.
  */
-int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char* iname);
+int funciton_symbol_has_param(FunctionSymbol* sym, const char* oname, const char* iname);
 
 /**
  * @brief Get function parameter by outside name.
@@ -154,7 +157,7 @@ int funciton_symbol_has_param(FunctionSymbol *sym, const char* oname, const char
  * @param[in] oname Name of the parameter when calling the function.
  * @return Pointer to function parameter on NULL when not found.
  */
-FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const char* oname);
+FunctionParameter* function_symbol_get_param_named(FunctionSymbol* sym, const char* oname);
 
 /**
  * @brief Insert function parameter to parameters in function symbol.
@@ -163,7 +166,7 @@ FunctionParameter* function_symbol_get_param_named(FunctionSymbol *sym, const ch
  * @note Parameter parm is NOT deeply copied and will take ownership of this parameter.
  * @return True if insertion was successful, False otherwise.
  */
-bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param);
+bool function_symbol_insert_param(FunctionSymbol* sym, FunctionParameter param);
 
 /**
  * @brief Construct FunctionParameter and insert it into parameter array.
@@ -173,20 +176,20 @@ bool function_symbol_insert_param(FunctionSymbol *sym, FunctionParameter param);
  * @param[in] iname Name of the parameter inside function definition.
  * @return True if insertion was successful, False otherwise.
  */
-bool function_symbol_emplace_param(FunctionSymbol *sym, DataType type, const char* oname, const char* iname);
+bool function_symbol_emplace_param(FunctionSymbol* sym, DataType type, const char* oname, const char* iname);
 
 /**
  * @brief Initialize the variable symbol.
  * @param[in,out] var Variable symbol to initialize.
  * @note This will set all attributes to false and datatype to 0.
  */
-void variable_symbol_init(VariableSymbol *var);
+void variable_symbol_init(VariableSymbol* var);
 
 /**
  * @brief Free all resources used by VariableSymbol.
  * @param[in,out] var VariableSymbol to free resources of.
  */
-void variable_symbol_free(VariableSymbol *var);
+void variable_symbol_free(VariableSymbol* var);
 
 /**
  * @brief Initialize a symbol table.
@@ -195,7 +198,7 @@ void variable_symbol_free(VariableSymbol *var);
  *
  * @param[out] symtable The Symtable struct to initialize.
  */
-void symtable_init(Symtable *symtable);
+void symtable_init(Symtable* symtable);
 
 /**
  * @brief Free memory associated with a symbol table.
@@ -204,7 +207,7 @@ void symtable_init(Symtable *symtable);
  *
  * @param[in,out] symtable The Symtable struct to free.
  */
-void symtable_free(Symtable *symtable);
+void symtable_free(Symtable* symtable);
 
 /**
  * @brief Insert a function symbol into the symbol table.
@@ -216,7 +219,7 @@ void symtable_free(Symtable *symtable);
  * @return Successfully inserted into symtable or not
  * @param[in] function The FunctionSymbol to insert.
  */
-bool symtable_insert_function(Symtable *symtable, const char *key, FunctionSymbol function);
+bool symtable_insert_function(Symtable* symtable, const char* key, FunctionSymbol function);
 
 /**
  * @brief Insert a variable symbol into the symbol table.
@@ -228,7 +231,7 @@ bool symtable_insert_function(Symtable *symtable, const char *key, FunctionSymbo
  * @param[in] variable The VariableSymbol to insert.
  * @return Successfully inserted into symtable or not
  */
-bool symtable_insert_variable(Symtable *symtable, const char *key, VariableSymbol variable);
+bool symtable_insert_variable(Symtable* symtable, const char* key, VariableSymbol variable);
 
 /**
  * @brief Get a function symbol from the symbol table by name.
@@ -239,7 +242,7 @@ bool symtable_insert_variable(Symtable *symtable, const char *key, VariableSymbo
  * @param[in] str The name of the function to retrieve.
  * @return A pointer to the FunctionSymbol if found; otherwise, NULL.
  */
-FunctionSymbol *symtable_get_function(Symtable *symtable, const char *str);
+FunctionSymbol* symtable_get_function(Symtable* symtable, const char* str);
 
 /**
  * @brief Get a variable symbol from the symbol table by name.
@@ -250,7 +253,7 @@ FunctionSymbol *symtable_get_function(Symtable *symtable, const char *str);
  * @param[in] str The name of the variable to retrieve.
  * @return A pointer to the VariableSymbol if found; otherwise, NULL.
  */
-VariableSymbol *symtable_get_variable(Symtable *symtable, const char *str);
+VariableSymbol* symtable_get_variable(Symtable* symtable, const char* str);
 
 /**
  * @brief Get the data type of a symbol in the symbol table by name.
@@ -263,6 +266,6 @@ VariableSymbol *symtable_get_variable(Symtable *symtable, const char *str);
  * @return A pointer to the NodeType representing the data type of the symbol if found;
  *         otherwise, NULL.
  */
-NodeType *symtable_get_symbol_type(Symtable *symtable, const char *str);
+NodeType* symtable_get_symbol_type(Symtable* symtable, const char* str);
 
 #endif

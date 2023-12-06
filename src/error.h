@@ -1,6 +1,6 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Define the `Error` enum type and its related function to be used for error handling in the project
- *
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 08/10/2023
@@ -10,9 +10,9 @@
 #ifndef ERROR_H
 #define ERROR_H
 
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <stdbool.h>
 #include "color.h"
 
 #ifdef NDEBUG
@@ -21,10 +21,15 @@
 #else
 
 /// Print the debug string into `stderr`
-#define debug(s) fprintf(stderr, __FILE__":%u: %s\n",__LINE__, s)
+#define debug(s) fprintf(stderr, __FILE__ ":%u: %s\n", __LINE__, s)
 
 /// Print the debug string with format like printf
-#define dfmt(s, ...) fprintf(stderr, __FILE__":%u: "s"\n",__LINE__,__VA_ARGS__)
+#define dfmt(s, ...) \
+    fprintf(stderr,  \
+            __FILE__ \
+            ":%u: "s \
+            "\n",    \
+            __LINE__, __VA_ARGS__)
 
 #endif
 
@@ -36,7 +41,6 @@
 
 /// Color used when printing error keyword.
 #define ERR_COL COL_R
-
 
 /// Represents various error types that can occur in the application.
 typedef enum {
@@ -51,7 +55,8 @@ typedef enum {
     /// sémantická chyba v programu – nedefinovaná funkce.
     Error_UndefinedFunction,
 
-    /// sémantická chyba v programu – špatný počet/typ parametrů u volání funkce či špatný typ návratové hodnoty z funkce.
+    /// sémantická chyba v programu – špatný počet/typ parametrů u volání funkce či špatný typ návratové hodnoty z
+    /// funkce.
     Error_TypeMismatched,
 
     /// sémantická chyba v programu – použití nedefinované proměnné.
@@ -150,7 +155,7 @@ typedef struct {
  * @param line Line in the file where the error happened.
  * @note This will also set error state to `Error_Internal`
  */
-void set_int_error(IntErrorType type, const char *msg, const char *file, unsigned int line);
+void set_int_error(IntErrorType type, const char* msg, const char* file, unsigned int line);
 
 /// Automatically add file and line when setting internal error.
 #define SET_INT_ERROR(type, msg) set_int_error(type, msg, __FILE__, __LINE__)
@@ -168,10 +173,12 @@ void print_int_error_msg();
 void clear_int_error();
 
 /// Assert with custom message printed to stderr.
-#define MASSERT(expr, msg) do {                                                                     \
-    if (!(expr)) {                                                                                  \
-        fprintf(stderr, __FILE__":%i: Assertion `" #expr "` failed. Message: %s\n", __LINE__, msg); \
-        exit(1);                                                                                    \
-    }} while(0)
+#define MASSERT(expr, msg)                                                                               \
+    do {                                                                                                 \
+        if (!(expr)) {                                                                                   \
+            fprintf(stderr, __FILE__ ":%i: Assertion `" #expr "` failed. Message: %s\n", __LINE__, msg); \
+            exit(1);                                                                                     \
+        }                                                                                                \
+    } while (0)
 
 #endif

@@ -1,4 +1,5 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file string.h
  * @author Le Duy Nguyen, xnguye27, VUT FIT
  * @date 25/09/2023
@@ -21,7 +22,7 @@
  * standard C string functions from `<string.h>`.
  */
 typedef struct {
-    char *data;
+    char* data;
     size_t length;
     size_t capacity;
 } String;
@@ -33,8 +34,7 @@ typedef struct {
  *
  * @param[out] str The String struct to initialize.
  */
-void string_init(String *str);
-
+void string_init(String* str);
 
 /**
  * @brief Free the memory used by the string.
@@ -43,7 +43,7 @@ void string_init(String *str);
  *
  * @param[in,out] str The String struct to free.
  */
-void string_free(String *str);
+void string_free(String* str);
 
 /**
  * @brief Clear the contents of the string, making it empty.
@@ -54,7 +54,7 @@ void string_free(String *str);
  *
  * @param[in,out] str The String struct to clear.
  */
-void string_clear(String *str);
+void string_clear(String* str);
 
 /**
  * @brief Get the length of the string.
@@ -65,7 +65,7 @@ void string_clear(String *str);
  * @param[in] str The String struct to examine.
  * @return The length of the string.
  */
-size_t string_len(String *str);
+size_t string_len(String* str);
 
 /**
  * @brief Reserve memory for the string to accommodate a specified capacity.
@@ -76,7 +76,7 @@ size_t string_len(String *str);
  * @param[in,out] str The String struct to reserve memory for.
  * @param[in] capacity The desired capacity to reserve.
  */
-void string_reserve(String *str, size_t capacity);
+void string_reserve(String* str, size_t capacity);
 
 /**
  * @brief Append a character to the end of the string.
@@ -87,7 +87,7 @@ void string_reserve(String *str, size_t capacity);
  * @param[in,out] str The String struct to modify.
  * @param[in] ch The character to append to the string.
  */
-void string_push(String *str, char ch);
+void string_push(String* str, char ch);
 
 /**
  * @brief Concatenate a C-style string to the end of a String.
@@ -98,7 +98,7 @@ void string_push(String *str, char ch);
  * @param[in,out] str The String to which the C-style string is concatenated.
  * @param[in] str2 The C-style string to concatenate.
  */
-void string_concat_c_str(String *str, const char *str2);
+void string_concat_c_str(String* str, const char* str2);
 
 /**
  * @brief Create a new String from a C string.
@@ -108,7 +108,7 @@ void string_concat_c_str(String *str, const char *str2);
  * @param str The input C string.
  * @return A new String object containing the input C string.
  */
-String string_from_c_str(const char *str);
+String string_from_c_str(const char* str);
 
 /**
  * @brief Initialize string from a given format.
@@ -118,7 +118,7 @@ String string_from_c_str(const char *str);
  * @param[in] ... Format arguments
  * @return New initialized string in given format.
  */
-String string_from_format(const char *fmt, ...);
+String string_from_format(const char* fmt, ...);
 
 /**
  * @brief Create a new string with the data from the given string and empty the given string.
@@ -129,7 +129,7 @@ String string_from_format(const char *fmt, ...);
  * @param[in,out] str The String struct to take data from and empty.
  * @return A new String struct containing the data from the original string.
  */
-String string_take(String *str);
+String string_take(String* str);
 
 /**
  * @brief Create a new string by cloning the given string.
@@ -141,7 +141,7 @@ String string_take(String *str);
  * @return A new String struct containing a copy of the data from the original string.
  *         If memory allocation fails, the error is set to InternalError.
  */
-String string_clone(String *str);
+String string_clone(String* str);
 
 /**
  * @brief Remove a specified number of indentation levels from the String.
@@ -149,6 +149,6 @@ String string_clone(String *str);
  * @param str The String to remove indentation from.
  * @param ident_level The number of indentation levels to remove.
  */
-void string_remove_ident(String *str, int ident_level);
+void string_remove_ident(String* str, int ident_level);
 
 #endif

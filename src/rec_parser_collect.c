@@ -1,13 +1,16 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @brief Implementation of function collect from rec_parser.h
  * @file rec_parser_collect.c
+ * @author Jakub Kloub, xkloub03, FIT VUT
+ * @date 30/11/2023
  */
+#include <string.h>
+#include "color.h"
+#include "error.h"
 #include "rec_parser.h"
 #include "symtable.h"
-#include "error.h"
-#include "color.h"
 #include "to_string.h"
-#include <string.h>
 
 bool col_rule_funcReturnType(FunctionSymbol* func);
 bool col_rule_params(FunctionSymbol* func);
@@ -25,8 +28,9 @@ bool rec_parser_collect() {
             // Additionally check that there is a '{' as a start of function definition.
             // We do this, so that during second phase we can just skip to this token,
             // knowing there it is there and we don't iterate to EOF on wrong syntax.
-            CHECK_TOKEN(Token_BracketLeft, "Unexpected token `" COL_Y("%s") "` after function declaration. Expected `" COL_C("{") "`.",
-                    token_to_string(&g_parser.token));
+            CHECK_TOKEN(Token_BracketLeft,
+                        "Unexpected token `" COL_Y("%s") "` after function declaration. Expected `" COL_C("{") "`.",
+                        token_to_string(&g_parser.token));
         }
     } while (g_parser.token.type != Token_EOF);
     return true;
@@ -34,7 +38,8 @@ bool rec_parser_collect() {
 
 bool col_handle_func_statement() {
     TokenAttribute attr = g_parser.token.attribute;
-    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.", TOK_STR);
+    CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the `func` keyword. Expected name of the function.",
+                TOK_STR);
     const char* func_name = attr.data.value.string.data;
 
     FunctionSymbol func;
@@ -51,10 +56,12 @@ bool col_handle_func_statement() {
         bCALL_RULEp(col_rule_params, &func);
         bCHECK_TOKEN(Token_ParenRight, "Unexpected token `%s` after the function parameters. Expected `)`.", TOK_STR);
         bCALL_RULEp(col_rule_funcReturnType, &func);
-    } TRY_FINAL {
+    }
+    TRY_FINAL {
         function_symbol_free(&func);
         return false;
-    } TRY_END;
+    }
+    TRY_END;
 
     // Generate code names for function and its parameters.
     parser_function_code_info(&func, func_name);
@@ -79,10 +86,12 @@ bool col_rule_params(FunctionSymbol* func) {
             parser_next_token();
 
             TokenAttribute attr = g_parser.token.attribute;
-            CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the parameter name. Expected identifier.", TOK_STR);
+            CHECK_TOKEN(Token_Identifier, "Unexpected token `%s` after the parameter name. Expected identifier.",
+                        TOK_STR);
             const char* iname = attr.data.value.string.data;
 
-            CHECK_TOKEN(Token_DoubleColon, "Unexpected token `%s` after inner parameter name. Expected `,` or `)`.", TOK_STR);
+            CHECK_TOKEN(Token_DoubleColon, "Unexpected token `%s` after inner parameter name. Expected `,` or `)`.",
+                        TOK_STR);
             attr = g_parser.token.attribute;
             CHECK_TOKEN(Token_DataType, "Unexpected token `%s`. Expected `DataType`.", TOK_STR);
 
@@ -93,8 +102,7 @@ bool col_rule_params(FunctionSymbol* func) {
             if ((has_param = funciton_symbol_has_param(func, oname, iname)) != 0) {
                 print_error(&g_parser.token, Error_Semantic, "Semantic",
                             "Conflicting names for parameter `%s%s" PRINT_RESET " %s%s" PRINT_RESET " : %s`.",
-                            has_param == 1 ? PRINT_Y : PRINT_W, oname,
-                            has_param == 2 ? PRINT_Y : PRINT_W, iname,
+                            has_param == 1 ? PRINT_Y : PRINT_W, oname, has_param == 2 ? PRINT_Y : PRINT_W, iname,
                             datatype_to_string(param_type));
                 return false;
             }
@@ -104,7 +112,8 @@ bool col_rule_params(FunctionSymbol* func) {
                 return false;
 
             CALL_RULEp(col_rule_params_n, func);
-           } return true;
+        }
+            return true;
         default:
             break;
     }
@@ -132,7 +141,7 @@ bool col_rule_funcReturnType(FunctionSymbol* func) {
             syntax_err("Unexpected end of file.");
             return true;
         case Token_BracketLeft:
-            func->return_value_type = DataType_Undefined;     // Function doesn't return anything.
+            func->return_value_type = DataType_Undefined;  // Function doesn't return anything.
             return true;
         case Token_ArrowRight:
             parser_next_token();
@@ -146,4 +155,3 @@ bool col_rule_funcReturnType(FunctionSymbol* func) {
             return false;
     }
 }
-

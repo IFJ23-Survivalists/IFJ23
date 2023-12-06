@@ -1,13 +1,14 @@
 /**
+ * @note Project: Implementace překladače imperativního jazyka IFJ23
  * @file test/rec_parser.c
  * @author Jakub Kloub, xkloub03, VUT FIT
  * @date 29/11/2023
- * @brief Tester for parser.
+ * @brief Tester for rec_parser.c.
  */
 
-#include "test.h"
 #include "../parser.h"
 #include "../scanner.h"
+#include "test.h"
 
 int prg_scanner_initialized() {
     scanner_reset_to_beginning();
@@ -72,7 +73,7 @@ int main() {
     }
     suite("Test Parser syntax/semantics - Let statements - invalid") {
         set_print_errors(false);
-        test(prg("let a : Int = \"fuj fuj\"")== 7);
+        test(prg("let a : Int = \"fuj fuj\"") == 7);
         test(prg("let a = 0\nlet a = 2") == 3);
         test(prg("let a = 0\nlet a = \":)\"") == 3);
         test(prg("let a = 0\n a = 1") == 3);
@@ -134,7 +135,7 @@ int main() {
     }
     suite("Test Parser syntax/semantics - Var statements - invalid") {
         set_print_errors(false);
-        test(prg("var a : Int = \"fuj fuj\"")== 7);
+        test(prg("var a : Int = \"fuj fuj\"") == 7);
         test(prg("var a = 0\nlet a = 2") == 3);
         test(prg("var a = 0\nlet a = \":)\"") == 3);
         test(prg("var a = 0\n a = nil") == 7);
@@ -187,17 +188,15 @@ int main() {
         test(prg("let a : Int = \n10\n if let a { var c : Int = 0\n c = c + a}") == 0);
         test(prg("let a = 12\n if let a { var c : Int = 0\n c = c + a}") == 0);
         test(prg("let a : Int? = nil\n if\n let a\n {\n var c : Int = 0\n c = c + a\n}\n") == 0);
-        test(prg(
-            "var a = 0\n"
-            "if (a == 0) {\n"
-                "var a = 0.0\n"
-            "} else if (a == 1) {\n"
-                "var b = 0.0\n"
-            "} else {\n"
-                "a = a+ 1\n"
-            "}\n"
-            "var b = 0\n"
-        ) == 0);
+        test(prg("var a = 0\n"
+                 "if (a == 0) {\n"
+                 "var a = 0.0\n"
+                 "} else if (a == 1) {\n"
+                 "var b = 0.0\n"
+                 "} else {\n"
+                 "a = a+ 1\n"
+                 "}\n"
+                 "var b = 0\n") == 0);
     }
     suite("Test Parser syntax/semantics - If/If-let statements - errors") {
         set_print_errors(false);
@@ -267,8 +266,11 @@ int main() {
         test(prg("func foo() { var a = bar()\n var b : Int = a }\nfunc bar() -> Int { return -1 }") == 0);
         test(prg("func bar() -> Int { return -1 } func foo() { var a = bar()\n var b : Int = a }") == 0);
         test(prg("func bar() -> Int { return -1 }\nfunc foo() { var a = bar()\n var b : Int = a }") == 0);
-        test(prg("func bar() -> Int { return -1 }\n foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") == 0);
-        test(prg("func bar() -> Int { return -1 } foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") == 0);
+        test(
+            prg("func bar() -> Int { return -1 }\n foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") ==
+            0);
+        test(prg("func bar() -> Int { return -1 } foo() \n bar() \n func foo() { var a = bar()\n var b : Int = a }") ==
+             0);
     }
     suite("Test Parser syntax/semantics - Func statements - errors") {
         set_print_errors(false);
@@ -292,12 +294,14 @@ int main() {
         test(prg("let b : String? = \"adkj\"\nvar a = 0\nif let b { var a = \"test\"\n var c : String = a }") == 0);
         test(prg("var a = 0\nfunc foo() { var a = \"test\"\n var c : String = a }") == 0);
         test(prg("let a : Int? = 12\n if let a { var b = a + 12 }") == 0);
-        test(prg("let a = 12\n if (true) { let a = 2.2\n while (true) { let a = false\n var c : Bool = a } var c : Double = a } var c : Int = a") == 0);
+        test(prg("let a = 12\n if (true) { let a = 2.2\n while (true) { let a = false\n var c : Bool = a } var c : "
+                 "Double = a } var c : Int = a") == 0);
     }
     suite("Test Parser syntax/semantics - Uninitialized variables") {
         set_print_errors(false);
         test(prg("var a: Int\nif (a == 2) {}") == 5);
-        test(prg("var a: Int?\n let c = a! * 2") == 0);     // Maybe variables are implicitly initialized to nil on empty initalization.
+        test(prg("var a: Int?\n let c = a! * 2") ==
+             0);  // Maybe variables are implicitly initialized to nil on empty initalization.
         test(prg("var a: Int\nwhile (a == 2) {}") == 5);
         test(prg("var a\nwhile (a == 2) {}") == 5);
         test(prg("var a: Int\n func foo() { var b = a * 2 }") == 5);

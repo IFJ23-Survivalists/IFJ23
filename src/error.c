@@ -1,3 +1,4 @@
+/// @note Project: Implementace překladače imperativního jazyka IFJ23
 /// @file error.c
 /// @author Le Duy Nguyen, xnguye27, VUT FIT
 /// @author Jakub Kloub, xkloub03, VUT FIT
@@ -8,7 +9,7 @@
 #include <stdarg.h>
 #include "scanner.h"
 
-const char *MSG[] = {
+const char* MSG[] = {
     [1] = "Chyba v programu v rámci lexikální analýzy (chybná struktura aktuálního lexému)",
     "Chyba v programu v rámci syntaktické analýzy (chybná syntaxe programu, chybějící hlavička, atp.)",
     "Sémantická chyba v programu – nedefinovaná funkce",
@@ -18,8 +19,7 @@ const char *MSG[] = {
     "sémantická chyba typové kompatibility v aritmetických, řetězcových a relačních výrazech.",
     "sémantická chyba odvození typu – typ proměnné nebo parametru není uveden a nelze odvodit od použitého výrazu.",
     "ostatní sémantické chyby.",
-    [99] = "interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)."
-};
+    [99] = "interní chyba překladače tj. neovlivněná vstupním programem (např. chyba alokace paměti atd.)."};
 
 Error ERROR = Error_None;
 
@@ -58,17 +58,15 @@ void print_error(const struct Token* tok, Error err_type, const char* err_string
     set_error(err_type);
 }
 
-const char* INT_ERR_MSG[] = {
-    [0] = "None",
-    "Invalid argument error",
-    "Memory allocation error",
-    "Out-of-range error",
-    "Runtime error"
-};
+const char* INT_ERR_MSG[] = {[0] = "None",
+                             "Invalid argument error",
+                             "Memory allocation error",
+                             "Out-of-range error",
+                             "Runtime error"};
 
-IntError g_int_error = { .type = IntError_None };
+IntError g_int_error = {.type = IntError_None};
 
-void set_int_error(IntErrorType type, const char *msg, const char *file, unsigned int line) {
+void set_int_error(IntErrorType type, const char* msg, const char* file, unsigned int line) {
     g_int_error.type = type;
     g_int_error.msg = msg;
     g_int_error.file = file;
@@ -86,8 +84,7 @@ void print_int_error_msg() {
     if (g_int_error.type) {
 #ifdef PRINT_INT_ERR
         if (g_int_error.msg)
-            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") ": %s\n",
-                    g_int_error.file, g_int_error.line,
+            fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") ": %s\n", g_int_error.file, g_int_error.line,
                     INT_ERR_MSG[(int)g_int_error.type], g_int_error.msg);
         else
             fprintf(stderr, "<internal> " BOLD("%s:%u") " " COL_R("%s") "\n", g_int_error.file, g_int_error.line,
@@ -100,4 +97,3 @@ void clear_int_error() {
     g_int_error.type = IntError_None;
     ERROR = Error_None;
 }
-
