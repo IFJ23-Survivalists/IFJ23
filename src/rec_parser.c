@@ -34,6 +34,7 @@ bool rule_assignExpr(VariableSymbol* var, const char* id_name);
 //     - Checking for function declaration inside declarations
 //     - Finding the function to use for return statement checks.
 char* g_current_func;
+bool g_func_has_return;
 
 /// Statement counters used for uniquelly indentifying needed IFJcode23 labels.
 int g_while_index;
@@ -42,6 +43,7 @@ int g_if_index;
 // Entry point to recursive parsing.
 bool rec_parser_begin() {
     g_current_func = NULL;
+    g_func_has_return = false;
     g_while_index = g_if_index = 0;
 
     code_buf_set(&g_parser.var_defs_code);
@@ -350,15 +352,18 @@ bool handle_func_statement() {
     code_buf_set(&func->code);
 
     g_current_func = func_id;
+    g_func_has_return = false;
     CALL_RULE(rule_statementList);  // Process all statements inside this function
+    g_current_func = NULL;
 
     // Check for missing return statement.
-    if (g_current_func != NULL && func->return_value_type != DataType_Undefined) {
+    if (g_func_has_return == false && func->return_value_type != DataType_Undefined) {
         return_err("Missing return statement in function `" COL_Y("%s") "`.", func_id);
         g_current_func = NULL;  // Maybe for future error recovery.
         return false;
     }
 
+    code_generation_raw("LABEL %s_end", func->code_name.data);
     code_generation(Instruction_PopFrame, NULL, NULL, NULL);
     code_generation(Instruction_Return, NULL, NULL, NULL);
     parser_scope_global();
@@ -471,7 +476,7 @@ bool rule_returnExpr() {
                            datatype_to_string(func->return_value_type));
                 return false;
             }
-            g_current_func = NULL;
+            g_func_has_return = true;
             break;
         }
         default: {
@@ -504,12 +509,11 @@ bool rule_returnExpr() {
             code_generation_raw("DEFVAR LF@ret");
             code_generation_raw("MOVE LF@ret TF@res");
 
-            // Set current func to NULL, so that we can check in `handle_func_statement()`, if the function has a return
-            // statement.
-            g_current_func = NULL;
+            g_func_has_return = true;
             break;
         }
     }
+    code_generation_raw("JUMP %s_end", func->code_name.data);
     return true;
 }
 
